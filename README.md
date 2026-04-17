@@ -1,16 +1,67 @@
-# app
+# Bridge - Learning Management System
 
-A new Flutter project.
+![Bridge](https://img.shields.io/badge/Flutter-3.19.5-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-## Getting Started
+**Bridge** is a modern, premium Learning Management System built with Flutter. It provides a seamless interface for Administrators, Teachers, Students, and School Managers to manage curriculum, attendance, activities, and communication.
 
-This project is a starting point for a Flutter application.
+## 🚀 Features
 
-A few resources to get you started if this is your first Flutter project:
+- **Multi-Role Support**: specialized dashboards for Admin, Teacher, Student, and Manager.
+- **Attendance Management**: Streamlined tracking of student attendance with daily summaries.
+- **Activity & Fair Tracking**: Manage school activities and fairs with payment tracking.
+- **Communication Hub**: Integrated messaging and group announcements.
+- **Timetable Management**: Class-wise schedule management.
+- **Premium UI**: Dark mode support, glassmorphism elements, and smooth micro-animations.
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+## 📱 Screenshots
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+*Add screenshots here*
+
+## 🛠️ Getting Started
+
+### Prerequisites
+
+- Flutter SDK (v3.19.5 or higher)
+- Dart SDK
+
+### Installation
+
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/afsalcheekode/app.git
+   ```
+
+2. **Navigate to the directory**:
+   ```bash
+   cd app
+   ```
+
+3. **Install dependencies**:
+   ```bash
+   flutter pub get
+   ```
+
+4. **Run the app**:
+   ```bash
+   flutter run
+   ```
+
+## 🌐 Deployment
+
+The web version of this app is automatically deployed to GitHub Pages via GitHub Actions.
+
+**View Live Demo**: [https://afsalcheekode.github.io/app/](https://afsalcheekode.github.io/app/)
+
+## 🔑 Demo Credentials
+
+| Role | Username | Password |
+|------|----------|----------|
+| Admin | `minad` | `321` |
+| Teacher | `teacher` | `123` |
+| Student | `student` | `123` |
+| Manager | `manager` | `123` |
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
