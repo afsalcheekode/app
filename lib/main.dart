@@ -26,7 +26,10 @@ class BridgeApp extends StatelessWidget {
       ),
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF075E54), // Premium dark blue
+          seedColor: const Color(0xFF6366F1), // Modern Indigo
+          primary: const Color(0xFF6366F1),
+          secondary: const Color(0xFFEC4899), // Pink/Rose accent
+          surface: const Color(0xFFF8FAFC),
           brightness: Brightness.light,
         ),
         useMaterial3: true,
@@ -392,120 +395,142 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              // Logo/Header
-              FadeInEntrance(
-                delay: 0.2,
-                child: Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: colorScheme.primary.withOpacity(0.1),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(Icons.hub_rounded, size: 80, color: colorScheme.primary),
-                    ),
-                    const SizedBox(height: 24),
-                    const Text(
-                      'BRIDGE',
-                      style: TextStyle(
-                        fontSize: 42,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 8,
-                        color: Color(0xFF075E54),
-                      ),
-                    ),
-                    Text(
-                      'LEARNING MANAGEMENT SYSTEM',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey[500],
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 60),
-
-              // Glassmorphism Login Card
-              FadeInEntrance(
-                delay: 0.4,
-                child: Container(
-                  padding: const EdgeInsets.all(28),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(32),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 30, offset: const Offset(0, 15))
-                    ],
-                  ),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 450),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Logo/Header
+                FadeInEntrance(
+                  delay: 0.2,
                   child: Column(
                     children: [
-                      TextField(
-                        controller: _userController,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        decoration: InputDecoration(
-                          labelText: 'Username',
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                          prefixIcon: Icon(Icons.person_outline_rounded, color: colorScheme.primary),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6366F1).withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            )
+                          ],
                         ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: _passController,
-                        obscureText: true,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          prefixIcon: Icon(Icons.lock_outline_rounded, color: colorScheme.primary),
-                        ),
+                        child: const Icon(Icons.auto_awesome_rounded, size: 60, color: Colors.white),
                       ),
                       const SizedBox(height: 32),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 60,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
-                            ),
-                            elevation: 0,
+                      ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(
+                          colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
+                        ).createShader(bounds),
+                        child: const Text(
+                          'BRIDGE',
+                          style: TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 10,
+                            color: Colors.white,
                           ),
-                          onPressed: _login,
-                          child: const Text(
-                            'Sign In',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                          ),
+                        ),
+                      ),
+                      Text(
+                        'NEXT-GEN LEARNING PLATFORM',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 3,
                         ),
                       ),
                     ],
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 60),
+  
+                // Glassmorphism Login Card
+                FadeInEntrance(
+                  delay: 0.4,
+                  child: Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(32),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 40, offset: const Offset(0, 20))
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _userController,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          onSubmitted: (_) => _login(),
+                          decoration: InputDecoration(
+                            labelText: 'Username',
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            prefixIcon: Icon(Icons.person_outline_rounded, color: colorScheme.primary),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: _passController,
+                          obscureText: true,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          onSubmitted: (_) => _login(),
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            prefixIcon: Icon(Icons.lock_outline_rounded, color: colorScheme.primary),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 60,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: _login,
+                            child: const Text(
+                              'Sign In',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
     ),
+    );
     );
   }
 
@@ -653,6 +678,9 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final width = MediaQuery.of(context).size.width;
+    final isDesktop = width > 1000;
+    final isTablet = width > 600 && width <= 1000;
     
     return FadeInEntrance(
       child: Scaffold(
@@ -660,7 +688,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
       appBar: AppBar(
         backgroundColor: colorScheme.primary,
         centerTitle: true,
-        toolbarHeight: 90,
+        toolbarHeight: isDesktop ? 120 : 90,
         elevation: 0,
         actions: [
           IconButton(
@@ -681,16 +709,16 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
             Text(
               'ADMIN',
               style: TextStyle(
-                fontSize: 64,
+                fontSize: isDesktop ? 80 : 64,
                 fontWeight: FontWeight.w100,
                 letterSpacing: 12,
                 color: Colors.white.withOpacity(0.12),
               ),
             ),
-            const Text(
+            Text(
               'Bridge',
               style: TextStyle(
-                fontSize: 32,
+                fontSize: isDesktop ? 40 : 32,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.5,
                 color: Colors.white,
@@ -709,7 +737,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                 "Let's simplify our curriculum\nand make learning fun!",
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  fontSize: 36,
+                  fontSize: isDesktop ? 48 : 36,
                   fontWeight: FontWeight.w200,
                   height: 1.5,
                   color: colorScheme.primary.withOpacity(0.08),
@@ -743,71 +771,112 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                     ),
                   ],
                 )
-              : ListView.builder(
+              : Padding(
                   padding: const EdgeInsets.all(16),
-                  itemCount: _schools.length,
-                  itemBuilder: (context, index) {
-                    final s = _schools[index];
-                    return Card(
-                      margin: const EdgeInsets.only(bottom: 12),
-                      child: ListTile(
-                        leading: const CircleAvatar(backgroundColor: Colors.teal, child: Icon(Icons.school, color: Colors.white)),
-                        title: Text(s['school'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Manager: ${s['manager']} | User: ${s['username']}'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(icon: const Icon(Icons.edit, color: Colors.teal), onPressed: () => _showAddSchoolSheet(index: index)),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () {
-                                setState(() => _schools.removeAt(index));
-                                _LoginScreenState.saveAllData();
-                              },
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: isDesktop ? 3 : (isTablet ? 2 : 1),
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      mainAxisExtent: 100,
+                    ),
+                    itemCount: _schools.length,
+                    itemBuilder: (context, index) {
+                      final s = _schools[index];
+                      return FadeInEntrance(
+                        delay: index * 0.1,
+                        child: Card(
+                          margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          elevation: 2,
+                          shadowColor: Colors.black.withOpacity(0.1),
+                          child: Center(
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: colorScheme.primary.withOpacity(0.1),
+                                child: Icon(Icons.school_rounded, color: colorScheme.primary),
+                              ),
+                              title: Text(s['school'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text('Manager: ${s['manager']}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(icon: const Icon(Icons.edit_rounded, color: Colors.teal, size: 20), onPressed: () => _showAddSchoolSheet(index: index)),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Delete School'),
+                                          content: Text('Are you sure you want to delete ${s['school']}?'),
+                                          actions: [
+                                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                            TextButton(onPressed: () {
+                                              setState(() => _schools.removeAt(index));
+                                              _LoginScreenState.saveAllData();
+                                              Navigator.pop(context);
+                                            }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                                          ],
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ],
+                          ),
                         ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
         ],
       ),
-      bottomNavigationBar: InkWell(
-        onTap: () => _showAddSchoolSheet(),
-        child: Container(
-          height: 70,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, -5),
-              )
-            ],
-          ),
-          alignment: Alignment.center,
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.domain_add, color: colorScheme.primary, size: 28),
-              const SizedBox(width: 12),
-              Text(
-                'Add School',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.primary,
-                  letterSpacing: 1.2,
-                ),
+      bottomNavigationBar: SafeArea(
+        child: InkWell(
+          onTap: () => _showAddSchoolSheet(),
+          child: Container(
+            height: 75,
+            margin: isDesktop ? const EdgeInsets.all(24) : EdgeInsets.zero,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: isDesktop ? BorderRadius.circular(20) : null,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, -5),
+                )
+              ],
+            ),
+            alignment: Alignment.center,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 400),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.domain_add_rounded, color: colorScheme.primary, size: 28),
+                  const SizedBox(width: 12),
+                  Text(
+                    'ADD NEW SCHOOL',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                      color: colorScheme.primary,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
     ),
     );
+  }
+}
   }
 }
 
@@ -1522,6 +1591,39 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final width = MediaQuery.of(context).size.width;
+    
+    final bool isDesktop = width > 1100;
+    final bool isTablet = width > 650 && width <= 1100;
+    final bool isMobile = width <= 650;
+
+    if (isDesktop || isTablet) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: Row(
+          children: [
+            isDesktop ? _buildDesktopSidebar(colorScheme) : _buildTabletRail(colorScheme),
+            Expanded(
+              child: Column(
+                children: [
+                   _buildDesktopAppBar(colorScheme),
+                   Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                      child: KeyedSubtree(
+                        key: ValueKey<int>(_currentIndex),
+                        child: _buildBody(colorScheme),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9), // Slate 100
@@ -1539,7 +1641,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
             const Text(
               'Bridge',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 1.2,
                 color: Colors.white,
@@ -1550,7 +1652,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 8,
                 fontWeight: FontWeight.w200,
                 letterSpacing: 4,
                 color: Colors.white.withOpacity(0.8),
@@ -1596,9 +1698,9 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 children: [
-                   _buildNavItem(Icons.dashboard, 'Overall', -1, colorScheme),
-                   _buildNavItem(Icons.class_, 'Class', 0, colorScheme),
-                   _buildNavItem(Icons.person, 'Teacher', 1, colorScheme),
+                   _buildNavItem(Icons.dashboard_rounded, 'Overall', -1, colorScheme),
+                   _buildNavItem(Icons.grid_view_rounded, 'Class', 0, colorScheme),
+                   _buildNavItem(Icons.badge_rounded, 'Teacher', 1, colorScheme),
                 ],
               ),
             ),
@@ -1609,14 +1711,164 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 children: [
-                   _buildNavItem(Icons.calendar_month, 'Schedule', 2, colorScheme),
-                   _buildNavItem(Icons.message, 'Msg', 3, colorScheme),
-                   _buildNavItem(Icons.settings, 'Features', 4, colorScheme),
+                   _buildNavItem(Icons.calendar_today_rounded, 'Sched', 2, colorScheme),
+                   _buildNavItem(Icons.chat_bubble_rounded, 'Msg', 3, colorScheme),
+                   _buildNavItem(Icons.tune_rounded, 'Feat', 4, colorScheme),
                 ],
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildTabletRail(ColorScheme colorScheme) {
+    return NavigationRail(
+      selectedIndex: _currentIndex + 1, // mapping -1 to 0
+      onDestinationSelected: (int index) {
+        setState(() => _currentIndex = index - 1);
+      },
+      backgroundColor: Colors.white,
+      labelType: NavigationRailLabelType.selected,
+      selectedIconTheme: IconThemeData(color: colorScheme.primary),
+      selectedLabelTextStyle: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 11),
+      unselectedLabelTextStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 10),
+      leading: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Icon(Icons.auto_awesome_rounded, color: colorScheme.primary, size: 32),
+      ),
+      destinations: const [
+        NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Overview')),
+        NavigationRailDestination(icon: Icon(Icons.grid_view_rounded), label: Text('Classes')),
+        NavigationRailDestination(icon: Icon(Icons.badge_rounded), label: Text('Teachers')),
+        NavigationRailDestination(icon: Icon(Icons.calendar_today_rounded), label: Text('Schedule')),
+        NavigationRailDestination(icon: Icon(Icons.chat_bubble_rounded), label: Text('Messages')),
+        NavigationRailDestination(icon: Icon(Icons.tune_rounded), label: Text('Features')),
+      ],
+      trailing: Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.add_circle_rounded, size: 32),
+              color: colorScheme.primary,
+              onPressed: () => _showEditMetricDialog(),
+            ),
+            const SizedBox(height: 20),
+            IconButton(
+              icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+              onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopSidebar(ColorScheme colorScheme) {
+    return Container(
+      width: 280,
+      color: Colors.white,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('ANTIGRAVITY', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4, color: Color(0xFF1E293B))),
+                const SizedBox(height: 8),
+                Text('SCHOOL MANAGER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colorScheme.primary, letterSpacing: 2)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _buildDesktopNavItem(Icons.dashboard_rounded, 'Overview', -1, colorScheme),
+                _buildDesktopNavItem(Icons.class_, 'Classes', 0, colorScheme),
+                _buildDesktopNavItem(Icons.person_rounded, 'Teachers', 1, colorScheme),
+                _buildDesktopNavItem(Icons.calendar_month, 'Schedule', 2, colorScheme),
+                _buildDesktopNavItem(Icons.message_rounded, 'Messages', 3, colorScheme),
+                _buildDesktopNavItem(Icons.settings_suggest_rounded, 'Feature Config', 4, colorScheme),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: ElevatedButton.icon(
+              onPressed: () => _showEditMetricDialog(),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('CUSTOM CARD', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            leading: CircleAvatar(backgroundColor: colorScheme.primary.withOpacity(0.1), child: Text(widget.schoolName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))),
+            title: Text(widget.schoolName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            subtitle: const Text('Administrator', style: TextStyle(fontSize: 10)),
+            trailing: IconButton(icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.grey), onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopNavItem(IconData icon, String label, int index, ColorScheme colorScheme) {
+    final isSelected = _currentIndex == index;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () => setState(() => _currentIndex = index),
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? colorScheme.primary.withOpacity(0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: isSelected ? colorScheme.primary : const Color(0xFF64748B), size: 20),
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? colorScheme.primary : const Color(0xFF1E293B),
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopAppBar(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      color: Colors.white,
+      child: Row(
+        children: [
+          const Text('Management Terminal', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+          const Spacer(),
+          IconButton(icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B)), onPressed: () {}),
+          const SizedBox(width: 12),
+          IconButton(icon: const Icon(Icons.settings_outlined, color: Color(0xFF64748B)), onPressed: () {}),
+        ],
       ),
     );
   }
@@ -1763,8 +2015,8 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 5 : (MediaQuery.of(context).size.width > 800 ? 4 : 2),
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
               childAspectRatio: 1.5,
@@ -2387,13 +2639,13 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
   List<Map<String, dynamic>> get _metrics {
       final config = _LoginScreenState._featureConfig;
       final List<Map<String, dynamic>> all = [
-        {'title': 'Activities', 'value': '${_activities.length}', 'icon': Icons.play_circle_fill, 'color': Colors.green, 'targetIndex': 1, 'feature': 'Activities'},
-        {'title': 'Fairs', 'value': '${_fairList.length}', 'icon': Icons.local_activity, 'color': Colors.pink, 'targetIndex': 2, 'feature': 'Fairs'},
-        {'title': 'Schedule', 'value': '${_exams.length}', 'icon': Icons.calendar_month, 'color': Colors.orange, 'targetIndex': 3, 'feature': 'Schedule'},
-        {'title': 'Results', 'value': '${_results.length}', 'icon': Icons.analytics, 'color': Colors.purple, 'targetIndex': 4, 'feature': 'Results'},
-        {'title': 'Attendance', 'value': 'VIEW', 'icon': Icons.how_to_reg, 'color': Colors.blue, 'targetIndex': 7, 'feature': 'Attendance'},
-        {'title': 'Messages', 'value': 'P2P', 'icon': Icons.message, 'color': Colors.teal, 'targetIndex': 5, 'feature': 'Messages'},
-        {'title': 'Announce', 'value': 'CHAT', 'icon': Icons.campaign, 'color': Colors.indigo, 'targetIndex': 6, 'feature': 'Groups'},
+        {'title': 'Activities', 'value': '${_activities.length}', 'icon': Icons.play_circle_fill, 'color': const Color(0xFF6366F1), 'targetIndex': 1, 'feature': 'Activities'},
+        {'title': 'Fairs', 'value': '${_fairList.length}', 'icon': Icons.star_rounded, 'color': const Color(0xFFEC4899), 'targetIndex': 2, 'feature': 'Fairs'},
+        {'title': 'Schedule', 'value': '${_exams.length}', 'icon': Icons.calendar_today_rounded, 'color': const Color(0xFFF59E0B), 'targetIndex': 3, 'feature': 'Schedule'},
+        {'title': 'Results', 'value': '${_results.length}', 'icon': Icons.auto_graph_rounded, 'color': const Color(0xFF8B5CF6), 'targetIndex': 4, 'feature': 'Results'},
+        {'title': 'Attendance', 'value': 'VIEW', 'icon': Icons.fingerprint_rounded, 'color': const Color(0xFF06B6D4), 'targetIndex': 7, 'feature': 'Attendance'},
+        {'title': 'Messages', 'value': 'P2P', 'icon': Icons.chat_bubble_rounded, 'color': const Color(0xFF10B981), 'targetIndex': 5, 'feature': 'Messages'},
+        {'title': 'Announce', 'value': 'CHAT', 'icon': Icons.campaign_rounded, 'color': const Color(0xFF6366F1), 'targetIndex': 6, 'feature': 'Groups'},
       ];
       return all.where((m) => config[m['feature']] ?? true).toList();
   }
@@ -2401,17 +2653,56 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final width = MediaQuery.of(context).size.width;
+    
+    final bool isDesktop = width > 1100;
+    final bool isTablet = width > 650 && width <= 1100;
+
+    if (isDesktop || isTablet) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: Row(
+          children: [
+            isDesktop ? _buildDesktopSidebar(colorScheme) : _buildTabletRail(colorScheme),
+            Expanded(
+              child: Column(
+                children: [
+                  _buildDesktopAppBar(colorScheme),
+                  Expanded(
+                    child: FadeInEntrance(
+                      child: IndexedStack(
+                        index: _currentIndex,
+                        children: [
+                          _buildHomeTab(colorScheme),
+                          _buildActivitiesTab(colorScheme),
+                          _buildFairTab(colorScheme),
+                          _buildScheduleTab(colorScheme),
+                          _buildResultTab(colorScheme),
+                          _buildMessagesTab(colorScheme),
+                          _buildGlobalGroupTab(colorScheme),
+                          _buildAttendanceDetailForStudent(colorScheme),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
       appBar: AppBar(
         backgroundColor: colorScheme.primary,
         foregroundColor: Colors.white,
+        centerTitle: true,
         title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(widget.studentName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            Text('Class ${widget.studentClass}', style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.8))),
+            Text(widget.studentName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Text('Class ${widget.studentClass}', style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.8))),
           ],
         ),
         actions: [
@@ -2453,16 +2744,153 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 12),
           physics: const BouncingScrollPhysics(),
           children: [
-            _buildNavItem(Icons.home, 'Home', 0, colorScheme),
+            _buildNavItem(Icons.home_rounded, 'Home', 0, colorScheme),
             _buildNavItem(Icons.play_circle_fill, 'Act', 1, colorScheme, isEnabled: _LoginScreenState._featureConfig['Activities'] ?? true),
-            _buildNavItem(Icons.local_activity, 'Fair', 2, colorScheme, isEnabled: _LoginScreenState._featureConfig['Fairs'] ?? true),
-            _buildNavItem(Icons.calendar_month, 'Sched', 3, colorScheme, isEnabled: _LoginScreenState._featureConfig['Schedule'] ?? true),
-            _buildNavItem(Icons.analytics, 'Res', 4, colorScheme, isEnabled: _LoginScreenState._featureConfig['Results'] ?? true),
-            _buildNavItem(Icons.how_to_reg, 'Attnd', 7, colorScheme, isEnabled: _LoginScreenState._featureConfig['Attendance'] ?? true),
-            _buildNavItem(Icons.message, 'Msg', 5, colorScheme, isEnabled: _LoginScreenState._featureConfig['Messages'] ?? true),
-            _buildNavItem(Icons.campaign, 'Announce', 6, colorScheme, isEnabled: _LoginScreenState._featureConfig['Groups'] ?? true),
+            _buildNavItem(Icons.local_activity_rounded, 'Fair', 2, colorScheme, isEnabled: _LoginScreenState._featureConfig['Fairs'] ?? true),
+            _buildNavItem(Icons.calendar_month_rounded, 'Sched', 3, colorScheme, isEnabled: _LoginScreenState._featureConfig['Schedule'] ?? true),
+            _buildNavItem(Icons.analytics_rounded, 'Res', 4, colorScheme, isEnabled: _LoginScreenState._featureConfig['Results'] ?? true),
+            _buildNavItem(Icons.fingerprint_rounded, 'Attnd', 7, colorScheme, isEnabled: _LoginScreenState._featureConfig['Attendance'] ?? true),
+            _buildNavItem(Icons.chat_bubble_rounded, 'Msg', 5, colorScheme, isEnabled: _LoginScreenState._featureConfig['Messages'] ?? true),
+            _buildNavItem(Icons.campaign_rounded, 'Announce', 6, colorScheme, isEnabled: _LoginScreenState._featureConfig['Groups'] ?? true),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopSidebar(ColorScheme colorScheme) {
+    return Container(
+      width: 280,
+      color: Colors.white,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('ANTIGRAVITY', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4, color: Color(0xFF1E293B))),
+                const SizedBox(height: 8),
+                Text('STUDENT PORTAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colorScheme.primary, letterSpacing: 2)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _buildDesktopNavItem(Icons.home_rounded, 'Home', 0, colorScheme),
+                _buildDesktopNavItem(Icons.play_circle_fill, 'Activities', 1, colorScheme),
+                _buildDesktopNavItem(Icons.local_activity_rounded, 'Fairs', 2, colorScheme),
+                _buildDesktopNavItem(Icons.calendar_month_rounded, 'Schedule', 3, colorScheme),
+                _buildDesktopNavItem(Icons.analytics_rounded, 'Results', 4, colorScheme),
+                _buildDesktopNavItem(Icons.fingerprint_rounded, 'Attendance', 7, colorScheme),
+                _buildDesktopNavItem(Icons.chat_bubble_rounded, 'Messages', 5, colorScheme),
+                _buildDesktopNavItem(Icons.campaign_rounded, 'Announce', 6, colorScheme),
+              ],
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            leading: CircleAvatar(backgroundColor: colorScheme.primary.withOpacity(0.1), child: Text(widget.studentName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))),
+            title: Text(widget.studentName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            subtitle: Text('Class ${widget.studentClass}', style: const TextStyle(fontSize: 10)),
+            trailing: IconButton(icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.grey), onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTabletRail(ColorScheme colorScheme) {
+    final config = _LoginScreenState._featureConfig;
+    bool isEnabled(String f) => config[f] ?? true;
+
+    return NavigationRail(
+      selectedIndex: _currentIndex,
+      onDestinationSelected: (int index) => setState(() => _currentIndex = index),
+      backgroundColor: Colors.white,
+      labelType: NavigationRailLabelType.selected,
+      selectedIconTheme: IconThemeData(color: colorScheme.primary),
+      destinations: [
+        const NavigationRailDestination(icon: Icon(Icons.home_rounded), label: Text('Home')),
+        if (isEnabled('Activities')) const NavigationRailDestination(icon: Icon(Icons.play_circle_fill), label: Text('Activities')),
+        if (isEnabled('Fairs')) const NavigationRailDestination(icon: Icon(Icons.local_activity_rounded), label: Text('Fairs')),
+        if (isEnabled('Schedule')) const NavigationRailDestination(icon: Icon(Icons.calendar_month_rounded), label: Text('Schedule')),
+        if (isEnabled('Results')) const NavigationRailDestination(icon: Icon(Icons.analytics_rounded), label: Text('Results')),
+        if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.fingerprint_rounded), label: Text('Attendance')),
+        if (isEnabled('Messages')) const NavigationRailDestination(icon: Icon(Icons.chat_bubble_rounded), label: Text('Messages')),
+        if (isEnabled('Groups')) const NavigationRailDestination(icon: Icon(Icons.campaign_rounded), label: Text('Announce')),
+      ],
+      trailing: Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.logout_rounded, color: Colors.grey),
+              onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopNavItem(IconData icon, String label, int index, ColorScheme colorScheme) {
+    final isSelected = _currentIndex == index;
+    final isEnabled = _LoginScreenState._featureConfig[label == 'Home' ? 'Activities' : (label == 'Attendance' ? 'Attendance' : (label == 'Announce' ? 'Groups' : label))] ?? true;
+    if (label == 'Home') { /* Always enabled */ } 
+    else if (!isEnabled) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: () => setState(() => _currentIndex = index),
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? colorScheme.primary.withOpacity(0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: isSelected ? colorScheme.primary : const Color(0xFF64748B), size: 20),
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? colorScheme.primary : const Color(0xFF1E293B),
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopAppBar(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      color: Colors.white,
+      child: Row(
+        children: [
+          Text('Welcome, ${widget.studentName}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(20)),
+            child: Text('Class ${widget.studentClass}', style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.primary, fontSize: 12)),
+          ),
+          const SizedBox(width: 16),
+          IconButton(icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B)), onPressed: () {}),
+        ],
       ),
     );
   }
@@ -2498,57 +2926,149 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
 
   Widget _buildAttendanceDetailForStudent(ColorScheme colorScheme) {
     final myAttendance = _LoginScreenState._allAttendance.where((a) => a['studentUsername'] == widget.studentUsername).toList();
-    
-    return Column(
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Text('My Attendance', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
-        ),
-        if (myAttendance.isEmpty)
-          const Expanded(child: Center(child: Text('No attendance records found.')))
-        else
-          Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: myAttendance.length,
-              itemBuilder: (context, index) {
-                final rec = myAttendance[index];
-                final pMap = rec['periods'] as Map? ?? {};
-                final fn = pMap['FN'] ?? '-';
-                final an = pMap['AN'] ?? '-';
-                            final DateTime dt = DateTime.tryParse(rec['date'] ?? '') ?? DateTime.now();
-                final List<String> weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                final String dayName = weekdays[dt.weekday - 1];
+    final presentCount = myAttendance.where((a) => (a['periods'] as Map?)?['FN'] == 'P' || (a['periods'] as Map?)?['AN'] == 'P').length;
+    final totalDays = myAttendance.length;
+    final attendancePct = totalDays == 0 ? 0.0 : (presentCount / totalDays);
 
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10)],
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('$dayName | ${rec['date'] ?? ''}', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B))),
-                          ],
-                        ),
-                      ),
-                      _attendanceBadge('Before Noon', fn),
-                      const SizedBox(width: 8),
-                      _attendanceBadge('After Noon', an),
-                    ],
-                  ),
-                );
-              },
+    return Container(
+      color: const Color(0xFFF8FAFC),
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(32), bottomRight: Radius.circular(32)),
+              boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 5))],
+            ),
+            child: Column(
+              children: [
+                const Text('My Attendance', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildAttStatCard('Total Days', '$totalDays', Icons.calendar_today_rounded, Colors.blue),
+                    _buildAttStatCard('Present', '$presentCount', Icons.check_circle_rounded, Colors.green),
+                    _buildAttStatCard('Percent', '${(attendancePct * 100).toInt()}%', Icons.analytics_rounded, Colors.orange),
+                  ],
+                ),
+              ],
             ),
           ),
+          if (myAttendance.isEmpty)
+            Expanded(
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.event_note_rounded, size: 80, color: Colors.grey.withOpacity(0.2)),
+                    const SizedBox(height: 16),
+                    const Text('No records yet', style: TextStyle(color: Colors.grey, fontSize: 18, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            )
+          else
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.all(20),
+                itemCount: myAttendance.length,
+                itemBuilder: (context, index) {
+                  final rec = myAttendance[index];
+                  final pMap = rec['periods'] as Map? ?? {};
+                  final fn = pMap['FN'] ?? '-';
+                  final an = pMap['AN'] ?? '-';
+                  final DateTime dt = DateTime.tryParse(rec['date'] ?? '') ?? DateTime.now();
+                  final List<String> weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                  final List<String> months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                  final String dayName = weekdays[dt.weekday - 1];
+                  final String monthName = months[dt.month - 1];
+
+                  return Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 12, offset: const Offset(0, 6))],
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: colorScheme.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Column(
+                              children: [
+                                Text(dayName, style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
+                                Text('${dt.day}', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 20)),
+                                Text(monthName, style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 10)),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 20),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Daily Status', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B))),
+                                const SizedBox(height: 8),
+                                Row(
+                                  children: [
+                                    _miniStatusBadge('Morning', fn),
+                                    const SizedBox(width: 8),
+                                    _miniStatusBadge('Afternoon', an),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(fn == 'P' && an == 'P' ? Icons.stars_rounded : Icons.check_circle_outline_rounded, 
+                               color: fn == 'P' && an == 'P' ? Colors.amber : Colors.grey.withOpacity(0.3), size: 30),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAttStatCard(String label, String value, IconData icon, Color color) {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle),
+          child: Icon(icon, color: color, size: 24),
+        ),
+        const SizedBox(height: 8),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF1E293B))),
+        Text(label, style: const TextStyle(fontSize: 10, color: Colors.grey, fontWeight: FontWeight.bold)),
       ],
+    );
+  }
+
+  Widget _miniStatusBadge(String label, String status) {
+    Color color = status == 'P' ? Colors.green : (status == 'A' ? Colors.red : Colors.grey);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Text(
+        '$label: $status',
+        style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold),
+      ),
     );
   }
 
@@ -2586,30 +3106,93 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             width: double.infinity,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.7)],
+                colors: [colorScheme.primary, colorScheme.secondary],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [BoxShadow(color: colorScheme.primary.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
+              borderRadius: BorderRadius.circular(30),
+              boxShadow: [
+                BoxShadow(
+                  color: colorScheme.primary.withOpacity(0.3),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                )
+              ],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Dashboard Overview', style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 8),
-                Text('Hello, ${widget.studentName}!', style: const TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 4),
-                Text('Welcome back to Class ${widget.studentClass}', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14)),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Welcome back,', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16)),
+                        Text(widget.studentName, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 30),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Weekly Progress', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                          Text('${(_activities.where((a) => _LoginScreenState._allActivitySubmissions.any((s) => s['studentUsername'] == widget.studentUsername && s['activityId'] == a['id'] && s['isCompleted'] == true)).length / (_activities.isEmpty ? 1 : _activities.length) * 100).toInt()}%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(10),
+                        child: LinearProgressIndicator(
+                          value: _activities.isEmpty ? 0 : _activities.where((a) => _LoginScreenState._allActivitySubmissions.any((s) => s['studentUsername'] == widget.studentUsername && s['activityId'] == a['id'] && s['isCompleted'] == true)).length / _activities.length,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                          minHeight: 10,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          const Text('Academic Hub', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+          const SizedBox(height: 32),
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text('Your Learning Path', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+            ],
+          ),
           const SizedBox(height: 16),
           GridView.builder(
 
@@ -2631,6 +3214,30 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
             },
           ),
           const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: colorScheme.secondary.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: colorScheme.secondary.withOpacity(0.1)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.lightbulb_outline_rounded, color: colorScheme.secondary, size: 30),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Tip of the Day', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                      Text('Break large tasks into smaller steps to stay focused and productive!', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 32),
           const Text('Recent Activities', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
           const SizedBox(height: 12),
           ...(_activities.take(3).map((a) => Card(
@@ -3698,14 +4305,14 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
   List<Map<String, dynamic>> get _metrics {
     final config = _LoginScreenState._featureConfig;
     final List<Map<String, dynamic>> allMetrics = [
-      {'title': 'Students', 'value': '${_students.length}', 'icon': Icons.people, 'color': Colors.teal, 'targetIndex': 0, 'feature': 'Students'},
-      {'title': 'Activities', 'value': '${_activities.length}', 'icon': Icons.play_circle_fill, 'color': Colors.green, 'targetIndex': 1, 'feature': 'Activities'},
-      {'title': 'Fairs', 'value': '${_fairList.length}', 'icon': Icons.local_activity, 'color': Colors.pink, 'targetIndex': 2, 'feature': 'Fairs'},
-      {'title': 'Schedule', 'value': '${_exams.length}', 'icon': Icons.calendar_month, 'color': Colors.orange, 'targetIndex': 3, 'feature': 'Schedule'},
-      {'title': 'Results', 'value': '${_results.length}', 'icon': Icons.analytics, 'color': Colors.purple, 'targetIndex': 4, 'feature': 'Results'},
-      {'title': 'Attendance', 'value': 'LOG', 'icon': Icons.how_to_reg, 'color': Colors.blue, 'targetIndex': 7, 'feature': 'Attendance'},
-      {'title': 'Messages', 'value': '${_messages.length}', 'icon': Icons.message, 'color': Colors.teal, 'targetIndex': 5, 'feature': 'Messages'},
-      {'title': 'Announce', 'value': '${_teachers.length + _allStudents.length}', 'icon': Icons.campaign, 'color': Colors.green, 'targetIndex': 6, 'feature': 'Groups'},
+      {'title': 'Students', 'value': '${_students.length}', 'icon': Icons.people_rounded, 'color': const Color(0xFF6366F1), 'targetIndex': 0, 'feature': 'Students'},
+      {'title': 'Activities', 'value': '${_activities.length}', 'icon': Icons.play_circle_fill, 'color': const Color(0xFF10B981), 'targetIndex': 1, 'feature': 'Activities'},
+      {'title': 'Fairs', 'value': '${_fairList.length}', 'icon': Icons.grade_rounded, 'color': const Color(0xFFEC4899), 'targetIndex': 2, 'feature': 'Fairs'},
+      {'title': 'Schedule', 'value': '${_exams.length}', 'icon': Icons.event_note_rounded, 'color': const Color(0xFFF59E0B), 'targetIndex': 3, 'feature': 'Schedule'},
+      {'title': 'Results', 'value': '${_results.length}', 'icon': Icons.analytics_rounded, 'color': const Color(0xFF8B5CF6), 'targetIndex': 4, 'feature': 'Results'},
+      {'title': 'Attendance', 'value': 'LOG', 'icon': Icons.fact_check_rounded, 'color': const Color(0xFF06B6D4), 'targetIndex': 7, 'feature': 'Attendance'},
+      {'title': 'Messages', 'value': '${_messages.length}', 'icon': Icons.question_answer_rounded, 'color': const Color(0xFFF43F5E), 'targetIndex': 5, 'feature': 'Messages'},
+      {'title': 'Announce', 'value': '${_teachers.length + _allStudents.length}', 'icon': Icons.campaign_rounded, 'color': const Color(0xFF6366F1), 'targetIndex': 6, 'feature': 'Groups'},
     ];
     return allMetrics.where((m) => config[m['feature']] ?? true).toList();
   }
@@ -3728,6 +4335,39 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final width = MediaQuery.of(context).size.width;
+    
+    final bool isDesktop = width > 1100;
+    final bool isTablet = width > 650 && width <= 1100;
+    final bool isMobile = width <= 650;
+
+    if (isDesktop || isTablet) {
+      return Scaffold(
+        backgroundColor: const Color(0xFFF1F5F9),
+        body: Row(
+          children: [
+            isDesktop ? _buildDesktopSidebar(colorScheme) : _buildTabletRail(colorScheme),
+            Expanded(
+              child: Column(
+                children: [
+                  _buildDesktopAppBar(colorScheme),
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, animation) => FadeTransition(opacity: animation, child: child),
+                      child: KeyedSubtree(
+                        key: ValueKey<int>(_currentIndex),
+                        child: _buildBody(colorScheme),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: const Color(0xFFF1F5F9),
@@ -3739,27 +4379,30 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'Bridge',
+              'BRIDGE',
               style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+                letterSpacing: 6,
                 color: Colors.white,
               ),
             ),
-            Text(
-              'TEACHER',
-              style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w200,
-                letterSpacing: 4,
-                color: Colors.white.withOpacity(0.8),
+            Container(
+              margin: const EdgeInsets.only(top: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
               ),
-            ),
-            Text(
-              '${widget.teacherName} | Class: ${widget.assignedClass}',
-              style: const TextStyle(fontSize: 12, color: Colors.white70),
-              textAlign: TextAlign.center,
+              child: Text(
+                'TEACHER PORTAL | CLASS ${widget.assignedClass}',
+                style: const TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.5,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ],
         ),
@@ -3794,6 +4437,173 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
           ],
         ),
         child: _buildTeacherNavContent(colorScheme),
+      ),
+    );
+  }
+
+  Widget _buildTabletRail(ColorScheme colorScheme) {
+    final config = _LoginScreenState._featureConfig;
+    
+    // Helper to check feature enablement
+    bool isEnabled(String feature) => config[feature] ?? true;
+
+    return NavigationRail(
+      selectedIndex: _currentIndex + 1, // mapping -1 to 0
+      onDestinationSelected: (int index) {
+         int targetIndex = index - 1;
+         // Handle feature checks if necessary, but rail shows all for simplicity usually
+         setState(() => _currentIndex = targetIndex);
+      },
+      backgroundColor: Colors.white,
+      labelType: NavigationRailLabelType.selected,
+      selectedIconTheme: IconThemeData(color: colorScheme.primary),
+      selectedLabelTextStyle: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 11),
+      unselectedLabelTextStyle: const TextStyle(color: Color(0xFF64748B), fontSize: 10),
+      leading: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 24),
+        child: Icon(Icons.auto_awesome_rounded, color: colorScheme.primary, size: 32),
+      ),
+      destinations: [
+        const NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Overview')),
+        if (isEnabled('Students')) const NavigationRailDestination(icon: Icon(Icons.people_rounded), label: Text('Students')),
+        if (isEnabled('Activities')) const NavigationRailDestination(icon: Icon(Icons.play_circle_fill), label: Text('Activities')),
+        if (isEnabled('Fairs')) const NavigationRailDestination(icon: Icon(Icons.local_activity), label: Text('Fairs')),
+        if (isEnabled('Schedule')) const NavigationRailDestination(icon: Icon(Icons.calendar_month), label: Text('Schedule')),
+        if (isEnabled('Results')) const NavigationRailDestination(icon: Icon(Icons.analytics), label: Text('Results')),
+        if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.how_to_reg), label: Text('Attendance')),
+        if (isEnabled('Messages')) const NavigationRailDestination(icon: Icon(Icons.message), label: Text('Messages')),
+        if (isEnabled('Groups')) const NavigationRailDestination(icon: Icon(Icons.campaign), label: Text('Announce')),
+      ],
+      trailing: Expanded(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.add_circle_rounded, size: 32),
+              color: colorScheme.primary,
+              onPressed: () => _showAddItemDialog(),
+            ),
+            const SizedBox(height: 20),
+            IconButton(
+              icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+              onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopSidebar(ColorScheme colorScheme) {
+    return Container(
+      width: 280,
+      color: Colors.white,
+      child: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 24),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('ANTIGRAVITY', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4, color: Color(0xFF1E293B))),
+                const SizedBox(height: 8),
+                Text('TEACHER PORTAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colorScheme.primary, letterSpacing: 2)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _buildDesktopNavItem(Icons.dashboard_rounded, 'Overview', -1, colorScheme),
+                _buildDesktopNavItem(Icons.people_rounded, 'Students', 0, colorScheme),
+                _buildDesktopNavItem(Icons.play_circle_fill, 'Activities', 1, colorScheme),
+                _buildDesktopNavItem(Icons.local_activity, 'Fairs', 2, colorScheme),
+                _buildDesktopNavItem(Icons.calendar_month, 'Schedule', 3, colorScheme),
+                _buildDesktopNavItem(Icons.analytics, 'Results', 4, colorScheme),
+                _buildDesktopNavItem(Icons.how_to_reg, 'Attendance', 7, colorScheme),
+                _buildDesktopNavItem(Icons.message, 'Messages', 5, colorScheme),
+                _buildDesktopNavItem(Icons.campaign, 'Announce', 6, colorScheme),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: ElevatedButton.icon(
+              onPressed: () => _showAddItemDialog(),
+              icon: const Icon(Icons.add, size: 18),
+              label: const Text('QUICK ADD', style: TextStyle(fontWeight: FontWeight.bold)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
+            ),
+          ),
+          const Divider(height: 1),
+          ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            leading: CircleAvatar(backgroundColor: colorScheme.primary.withOpacity(0.1), child: Text(widget.teacherName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))),
+            title: Text(widget.teacherName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+            subtitle: Text('ID: ${widget.teacherUsername}', style: const TextStyle(fontSize: 10)),
+            trailing: IconButton(icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.grey), onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()))),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDesktopNavItem(IconData icon, String label, int index, ColorScheme colorScheme) {
+    final isSelected = _currentIndex == index;
+    final isEnabled = _LoginScreenState._featureConfig[label == 'Overview' ? 'Students' : (label == 'Fairs' ? 'Fairs' : (label == 'Attendance' ? 'Attendance' : (label == 'Announce' ? 'Groups' : label)))] ?? true;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: InkWell(
+        onTap: isEnabled ? () => setState(() => _currentIndex = index) : null,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: isSelected ? colorScheme.primary.withOpacity(0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: isSelected ? colorScheme.primary : (isEnabled ? const Color(0xFF64748B) : Colors.grey.withOpacity(0.2)), size: 20),
+              const SizedBox(width: 16),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? colorScheme.primary : (isEnabled ? const Color(0xFF1E293B) : Colors.grey.withOpacity(0.3)),
+                  fontWeight: isSelected ? FontWeight.w900 : FontWeight.w600,
+                  fontSize: 14,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDesktopAppBar(ColorScheme colorScheme) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+      color: Colors.white,
+      child: Row(
+        children: [
+          const Text('Dashboard', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+          const Spacer(),
+          Text('Assigned Class: ${widget.assignedClass}', style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+          const SizedBox(width: 24),
+          IconButton(icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B)), onPressed: () {}),
+          const SizedBox(width: 12),
+          IconButton(icon: const Icon(Icons.settings_outlined, color: Color(0xFF64748B)), onPressed: () {}),
+        ],
       ),
     );
   }
@@ -4639,33 +5449,85 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
 
   Widget _buildOverview(ColorScheme colorScheme) {
     return SingleChildScrollView(
+      physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Welcome, ${widget.teacherName}!',
-            style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+          Stack(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [colorScheme.primary, colorScheme.primary.withRed(100)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(32),
+                  boxShadow: [BoxShadow(color: colorScheme.primary.withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10))],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Management Hub', style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 13, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                            const SizedBox(height: 4),
+                            Text(widget.teacherName, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+                          child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          _overviewMiniStat('Students', '${_students.length}', Icons.people_outline),
+                          Container(width: 1, height: 30, color: Colors.white.withOpacity(0.2), margin: const EdgeInsets.symmetric(horizontal: 16)),
+                          _overviewMiniStat('Activities', '${_activities.length}', Icons.play_circle_outline),
+                          Container(width: 1, height: 30, color: Colors.white.withOpacity(0.2), margin: const EdgeInsets.symmetric(horizontal: 16)),
+                          _overviewMiniStat('Class', widget.assignedClass, Icons.class_outlined),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Assigned Class: ${widget.assignedClass} | Subjects: ${widget.subjects}',
-            style: const TextStyle(fontSize: 16, color: Color(0xFF64748B)),
-          ),
-          const SizedBox(height: 24),
-          const Text(
-            'Overview',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+          const SizedBox(height: 32),
+          Row(
+            children: [
+              Container(width: 4, height: 24, decoration: BoxDecoration(color: colorScheme.primary, borderRadius: BorderRadius.circular(2))),
+              const SizedBox(width: 12),
+              const Text('Management Hub', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+            ],
           ),
           const SizedBox(height: 16),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 4 : (MediaQuery.of(context).size.width > 800 ? 3 : 2),
               crossAxisSpacing: 16,
               mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
+              childAspectRatio: 1.1,
             ),
             itemCount: _metrics.length,
             itemBuilder: (context, index) {
@@ -4678,7 +5540,6 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                   m['icon'],
                   m['color'],
                   m['targetIndex'],
-                  index,
                 ),
               );
             },
@@ -4688,41 +5549,42 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon, MaterialColor color, int targetIndex, int metricIndex) {
+  Widget _overviewMiniStat(String label, String value, IconData icon) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white.withOpacity(0.8), size: 16),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 9, fontWeight: FontWeight.w600)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(String title, String value, IconData icon, Color color, int targetIndex) {
     return GestureDetector(
       onTap: () {
         if (targetIndex != -1) setState(() => _currentIndex = targetIndex);
       },
       child: Container(
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
         ),
-        child: Stack(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Align(
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    backgroundColor: color.shade50,
-                    radius: 24,
-                    child: Icon(icon, color: color.shade700, size: 24),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    value,
-                    style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                  ),
-                  Text(
-                    title,
-                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
-                  ),
-                ],
-              ),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+              child: Icon(icon, color: color, size: 28),
             ),
+            const SizedBox(height: 16),
+            Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+            Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
           ],
         ),
       ),
@@ -4732,78 +5594,53 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
   Widget _buildStudentsTab(ColorScheme colorScheme) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
+        Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: DropdownButtonFormField<String>(
-                  value: _teacherSelectedClass,
-                  decoration: const InputDecoration(labelText: 'Select Class', border: OutlineInputBorder()),
-                  items: _classes.map((c) => DropdownMenuItem(value: c, child: Text('Class $c'))).toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _teacherSelectedClass = val;
-                      setState(() {});
-                    });
-                  },
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('Students', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                  Row(
+                    children: [
+                      _actionIconBtn(Icons.add_box_rounded, colorScheme.primary, () => _showAddItemDialog()),
+                      const SizedBox(width: 8),
+                      _actionIconBtn(Icons.create_new_folder_rounded, Colors.amber.shade700, () => _showAddNewClassDialog()),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                physics: const BouncingScrollPhysics(),
+                child: Row(
+                  children: _classes.map((c) {
+                    final bool isSelected = _teacherSelectedClass == c;
+                    return GestureDetector(
+                      onTap: () => setState(() => _teacherSelectedClass = c),
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 10),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isSelected ? colorScheme.primary : Colors.white,
+                          borderRadius: BorderRadius.circular(15),
+                          border: Border.all(color: isSelected ? colorScheme.primary : Colors.grey.shade200),
+                          boxShadow: isSelected ? [BoxShadow(color: colorScheme.primary.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))] : null,
+                        ),
+                        child: Text(
+                          'Class $c',
+                          style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.grey.shade700,
+                            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  }).toList(),
                 ),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: () {
-                  if (_teacherSelectedClass == null) return;
-                  final cls = _teacherSelectedClass!;
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Delete Current Class'),
-                      content: Text('Are you sure you want to delete Class $cls?'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                        TextButton(onPressed: () {
-                          setState(() {
-                            _LoginScreenState._allClasses.remove(cls);
-                            _LoginScreenState.saveAllData();
-                            _teacherSelectedClass = _classes.isNotEmpty ? _classes.first : widget.assignedClass;
-                          });
-                          Navigator.pop(context);
-                        }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
-                      ],
-                    ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade50, foregroundColor: Colors.red),
-                icon: const Icon(Icons.delete, size: 18),
-                label: const Text('Delete'),
-              ),
-              const SizedBox(width: 8),
-              ElevatedButton.icon(
-                onPressed: () {
-                  final classCtrl = TextEditingController();
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Add New Class'),
-                      content: TextField(controller: classCtrl, decoration: const InputDecoration(labelText: 'Class Name (e.g. 06)')),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                        TextButton(onPressed: () {
-                          if (classCtrl.text.isNotEmpty) {
-                            setState(() {
-                              _LoginScreenState._allClasses.add(classCtrl.text);
-                              _LoginScreenState.saveAllData();
-                              _teacherSelectedClass = classCtrl.text;
-                            });
-                          }
-                          Navigator.pop(context);
-                        }, child: const Text('Add')),
-                      ],
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('New Class'),
               ),
             ],
           ),
@@ -4814,65 +5651,70 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.people_outline, size: 64, color: Colors.grey.shade400),
-                      const SizedBox(height: 16),
-                      Text('No students in Class $_teacherSelectedClass'),
-                      const SizedBox(height: 8),
-                      const Text('Click the "+" button to add students.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                      Container(
+                        padding: const EdgeInsets.all(30),
+                        decoration: BoxDecoration(color: Colors.grey.shade50, shape: BoxShape.circle),
+                        child: Icon(Icons.people_alt_rounded, size: 80, color: Colors.grey.shade300),
+                      ),
+                      const SizedBox(height: 20),
+                      Text('No students in Class $_teacherSelectedClass', style: const TextStyle(fontSize: 16, color: Colors.grey, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 )
               : ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  physics: const BouncingScrollPhysics(),
                   itemCount: _students.length,
                   itemBuilder: (context, index) {
                     final s = _students[index];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
+                      ),
                       child: ListTile(
                         onTap: () => _showStudentDetails(s),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         leading: CircleAvatar(
+                          radius: 26,
                           backgroundColor: colorScheme.primary.withOpacity(0.1),
-                          child: Text(s['name']?[0] ?? 'S', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold)),
+                          child: Text(s['name']?[0] ?? 'S', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 18)),
                         ),
-                        title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: Text('Place: ${s['place']} | Phone: ${s['phone']}'),
-                        trailing: PopupMenuButton<String>(
-                          onSelected: (val) {
-                            if (val == 'edit') {
-                              final studentIndex = _allStudents.indexOf(s);
-                              _showStudentFormDialog(index: studentIndex);
-                            } else if (val == 'msg') {
-                              setState(() {
-                                _currentIndex = 5; // Msg tab
-                                _activeChatPeerId = s['username'];
-                                _activeChatPeerName = s['name'];
-                                _activeChatPeerColor = Colors.teal;
-                                _activeChatPeerDept = 'Class ${widget.assignedClass}';
-                              });
-                            } else if (val == 'delete') {
-                              showDialog(
-                                context: context,
-                                builder: (context) => AlertDialog(
-                                  title: const Text('Delete Student'),
-                                  content: Text('Are you sure you want to delete ${s['name']}?'),
-                                  actions: [
-                                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                                    TextButton(onPressed: () {
-                                      setState(() {
-                                        _allStudents.remove(s);
-                                        _LoginScreenState.saveAllData();
-                                      });
-                                      Navigator.pop(context);
-                                    }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
-                                  ],
-                                ),
-                              );
-                            }
-                          },
-                          itemBuilder: (context) => [
-                            const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.teal), title: Text('Edit'))),
-                            const PopupMenuItem(value: 'msg', child: ListTile(leading: Icon(Icons.message, color: Colors.blue), title: Text('Message'))),
-                            const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Delete'))),
+                        title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B))),
+                        subtitle: Row(
+                          children: [
+                            Icon(Icons.location_on_rounded, size: 12, color: Colors.grey.shade400),
+                            const SizedBox(width: 4),
+                            Text(s['place'] ?? '', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          ],
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(
+                              icon: const Icon(Icons.message_rounded, size: 20, color: Colors.blue),
+                              onPressed: () {
+                                setState(() {
+                                  _currentIndex = 5;
+                                  _activeChatPeerId = s['username'];
+                                  _activeChatPeerName = s['name'];
+                                });
+                              },
+                            ),
+                            PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert_rounded),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                              onSelected: (val) {
+                                if (val == 'edit') _showStudentFormDialog(index: _allStudents.indexOf(s));
+                                if (val == 'delete') _showDeleteStudentConfirm(s);
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit_rounded, color: Colors.indigo), title: Text('Edit'))),
+                                const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete_rounded, color: Colors.red), title: Text('Delete'))),
+                              ],
+                            ),
                           ],
                         ),
                       ),
@@ -4884,130 +5726,212 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
     );
   }
 
+  Widget _actionIconBtn(IconData icon, Color color, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+        child: Icon(icon, color: color, size: 22),
+      ),
+    );
+  }
+
+  void _showAddNewClassDialog() {
+    final classCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Add New Class'),
+        content: TextField(controller: classCtrl, decoration: const InputDecoration(labelText: 'Class Name (e.g. 06)')),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(onPressed: () {
+            if (classCtrl.text.isNotEmpty) {
+              setState(() {
+                _LoginScreenState._allClasses.add(classCtrl.text);
+                _teacherSelectedClass = classCtrl.text;
+                _LoginScreenState.saveAllData();
+              });
+            }
+            Navigator.pop(context);
+          }, child: const Text('Add')),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteStudentConfirm(Map<String, String> s) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Delete Student'),
+        content: Text('Are you sure you want to delete ${s['name']}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () {
+            setState(() {
+              _allStudents.remove(s);
+              _LoginScreenState.saveAllData();
+            });
+            Navigator.pop(context);
+          }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+  }
+
   Widget _buildActivitiesTab(ColorScheme colorScheme) {
     return DefaultTabController(
       length: 2,
       child: Column(
         children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Activities', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                _actionIconBtn(Icons.add_circle_rounded, colorScheme.primary, () => _showAddActivityDialog()),
+              ],
+            ),
+          ),
           TabBar(
             labelColor: colorScheme.primary,
             unselectedLabelColor: Colors.grey,
-            tabs: const [
-              Tab(text: 'Activities List'),
-              Tab(text: 'Participation'),
-            ],
+            indicatorSize: TabBarIndicatorSize.label,
+            labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+            tabs: const [Tab(text: 'Directory'), Tab(text: 'Progress')],
           ),
           Expanded(
             child: TabBarView(
               children: [
-                // Tab 1: List
-                Column(
-                  children: [
-                    Expanded(
-                      child: _activities.isEmpty
-                          ? const Center(child: Text('No activities added yet.'))
-                          : ListView.builder(
-                              itemCount: _activities.length,
-                              itemBuilder: (context, index) {
-                                final a = _activities[index];
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  child: ListTile(
-                                    leading: CircleAvatar(backgroundColor: Colors.green.shade50, child: const Icon(Icons.play_circle_fill, color: Colors.green)),
-                                    title: Text(a['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    subtitle: Text('${a['type']} | Marks: ${a['marks']}'),
-                                    trailing: PopupMenuButton<String>(
-                                      onSelected: (val) {
-                                        if (val == 'edit') {
-                                          _showAddActivityDialog(index: index);
-                                        } else if (val == 'delete') {
-                                          setState(() {
-                                            _LoginScreenState._allActivities.remove(a);
-                                            _LoginScreenState.saveAllData();
-                                          });
-                                        }
-                                      },
-                                      itemBuilder: (context) => [
-                                        const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.teal), title: Text('Edit'))),
-                                        const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Delete'))),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
-                // Tab 2: Participation
-                ListView.builder(
-                  itemCount: _activities.length,
-                  itemBuilder: (context, aIndex) {
-                    final a = _activities[aIndex];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      child: ExpansionTile(
-                        leading: const CircleAvatar(child: Icon(Icons.check_circle, color: Colors.green)),
-                        title: Text(a['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: const Text('Update student scores'),
-                        children: _students.map((s) {
-                          final subIdx = _LoginScreenState._allActivitySubmissions.indexWhere((sub) => 
-                            sub['studentUsername'] == s['username'] && sub['activityId'] == a['id']
-                          );
-                          final Map<String, dynamic> submission = subIdx != -1 
-                              ? _LoginScreenState._allActivitySubmissions[subIdx]
-                              : {'isCompleted': false, 'score': '0'};
-                              
-                          return ListTile(
-                            leading: CircleAvatar(radius: 14, child: Text(s['name']?[0] ?? 'S', style: const TextStyle(fontSize: 10))),
-                            title: Text(s['name'] ?? ''),
-                            subtitle: submission['isCompleted'] == true ? Text('Score: ${submission['score']}') : null,
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Switch(
-                                  value: submission['isCompleted'] == true,
-                                  onChanged: (val) {
-                                    setState(() {
-                                      _updateActivityStatus(s['username']!, s['name']!, a, val, submission['score']?.toString());
-                                    });
-                                  },
-                                ),
-                                if (submission['isCompleted'] == true) 
-                                  IconButton(
-                                    icon: const Icon(Icons.edit_note, size: 20),
-                                    onPressed: () {
-                                      final scCtrl = TextEditingController(text: submission['score']?.toString());
-                                      showDialog(
-                                        context: context,
-                                        builder: (ctx) => AlertDialog(
-                                          title: const Text('Enter Score'),
-                                          content: TextField(controller: scCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Score')),
-                                          actions: [
-                                            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                                            ElevatedButton(onPressed: () {
-                                              setState(() {
-                                                _updateActivityStatus(s['username']!, s['name']!, a, true, scCtrl.text);
-                                              });
-                                              Navigator.pop(ctx);
-                                            }, child: const Text('Save')),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    );
-                  },
-                ),
+                _buildActivityList(colorScheme),
+                _buildActivityParticipation(colorScheme),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActivityList(ColorScheme colorScheme) {
+    if (_activities.isEmpty) return _emptyStateView(Icons.play_circle_outline, 'No activities planned');
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: _activities.length,
+      itemBuilder: (context, index) {
+        final a = _activities[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(12),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(16)),
+              child: const Icon(Icons.rocket_launch_rounded, color: Colors.green),
+            ),
+            title: Text(a['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+            subtitle: Text('${a['type']} • Max ${a['marks']} Marks', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            trailing: PopupMenuButton<String>(
+              onSelected: (val) {
+                if (val == 'edit') _showAddActivityDialog(index: index);
+                if (val == 'delete') {
+                  setState(() {
+                    _LoginScreenState._allActivities.remove(a);
+                    _LoginScreenState.saveAllData();
+                  });
+                }
+              },
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit_rounded, color: Colors.indigo), title: Text('Edit'))),
+                const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete_rounded, color: Colors.red), title: Text('Delete'))),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildActivityParticipation(ColorScheme colorScheme) {
+    if (_activities.isEmpty) return _emptyStateView(Icons.check_circle_outline, 'No participation data');
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: _activities.length,
+      itemBuilder: (context, index) {
+        final a = _activities[index];
+        final participants = _LoginScreenState._allActivitySubmissions.where((s) => s['activityId'] == a['id'] && s['isCompleted'] == true).length;
+        final double progress = _students.isEmpty ? 0 : participants / _students.length;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
+          ),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(value: progress, strokeWidth: 4, backgroundColor: Colors.grey.shade100, valueColor: const AlwaysStoppedAnimation(Colors.green)),
+                Text('${(progress * 100).toInt()}%', style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold)),
+              ],
+            ),
+            title: Text(a['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+            subtitle: Text('$participants / ${_students.length} Participated', style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+            children: _students.map((s) {
+               final subIdx = _LoginScreenState._allActivitySubmissions.indexWhere((sub) => 
+                sub['studentUsername'] == s['username'] && sub['activityId'] == a['id']
+              );
+              final bool isDone = subIdx != -1 && _LoginScreenState._allActivitySubmissions[subIdx]['isCompleted'] == true;
+              final String score = isDone ? _LoginScreenState._allActivitySubmissions[subIdx]['score']?.toString() ?? '0' : '0';
+
+              return ListTile(
+                leading: CircleAvatar(radius: 12, backgroundColor: isDone ? Colors.green.withOpacity(0.1) : Colors.grey.shade100, child: Text(s['name']?[0] ?? 'S', style: TextStyle(fontSize: 10, color: isDone ? Colors.green : Colors.grey))),
+                title: Text(s['name'] ?? '', style: TextStyle(fontWeight: isDone ? FontWeight.bold : FontWeight.normal, fontSize: 13)),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isDone) Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)), child: Text('Score: $score', style: const TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.bold))),
+                    const SizedBox(width: 8),
+                    Switch(
+                      value: isDone,
+                      activeColor: Colors.green,
+                      onChanged: (val) {
+                        setState(() {
+                          _updateActivityStatus(s['username']!, s['name']!, a, val, score);
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _emptyStateView(IconData icon, String message) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(icon, size: 64, color: Colors.grey.shade300),
+          const SizedBox(height: 16),
+          Text(message, style: const TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
         ],
       ),
     );
@@ -5018,98 +5942,131 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
       length: 2,
       child: Column(
         children: [
+          Container(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Fairs', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                _actionIconBtn(Icons.assignment_add, colorScheme.primary, () => _showAddFairDialog()),
+              ],
+            ),
+          ),
           TabBar(
             labelColor: colorScheme.primary,
             unselectedLabelColor: Colors.grey,
-            tabs: const [
-              Tab(text: 'Fairs List'),
-              Tab(text: 'Student Participation'),
-            ],
+            indicatorSize: TabBarIndicatorSize.label,
+            labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+            tabs: const [Tab(text: 'Catalogue'), Tab(text: 'Payments')],
           ),
           Expanded(
             child: TabBarView(
               children: [
-                // Tab 1: Fairs List
-                Column(
-                  children: [
-                    Expanded(
-                      child: _fairList.isEmpty
-                          ? const Center(child: Text('No fairs added yet.'))
-                          : ListView.builder(
-                              itemCount: _fairList.length,
-                              itemBuilder: (context, index) {
-                                final f = _fairList[index];
-                                return Card(
-                                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                                  child: ListTile(
-                                    leading: const CircleAvatar(child: Icon(Icons.star, color: Colors.pink)),
-                                    title: Text(f['title'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                    subtitle: Text('${f['description']}\nAmount: ${f['amount']} | Due: ${f['date']}'),
-                                    isThreeLine: true,
-                                    trailing: PopupMenuButton<String>(
-                                      onSelected: (val) {
-                                        if (val == 'edit') {
-                                          _showAddFairDialog(index: index);
-                                        } else if (val == 'delete') {
-                                          setState(() {
-                                            _LoginScreenState._allFairItems.remove(f);
-                                            _LoginScreenState.saveAllData();
-                                          });
-                                        }
-                                      },
-                                      itemBuilder: (context) => [
-                                        const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.teal), title: Text('Edit'))),
-                                        const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Delete'))),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                  ],
-                ),
-                // Tab 2: Student Participation (Original View)
-                ListView.builder(
-                  itemCount: _fairList.length,
-                  itemBuilder: (context, fIndex) {
-                    final f = _fairList[fIndex];
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      child: ExpansionTile(
-                        leading: const CircleAvatar(child: Icon(Icons.star, color: Colors.pink)),
-                        title: Text(f['title'] ?? 'Untitled Fair', style: const TextStyle(fontWeight: FontWeight.bold)),
-                        subtitle: const Text('Update student payments'),
-                        children: _students.map((s) {
-                          final pIdx = _LoginScreenState._allFairPayments.indexWhere((p) => 
-                            p['studentUsername'] == s['username'] && p['fairId'] == f['id']
-                          );
-                          final bool isPaid = pIdx != -1 && _LoginScreenState._allFairPayments[pIdx]['isPaid'] == true;
-                          
-                          return ListTile(
-                            leading: CircleAvatar(radius: 14, child: Text(s['name']?[0] ?? 'S', style: const TextStyle(fontSize: 10))),
-                            title: Text(s['name'] ?? ''),
-                            trailing: Switch(
-                              value: isPaid,
-                              activeColor: Colors.teal,
-                              onChanged: (val) {
-                                setState(() {
-                                  _updateFairStatus(s['username']!, f, val);
-                                });
-                              },
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    );
-                  },
-                ),
+                 _buildFairList(colorScheme),
+                 _buildFairPayments(colorScheme),
               ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildFairList(ColorScheme colorScheme) {
+    if (_fairList.isEmpty) return _emptyStateView(Icons.local_activity_outlined, 'No fairs scheduled');
+     return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: _fairList.length,
+      itemBuilder: (context, index) {
+        final f = _fairList[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
+          ),
+          child: ListTile(
+            contentPadding: const EdgeInsets.all(12),
+            leading: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.pink.shade50, borderRadius: BorderRadius.circular(16)),
+              child: const Icon(Icons.star_rounded, color: Colors.pink),
+            ),
+            title: Text(f['title'] ?? 'Untitled Fair', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+            subtitle: Text('Due: ${f['date']} • Fee: ${f['amount']}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+            trailing: PopupMenuButton<String>(
+              onSelected: (val) {
+                if (val == 'edit') _showAddFairDialog(index: index);
+                if (val == 'delete') {
+                  setState(() {
+                    _LoginScreenState._allFairItems.remove(f);
+                    _LoginScreenState.saveAllData();
+                  });
+                }
+              },
+              itemBuilder: (ctx) => [
+                const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit_rounded, color: Colors.indigo), title: Text('Edit'))),
+                const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete_rounded, color: Colors.red), title: Text('Delete'))),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFairPayments(ColorScheme colorScheme) {
+    if (_fairList.isEmpty) return _emptyStateView(Icons.payments_outlined, 'No payment tracking available');
+    return ListView.builder(
+      padding: const EdgeInsets.all(20),
+      itemCount: _fairList.length,
+      itemBuilder: (context, index) {
+        final f = _fairList[index];
+        final paidCount = _LoginScreenState._allFairPayments.where((p) => p['fairId'] == f['id'] && p['isPaid'] == true).length;
+        final double progress = _students.isEmpty ? 0 : paidCount / _students.length;
+
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
+          ),
+          child: ExpansionTile(
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: Stack(
+              alignment: Alignment.center,
+              children: [
+                CircularProgressIndicator(value: progress, strokeWidth: 4, backgroundColor: Colors.grey.shade100, valueColor: const AlwaysStoppedAnimation(Colors.pink)),
+                Text('${(progress * 100).toInt()}%', style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.pink)),
+              ],
+            ),
+            title: Text(f['title'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+            subtitle: Text('$paidCount / ${_students.length} Collected', style: const TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold)),
+            children: _students.map((s) {
+              final pIdx = _LoginScreenState._allFairPayments.indexWhere((p) => 
+                p['studentUsername'] == s['username'] && p['fairId'] == f['id']
+              );
+              final bool isPaid = pIdx != -1 && _LoginScreenState._allFairPayments[pIdx]['isPaid'] == true;
+              
+              return ListTile(
+                leading: CircleAvatar(radius: 12, backgroundColor: isPaid ? Colors.teal.withOpacity(0.1) : Colors.grey.shade100, child: Text(s['name']?[0] ?? 'S', style: TextStyle(fontSize: 10, color: isPaid ? Colors.teal : Colors.grey))),
+                title: Text(s['name'] ?? '', style: TextStyle(fontWeight: isPaid ? FontWeight.bold : FontWeight.normal, fontSize: 13)),
+                trailing: Switch(
+                  value: isPaid,
+                  activeColor: Colors.teal,
+                  onChanged: (val) {
+                    setState(() {
+                      _updateFairStatus(s['username']!, f, val);
+                    });
+                  },
+                ),
+              );
+            }).toList(),
+          ),
+        );
+      },
     );
   }
 
@@ -5773,98 +6730,98 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
   Widget _buildScheduleTab(ColorScheme colorScheme) {
     return Column(
       children: [
-        const Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Text('Class Schedule', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: Color(0xFF0F172A))),
+        Container(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Schedule', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+              _actionIconBtn(Icons.calendar_month_rounded, colorScheme.primary, () => _showAddScheduleDialog()),
+            ],
+          ),
         ),
         Expanded(
           child: _exams.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.calendar_today_outlined, size: 80, color: Colors.grey.shade300),
-                      const SizedBox(height: 20),
-                      const Text('Schedule is empty', style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                )
+              ? _emptyStateView(Icons.event_busy_rounded, 'No events scheduled')
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: _exams.length,
                   itemBuilder: (context, index) {
                     final item = _exams[index];
                     final String type = item['type'] ?? 'Exam';
                     final bool isExam = type == 'Exam';
                     final List subs = item['subjects'] ?? [];
+                    final accentColor = isExam ? Colors.orange : Colors.indigo;
                     
                     return Container(
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.grey.shade200),
-                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8))],
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
                       ),
-                      child: Theme(
-                        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                        child: ExpansionTile(
-                          leading: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: isExam ? Colors.orange.shade50 : Colors.teal.shade50,
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: Icon(isExam ? Icons.assignment : Icons.event, color: isExam ? Colors.orange.shade700 : Colors.teal.shade700),
-                          ),
-                          title: Text(item['title'] ?? item['examName'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF1E293B))),
-                          subtitle: Text(isExam ? '${subs.length} Subjects • Class ${item['class']}' : '${item['dates']} • ${item['time']}', style: TextStyle(color: isExam ? Colors.orange.shade800 : Colors.teal.shade800, fontSize: 13, fontWeight: FontWeight.w700)),
-                          trailing: PopupMenuButton<String>(
-                            onSelected: (val) {
-                              if (val == 'edit') {
-                                _showAddScheduleDialog(index: index);
-                              } else if (val == 'delete') {
-                                setState(() {
-                                  _LoginScreenState._allExams.remove(item);
-                                  _LoginScreenState.saveAllData();
-                                });
-                              }
-                            },
-                            itemBuilder: (context) => [
-                              const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.teal), title: Text('Edit'))),
-                              const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Delete'))),
-                            ],
-                          ),
+                      clipBehavior: Clip.antiAlias,
+                      child: IntrinsicHeight(
+                        child: Row(
                           children: [
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  const Divider(),
-                                  if (!isExam && (item['description']?.toString().isNotEmpty == true)) ...[
-                                    Container(
-                                      padding: const EdgeInsets.all(12),
-                                      decoration: BoxDecoration(color: Colors.teal.shade50, borderRadius: BorderRadius.circular(12)),
-                                      child: Text(item['description'], style: const TextStyle(height: 1.5, color: Color(0xFF0F766E), fontWeight: FontWeight.w600)),
+                            Container(width: 6, color: accentColor),
+                            Expanded(
+                              child: Theme(
+                                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                                child: ExpansionTile(
+                                  tilePadding: const EdgeInsets.all(16),
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(color: accentColor.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
+                                    child: Icon(isExam ? Icons.assignment_rounded : Icons.calendar_month_rounded, color: accentColor),
+                                  ),
+                                  title: Text(item['title'] ?? item['examName'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF1E293B))),
+                                  subtitle: Text(isExam ? '${subs.length} Subjects • Class ${item['class']}' : '${item['dates']} • ${item['time']}', style: TextStyle(color: accentColor.withOpacity(0.8), fontSize: 13, fontWeight: FontWeight.bold)),
+                                  trailing: PopupMenuButton<String>(
+                                    icon: const Icon(Icons.more_horiz_rounded),
+                                    onSelected: (val) {
+                                      if (val == 'edit') _showAddScheduleDialog(index: index);
+                                      if (val == 'delete') {
+                                        setState(() {
+                                          _LoginScreenState._allExams.remove(item);
+                                          _LoginScreenState.saveAllData();
+                                        });
+                                      }
+                                    },
+                                    itemBuilder: (context) => [
+                                      const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit_rounded, color: Colors.teal), title: Text('Edit'))),
+                                      const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete_rounded, color: Colors.red), title: Text('Delete'))),
+                                    ],
+                                  ),
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          const Divider(),
+                                          if (!isExam && (item['description']?.toString().isNotEmpty == true)) ...[
+                                            Text(item['description'], style: TextStyle(height: 1.5, color: Colors.grey.shade700, fontWeight: FontWeight.w500)),
+                                            const SizedBox(height: 12),
+                                          ],
+                                          if (isExam) ...subs.map<Widget>((s) => Container(
+                                            margin: const EdgeInsets.only(top: 8),
+                                            padding: const EdgeInsets.all(12),
+                                            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(12)),
+                                            child: Row(
+                                              children: [
+                                                const Icon(Icons.book_rounded, size: 16, color: Colors.orange),
+                                                const SizedBox(width: 12),
+                                                Expanded(child: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B)))),
+                                                Text('${s['date']} | ${s['time']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.orange)),
+                                              ],
+                                            ),
+                                          )).toList(),
+                                        ],
+                                      ),
                                     ),
-                                    const SizedBox(height: 12),
-                                    if (item['days']?.toString().isNotEmpty == true) _buildScheduleDetail(Icons.calendar_today, 'Days', item['days']),
                                   ],
-                                  if (isExam) ...subs.map<Widget>((s) => Container(
-                                    margin: const EdgeInsets.only(top: 8),
-                                    padding: const EdgeInsets.all(12),
-                                    decoration: BoxDecoration(color: Colors.orange.shade50, borderRadius: BorderRadius.circular(12)),
-                                    child: Row(
-                                      children: [
-                                        const Icon(Icons.book, size: 16, color: Colors.orange),
-                                        const SizedBox(width: 12),
-                                        Expanded(child: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF9A3412)))),
-                                        Text('${s['date']} | ${s['time']}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFFC2410C))),
-                                      ],
-                                    ),
-                                  )).toList(),
-                                ],
+                                ),
                               ),
                             ),
                           ],
@@ -5906,24 +6863,21 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
 
     return Column(
       children: [
-        const Padding(
-          padding: EdgeInsets.all(20.0),
-          child: Text('Result Board', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: Color(0xFF0F172A))),
+        Container(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Results', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+              _actionIconBtn(Icons.add_chart_rounded, colorScheme.primary, () => _showAddResultDialog()),
+            ],
+          ),
         ),
         Expanded(
           child: examNames.isEmpty
-              ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.analytics_outlined, size: 80, color: Colors.grey.shade300),
-                      const SizedBox(height: 20),
-                      const Text('No results published', style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.w500)),
-                    ],
-                  ),
-                )
+              ? _emptyStateView(Icons.analytics_outlined, 'No results published')
               : ListView.builder(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
                   itemCount: examNames.length,
                   itemBuilder: (context, index) {
                     final examTitle = examNames[index];
@@ -5934,140 +6888,147 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(24),
-                        border: Border.all(color: Colors.purple.shade100, width: 2),
-                        boxShadow: [BoxShadow(color: Colors.purple.withOpacity(0.1), blurRadius: 15, offset: const Offset(0, 8))],
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
                       ),
-                      child: Theme(
-                        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
-                        child: ExpansionTile(
-                          initiallyExpanded: false,
-                          leading: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(color: Colors.purple.shade700, borderRadius: BorderRadius.circular(16)),
-                            child: const Icon(Icons.assignment, color: Colors.white, size: 20),
-                          ),
-                          title: Text(
-                            examTitle, 
-                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Color(0xFF1E293B))
-                          ),
-                          subtitle: Text('${studentsInExam.length} Student Score Cards', style: TextStyle(color: Colors.purple.shade700, fontWeight: FontWeight.w700)),
+                      clipBehavior: Clip.antiAlias,
+                      child: IntrinsicHeight(
+                        child: Row(
                           children: [
-                            const Divider(height: 1),
-                            ...studentsInExam.map((r) {
-                              final List subjectRes = r['subjectResults'] ?? [];
-                              return Container(
-                                margin: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: Colors.grey.shade100),
-                                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
-                                ),
-                                child: Column(
+                            Container(width: 6, color: Colors.purple.shade400),
+                            Expanded(
+                              child: Theme(
+                                data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                                child: ExpansionTile(
+                                  initiallyExpanded: false,
+                                  tilePadding: const EdgeInsets.all(16),
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(color: Colors.purple.shade50, borderRadius: BorderRadius.circular(16)),
+                                    child: const Icon(Icons.assessment_rounded, color: Colors.purple),
+                                  ),
+                                  title: Text(examTitle, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 20, color: Color(0xFF1E293B))),
+                                  subtitle: Text('${studentsInExam.length} Student Score Cards', style: TextStyle(color: Colors.purple.shade700, fontWeight: FontWeight.w700)),
                                   children: [
-                                    ListTile(
-                                      leading: CircleAvatar(
-                                        backgroundColor: Colors.purple.shade50,
-                                        child: Text(r['studentName']?[0] ?? 'S', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple)),
-                                      ),
-                                      title: GestureDetector(
-                                        onTap: () {
-                                          final student = _allStudents.firstWhere(
-                                            (s) => s['name'] == r['studentName'],
-                                            orElse: () => {},
-                                          );
-                                          if (student.isNotEmpty) {
-                                            _showStudentDetails(student);
-                                          }
-                                        },
-                                        child: Text(
-                                          r['studentName'] ?? 'Result', 
-                                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.purple, decoration: TextDecoration.underline)
-                                        ),
-                                      ),
-                                      subtitle: Text('${subjectRes.length} Subjects Evaluated', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                                      trailing: PopupMenuButton<String>(
-                                        onSelected: (val) {
-                                          if (val == 'edit') {
-                                            final originalIdx = _LoginScreenState._allResults.indexOf(r);
-                                            _showAddResultDialog(index: originalIdx);
-                                          } else if (val == 'delete') {
-                                            setState(() {
-                                               _LoginScreenState._allResults.remove(r);
-                                               _LoginScreenState.saveAllData();
-                                             });
-                                          }
-                                        },
-                                        itemBuilder: (context) => [
-                                          const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.teal), title: Text('Edit'))),
-                                          const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Delete'))),
-                                        ],
-                                      ),
-                                    ),
-                                    Padding(
-                                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                                      child: Container(
+                                    const Divider(height: 1),
+                                    ...studentsInExam.map((r) {
+                                      final List subjectRes = r['subjectResults'] ?? [];
+                                      return Container(
+                                        margin: const EdgeInsets.all(16),
                                         decoration: BoxDecoration(
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Colors.grey.shade50),
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(color: Colors.grey.shade100),
+                                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
                                         ),
-                                        clipBehavior: Clip.antiAlias,
-                                        child: Table(
-                                          border: TableBorder.all(color: Colors.grey.shade100),
+                                        child: Column(
                                           children: [
-                                            TableRow(
-                                              decoration: BoxDecoration(color: Colors.grey.shade50),
-                                              children: const [
-                                                Padding(padding: EdgeInsets.all(12), child: Text('Subject', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12))),
-                                                Padding(padding: EdgeInsets.all(12), child: Text('Scored', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12))),
-                                                Padding(padding: EdgeInsets.all(12), child: Text('Grade', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12))),
-                                                Padding(padding: EdgeInsets.all(12), child: Text('Status', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12))),
-                                              ],
-                                            ),
-                                            ...subjectRes.map((s) {
-                                              final double scored = double.tryParse(s['scoredMark']?.toString() ?? '0') ?? 0;
-                                              final double total = double.tryParse(s['totalMarks']?.toString() ?? '100') ?? 100;
-                                              final double pct = (scored / total) * 100;
-                                              String grade = 'D'; String status = 'Failed'; Color statusColor = Colors.red;
-                                              if (pct >= 40) { status = 'Pass'; statusColor = Colors.green; }
-                                              if (pct >= 90) grade = 'A+';
-                                              else if (pct >= 80) grade = 'A';
-                                              else if (pct >= 70) grade = 'B+';
-                                              else if (pct >= 60) grade = 'B';
-                                              else if (pct >= 50) grade = 'C+';
-                                              else if (pct >= 40) grade = 'C';
-                                              else grade = 'D';
-                                              
-                                              return TableRow(
-                                                children: [
-                                                  Padding(padding: const EdgeInsets.all(12), child: Text(s['subject'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600))),
-                                                  Padding(padding: const EdgeInsets.all(12), child: Text('${s['scoredMark']}/${s['totalMarks']}', style: const TextStyle(fontWeight: FontWeight.w900))),
-                                                  Padding(padding: const EdgeInsets.all(12), child: Text(grade, style: TextStyle(fontWeight: FontWeight.w900, color: statusColor))),
-                                                  Padding(
-                                                    padding: const EdgeInsets.all(8), 
-                                                    child: Container(
-                                                      padding: const EdgeInsets.symmetric(vertical: 4),
-                                                      decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
-                                                      child: Center(
-                                                        child: Text(
-                                                          status, 
-                                                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: statusColor)
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ),
+                                            ListTile(
+                                              leading: CircleAvatar(
+                                                backgroundColor: Colors.purple.shade50,
+                                                child: Text(r['studentName']?[0] ?? 'S', style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple)),
+                                              ),
+                                              title: GestureDetector(
+                                                onTap: () {
+                                                  final student = _allStudents.firstWhere(
+                                                    (s) => s['name'] == r['studentName'],
+                                                    orElse: () => {},
+                                                  );
+                                                  if (student.isNotEmpty) {
+                                                    _showStudentDetails(student);
+                                                  }
+                                                },
+                                                child: Text(
+                                                  r['studentName'] ?? 'Result', 
+                                                  style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Colors.purple, decoration: TextDecoration.underline)
+                                                ),
+                                              ),
+                                              subtitle: Text('${subjectRes.length} Subjects Evaluated', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                                              trailing: PopupMenuButton<String>(
+                                                onSelected: (val) {
+                                                  if (val == 'edit') {
+                                                    final originalIdx = _LoginScreenState._allResults.indexOf(r);
+                                                    _showAddResultDialog(index: originalIdx);
+                                                  } else if (val == 'delete') {
+                                                    setState(() {
+                                                       _LoginScreenState._allResults.remove(r);
+                                                       _LoginScreenState.saveAllData();
+                                                     });
+                                                  }
+                                                },
+                                                itemBuilder: (context) => [
+                                                  const PopupMenuItem(value: 'edit', child: ListTile(leading: Icon(Icons.edit, color: Colors.teal), title: Text('Edit'))),
+                                                  const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Delete'))),
                                                 ],
-                                              );
-                                            }).toList(),
+                                              ),
+                                            ),
+                                            Padding(
+                                              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                                              child: Container(
+                                                decoration: BoxDecoration(
+                                                  borderRadius: BorderRadius.circular(12),
+                                                  border: Border.all(color: Colors.grey.shade50),
+                                                ),
+                                                clipBehavior: Clip.antiAlias,
+                                                child: Table(
+                                                  border: TableBorder.all(color: Colors.grey.shade100),
+                                                  children: [
+                                                    TableRow(
+                                                      decoration: BoxDecoration(color: Colors.grey.shade50),
+                                                      children: const [
+                                                        Padding(padding: EdgeInsets.all(12), child: Text('Subject', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12))),
+                                                        Padding(padding: EdgeInsets.all(12), child: Text('Scored', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12))),
+                                                        Padding(padding: EdgeInsets.all(12), child: Text('Grade', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12))),
+                                                        Padding(padding: EdgeInsets.all(12), child: Text('Status', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 12))),
+                                                      ],
+                                                    ),
+                                                    ...subjectRes.map((s) {
+                                                      final double scored = double.tryParse(s['scoredMark']?.toString() ?? '0') ?? 0;
+                                                      final double total = double.tryParse(s['totalMarks']?.toString() ?? '100') ?? 100;
+                                                      final double pct = (scored / total) * 100;
+                                                      String grade = 'D'; String status = 'Failed'; Color statusColor = Colors.red;
+                                                      if (pct >= 40) { status = 'Pass'; statusColor = Colors.green; }
+                                                      if (pct >= 90) grade = 'A+';
+                                                      else if (pct >= 80) grade = 'A';
+                                                      else if (pct >= 70) grade = 'B+';
+                                                      else if (pct >= 60) grade = 'B';
+                                                      else if (pct >= 50) grade = 'C+';
+                                                      else if (pct >= 40) grade = 'C';
+                                                      else grade = 'D';
+                                                      
+                                                      return TableRow(
+                                                        children: [
+                                                          Padding(padding: const EdgeInsets.all(12), child: Text(s['subject'] ?? '', style: const TextStyle(fontWeight: FontWeight.w600))),
+                                                          Padding(padding: const EdgeInsets.all(12), child: Text('${s['scoredMark']}/${s['totalMarks']}', style: const TextStyle(fontWeight: FontWeight.w900))),
+                                                          Padding(padding: const EdgeInsets.all(12), child: Text(grade, style: TextStyle(fontWeight: FontWeight.w900, color: statusColor))),
+                                                          Padding(
+                                                            padding: const EdgeInsets.all(8), 
+                                                            child: Container(
+                                                              padding: const EdgeInsets.symmetric(vertical: 4),
+                                                              decoration: BoxDecoration(color: statusColor.withOpacity(0.1), borderRadius: BorderRadius.circular(6)),
+                                                              child: Center(
+                                                                child: Text(
+                                                                  status, 
+                                                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w900, color: statusColor)
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      );
+                                                    }).toList(),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
                                           ],
                                         ),
-                                      ),
-                                    ),
+                                      );
+                                    }).toList(),
+                                    const SizedBox(height: 16),
                                   ],
                                 ),
-                              );
-                            }).toList(),
-                            const SizedBox(height: 16),
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -7061,33 +8022,40 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   Widget _statCard(String label, int present, int absent, Color color) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 10),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.grey.withOpacity(0.08)),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
         ),
         child: Column(
           children: [
-            Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 10, fontWeight: FontWeight.w800, letterSpacing: 0.8)),
-            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+              child: Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.w900, letterSpacing: 0.5)),
+            ),
+            const SizedBox(height: 16),
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                Text('$present', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                const SizedBox(width: 8),
-                Text('P', style: TextStyle(fontSize: 10, color: Colors.teal.shade400, fontWeight: FontWeight.w900)),
-                const SizedBox(width: 12),
-                Container(width: 1, height: 20, color: Colors.grey.withOpacity(0.1)),
-                const SizedBox(width: 12),
-                Text('$absent', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                const SizedBox(width: 8),
-                Text('A', style: TextStyle(fontSize: 10, color: Colors.red.shade300, fontWeight: FontWeight.w900)),
+                _miniStat('P', present, Colors.teal),
+                Container(width: 1, height: 20, color: Colors.grey.shade100),
+                _miniStat('A', absent, Colors.red),
               ],
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _miniStat(String tag, int count, Color color) {
+    return Column(
+      children: [
+        Text('$count', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+        Text(tag, style: TextStyle(fontSize: 10, color: color, fontWeight: FontWeight.w900)),
+      ],
     );
   }
 
@@ -7393,35 +8361,30 @@ class _TwoSessionAttendanceRowState extends State<_TwoSessionAttendanceRow> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.grey.withOpacity(0.06)),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        padding: const EdgeInsets.all(16),
         child: Column(
           children: [
             Row(
               children: [
-                Container(
-                  width: 32, height: 32,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Center(
-                    child: Text(widget.student['name']?[0] ?? 'S', style: const TextStyle(color: Color(0xFF475569), fontWeight: FontWeight.w900, fontSize: 13)),
-                  ),
+                CircleAvatar(
+                  radius: 20,
+                  backgroundColor: Colors.indigo.shade50,
+                  child: Text(widget.student['name']?[0] ?? 'S', style: TextStyle(color: Colors.indigo.shade700, fontWeight: FontWeight.w900, fontSize: 16)),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(widget.student['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14, color: Color(0xFF1E293B), letterSpacing: -0.3)),
-                      Text(widget.student['username'] ?? '', style: TextStyle(fontSize: 9, color: Colors.grey.shade500, fontWeight: FontWeight.bold, letterSpacing: 0.2)),
+                      Text(widget.student['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B))),
+                      Text(widget.student['username'] ?? '', style: TextStyle(color: Colors.grey.shade500, fontSize: 10, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ),
@@ -7430,31 +8393,20 @@ class _TwoSessionAttendanceRowState extends State<_TwoSessionAttendanceRow> {
                     _updateStatus('FN', 'P');
                     _updateStatus('AN', 'P');
                   },
-                  borderRadius: BorderRadius.circular(6),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.teal.withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.done_all_rounded, size: 10, color: Colors.teal.shade600),
-                        const SizedBox(width: 4),
-                        Text('ALL P', style: TextStyle(color: Colors.teal.shade700, fontSize: 8, fontWeight: FontWeight.w900)),
-                      ],
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(color: Colors.teal.shade50, borderRadius: BorderRadius.circular(10)),
+                    child: Text('All P', style: TextStyle(color: Colors.teal.shade700, fontSize: 10, fontWeight: FontWeight.w900)),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(child: _sessionUI('Morning', _fnStatus, (s) => _updateStatus('FN', s))),
-                Container(width: 1, height: 36, color: Colors.grey.withOpacity(0.06), margin: const EdgeInsets.symmetric(horizontal: 12)),
-                Expanded(child: _sessionUI('Afternoon', _anStatus, (s) => _updateStatus('AN', s))),
+                Expanded(child: _sessionBtn('FN (Morning)', _fnStatus, (s) => _updateStatus('FN', s))),
+                const SizedBox(width: 12),
+                Expanded(child: _sessionBtn('AN (Afternoon)', _anStatus, (s) => _updateStatus('AN', s))),
               ],
             ),
           ],
@@ -7463,43 +8415,30 @@ class _TwoSessionAttendanceRowState extends State<_TwoSessionAttendanceRow> {
     );
   }
 
-  Widget _sessionUI(String label, String status, Function(String) onUpdate) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(label == 'Morning' ? Icons.wb_sunny_rounded : Icons.wb_twilight_rounded, size: 9, color: Colors.grey.shade400),
-            const SizedBox(width: 4),
-            Text(label.toUpperCase(), style: TextStyle(fontSize: 7, fontWeight: FontWeight.w900, letterSpacing: 0.5, color: Colors.grey.shade400)),
-          ],
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            _chipBtn('P', Colors.teal, status == 'P', () => onUpdate('P')),
-            const SizedBox(width: 6),
-            _chipBtn('A', Colors.red, status == 'A', () => onUpdate('A')),
-          ],
-        ),
-      ],
-    );
-  }
+  Widget _sessionBtn(String label, String status, Function(String) onUpdate) {
+    Color bg = Colors.grey.shade50;
+    Color fg = Colors.grey.shade400;
+    
+    if (status == 'P') { bg = Colors.teal.shade50; fg = Colors.teal.shade700; }
+    if (status == 'A') { bg = Colors.red.shade50; fg = Colors.red.shade700; }
 
-  Widget _chipBtn(String l, Color c, bool active, VoidCallback tap) {
     return GestureDetector(
-      onTap: tap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        width: 30, height: 30,
+      onTap: () {
+        String next = status == '-' ? 'P' : (status == 'P' ? 'A' : '-');
+        onUpdate(next);
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
-          color: active ? c : const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: active ? Colors.transparent : Colors.grey.withOpacity(0.08)),
+          color: bg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: fg.withOpacity(0.1)),
         ),
         child: Center(
-          child: Text(l, style: TextStyle(color: active ? Colors.white : Colors.grey.shade400, fontWeight: FontWeight.w900, fontSize: 11)),
+          child: Text(
+            status == '-' ? label : '$label: $status',
+            style: TextStyle(color: fg, fontSize: 10, fontWeight: FontWeight.w900),
+          ),
         ),
       ),
     );
@@ -7727,10 +8666,6 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
       return "${dt.hour}:${dt.minute.toString().padLeft(2, '0')}";
     } catch (_) { return ''; }
   }
-
-
-
-
 }
 
 class FadeInEntrance extends StatefulWidget {
