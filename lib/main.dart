@@ -530,8 +530,6 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       ),
     ),
-    );
-    );
   }
 
   @override
@@ -873,10 +871,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
           ),
         ),
       ),
-    ),
     );
-  }
-}
   }
 }
 
