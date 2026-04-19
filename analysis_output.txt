@@ -1,0 +1,68 @@
+Analyzing main.dart...
+
+  error - main.dart:532:6 - Expected to find ')'. - expected_token
+  error - main.dart:874:6 - Expected to find ')'. - expected_token
+warning - main.dart:1593:16 - The value of the local variable 'isMobile' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - main.dart:2606:8 - The value of the field '_chatEmojiOpen' isn't used. Try removing the field, or using it. - unused_field
+warning - main.dart:4337:16 - The value of the local variable 'isMobile' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - main.dart:4824:11 - The value of the local variable 'classCtrl' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - main.dart:6085:11 - The value of the local variable 'activityProgress' isn't used. Try removing the variable or using it. - unused_local_variable
+warning - main.dart:6094:11 - The value of the local variable 'fairProgress' isn't used. Try removing the variable or using it. - unused_local_variable
+   info - main.dart:989:8 - The declaration '_showAddMessageDialog' isn't referenced. Try removing the declaration of '_showAddMessageDialog'. - unused_element
+   info - main.dart:1349:8 - The declaration '_showAddExamDialog' isn't referenced. Try removing the declaration of '_showAddExamDialog'. - unused_element
+   info - main.dart:1872:8 - The declaration '_syncScrolls' isn't referenced. Try removing the declaration of '_syncScrolls'. - unused_element
+   info - main.dart:2389:38 - Unnecessary use of 'toList' in a spread. Try removing the invocation of 'toList'. - unnecessary_to_list_in_spreads
+   info - main.dart:2606:8 - The private field _chatEmojiOpen could be 'final'. Try making the field 'final'. - prefer_final_fields
+   info - main.dart:2840:26 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:3070:10 - The declaration '_attendanceBadge' isn't referenced. Try removing the declaration of '_attendanceBadge'. - unused_element
+   info - main.dart:3563:38 - Unnecessary use of 'toList' in a spread. Try removing the invocation of 'toList'. - unnecessary_to_list_in_spreads
+   info - main.dart:3669:36 - Unnecessary use of 'toList' in a spread. Try removing the invocation of 'toList'. - unnecessary_to_list_in_spreads
+   info - main.dart:3810:22 - Function literals shouldn't be passed to 'forEach'. Try using a 'for' loop. - avoid_function_literals_in_foreach_calls
+   info - main.dart:3857:18 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - main.dart:3858:23 - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal. - prefer_const_literals_to_create_immutables
+   info - main.dart:3861:15 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - main.dart:3862:24 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - main.dart:3864:29 - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal. - prefer_const_literals_to_create_immutables
+   info - main.dart:3964:8 - The declaration '_sendGlobalReply' isn't referenced. Try removing the declaration of '_sendGlobalReply'. - unused_element
+   info - main.dart:3982:10 - The declaration '_buildClassGroupTab' isn't referenced. Try removing the declaration of '_buildClassGroupTab'. - unused_element
+   info - main.dart:5228:11 - The local variable '_name' starts with an underscore. Try renaming the variable to not start with an underscore. - no_leading_underscores_for_local_identifiers
+   info - main.dart:5229:11 - The local variable '_address' starts with an underscore. Try renaming the variable to not start with an underscore. - no_leading_underscores_for_local_identifiers
+   info - main.dart:5230:11 - The local variable '_parents' starts with an underscore. Try renaming the variable to not start with an underscore. - no_leading_underscores_for_local_identifiers
+   info - main.dart:5231:11 - The local variable '_place' starts with an underscore. Try renaming the variable to not start with an underscore. - no_leading_underscores_for_local_identifiers
+   info - main.dart:5232:11 - The local variable '_phone' starts with an underscore. Try renaming the variable to not start with an underscore. - no_leading_underscores_for_local_identifiers
+   info - main.dart:5233:11 - The local variable '_blood' starts with an underscore. Try renaming the variable to not start with an underscore. - no_leading_underscores_for_local_identifiers
+   info - main.dart:5234:11 - The local variable '_user' starts with an underscore. Try renaming the variable to not start with an underscore. - no_leading_underscores_for_local_identifiers
+   info - main.dart:5235:11 - The local variable '_pass' starts with an underscore. Try renaming the variable to not start with an underscore. - no_leading_underscores_for_local_identifiers
+   info - main.dart:5404:10 - The declaration '_buildAddButton' isn't referenced. Try removing the declaration of '_buildAddButton'. - unused_element
+   info - main.dart:6317:56 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6318:61 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6319:61 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6320:61 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6321:61 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6322:61 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6323:46 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6615:20 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - main.dart:6616:25 - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal. - prefer_const_literals_to_create_immutables
+   info - main.dart:6814:46 - Unnecessary use of 'toList' in a spread. Try removing the invocation of 'toList'. - unnecessary_to_list_in_spreads
+   info - main.dart:6833:10 - The declaration '_buildScheduleDetail' isn't referenced. Try removing the declaration of '_buildScheduleDetail'. - unused_element
+   info - main.dart:6985:70 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6986:75 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6987:75 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6988:75 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6989:75 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6990:75 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:6991:60 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:7013:56 - Unnecessary use of 'toList' in a spread. Try removing the invocation of 'toList'. - unnecessary_to_list_in_spreads
+   info - main.dart:7021:40 - Unnecessary use of 'toList' in a spread. Try removing the invocation of 'toList'. - unnecessary_to_list_in_spreads
+   info - main.dart:7729:22 - Function literals shouldn't be passed to 'forEach'. Try using a 'for' loop. - avoid_function_literals_in_foreach_calls
+   info - main.dart:7766:15 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - main.dart:7767:24 - Use 'const' with the constructor to improve performance. Try adding the 'const' keyword to the constructor invocation. - prefer_const_constructors
+   info - main.dart:7769:29 - Use 'const' literals as arguments to constructors of '@immutable' classes. Try adding 'const' before the literal. - prefer_const_literals_to_create_immutables
+   info - main.dart:8010:32 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:8010:67 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:8011:32 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:8011:67 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:8326:28 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+   info - main.dart:8327:12 - Statements in an if should be enclosed in a block. Try wrapping the statement in a block. - curly_braces_in_flow_control_structures
+
+64 issues found.
