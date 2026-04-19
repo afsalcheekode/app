@@ -54,3 +54,10 @@ package-lock.json
 /analysis.txt
 /temp.txt
 /lib/focused_attendance_row.dart.bak
+
+# App Specific Logs & Scratch
+*_error.txt
+*_output.txt
+analysis_full.txt
+scratch/
+

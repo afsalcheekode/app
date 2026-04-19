@@ -102,7 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
   static Map<String, bool> _featureConfig = {
     'Students': true,
     'Activities': true,
-    'Fairs': true,
+    'F.transactions': true,
     'Schedule': true,
     'Results': true,
     'Messages': true,
@@ -529,8 +529,9 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   void dispose() {
@@ -863,16 +864,17 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                       fontWeight: FontWeight.w900,
                       color: colorScheme.primary,
                       letterSpacing: 2.0,
-                    ),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
-    );
-  }
+    ),
+  ),
+);
+}
 }
 
 // ==========================================
@@ -2635,7 +2637,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
       final config = _LoginScreenState._featureConfig;
       final List<Map<String, dynamic>> all = [
         {'title': 'Activities', 'value': '${_activities.length}', 'icon': Icons.play_circle_fill, 'color': const Color(0xFF6366F1), 'targetIndex': 1, 'feature': 'Activities'},
-        {'title': 'Fairs', 'value': '${_fairList.length}', 'icon': Icons.star_rounded, 'color': const Color(0xFFEC4899), 'targetIndex': 2, 'feature': 'Fairs'},
+        {'title': 'F.transactions', 'value': '${_fairList.length}', 'icon': Icons.star_rounded, 'color': const Color(0xFFEC4899), 'targetIndex': 2, 'feature': 'F.transactions'},
         {'title': 'Schedule', 'value': '${_exams.length}', 'icon': Icons.calendar_today_rounded, 'color': const Color(0xFFF59E0B), 'targetIndex': 3, 'feature': 'Schedule'},
         {'title': 'Results', 'value': '${_results.length}', 'icon': Icons.auto_graph_rounded, 'color': const Color(0xFF8B5CF6), 'targetIndex': 4, 'feature': 'Results'},
         {'title': 'Attendance', 'value': 'VIEW', 'icon': Icons.fingerprint_rounded, 'color': const Color(0xFF06B6D4), 'targetIndex': 7, 'feature': 'Attendance'},
@@ -2741,7 +2743,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
           children: [
             _buildNavItem(Icons.home_rounded, 'Home', 0, colorScheme),
             _buildNavItem(Icons.play_circle_fill, 'Act', 1, colorScheme, isEnabled: _LoginScreenState._featureConfig['Activities'] ?? true),
-            _buildNavItem(Icons.local_activity_rounded, 'Fair', 2, colorScheme, isEnabled: _LoginScreenState._featureConfig['Fairs'] ?? true),
+            _buildNavItem(Icons.local_activity_rounded, 'F.transactions', 2, colorScheme, isEnabled: _LoginScreenState._featureConfig['F.transactions'] ?? true),
             _buildNavItem(Icons.calendar_month_rounded, 'Sched', 3, colorScheme, isEnabled: _LoginScreenState._featureConfig['Schedule'] ?? true),
             _buildNavItem(Icons.analytics_rounded, 'Res', 4, colorScheme, isEnabled: _LoginScreenState._featureConfig['Results'] ?? true),
             _buildNavItem(Icons.fingerprint_rounded, 'Attnd', 7, colorScheme, isEnabled: _LoginScreenState._featureConfig['Attendance'] ?? true),
@@ -2776,7 +2778,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
               children: [
                 _buildDesktopNavItem(Icons.home_rounded, 'Home', 0, colorScheme),
                 _buildDesktopNavItem(Icons.play_circle_fill, 'Activities', 1, colorScheme),
-                _buildDesktopNavItem(Icons.local_activity_rounded, 'Fairs', 2, colorScheme),
+                _buildDesktopNavItem(Icons.local_activity_rounded, 'F.transactions', 2, colorScheme),
                 _buildDesktopNavItem(Icons.calendar_month_rounded, 'Schedule', 3, colorScheme),
                 _buildDesktopNavItem(Icons.analytics_rounded, 'Results', 4, colorScheme),
                 _buildDesktopNavItem(Icons.fingerprint_rounded, 'Attendance', 7, colorScheme),
@@ -2811,7 +2813,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
       destinations: [
         const NavigationRailDestination(icon: Icon(Icons.home_rounded), label: Text('Home')),
         if (isEnabled('Activities')) const NavigationRailDestination(icon: Icon(Icons.play_circle_fill), label: Text('Activities')),
-        if (isEnabled('Fairs')) const NavigationRailDestination(icon: Icon(Icons.local_activity_rounded), label: Text('Fairs')),
+        if (isEnabled('F.transactions')) const NavigationRailDestination(icon: Icon(Icons.local_activity_rounded), label: Text('F.transactions')),
         if (isEnabled('Schedule')) const NavigationRailDestination(icon: Icon(Icons.calendar_month_rounded), label: Text('Schedule')),
         if (isEnabled('Results')) const NavigationRailDestination(icon: Icon(Icons.analytics_rounded), label: Text('Results')),
         if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.fingerprint_rounded), label: Text('Attendance')),
@@ -3401,7 +3403,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
       children: [
         const Padding(
           padding: EdgeInsets.all(20.0),
-          child: Text('School Fairs', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: Color(0xFF0F172A))),
+          child: Text('School F.transactions', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5, color: Color(0xFF0F172A))),
         ),
         Expanded(
           child: _fairList.isEmpty
@@ -3411,7 +3413,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
                     children: [
                       Icon(Icons.local_activity_outlined, size: 80, color: Colors.grey.shade300),
                       const SizedBox(height: 20),
-                      const Text('No fairs added.', style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.w500)),
+                      const Text('No F.transactions added.', style: TextStyle(fontSize: 18, color: Colors.grey, fontWeight: FontWeight.w500)),
                     ],
                   ),
                 )
@@ -3443,7 +3445,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
                           ),
                           child: Icon(Icons.star, color: isPaid ? Colors.teal : Colors.pink),
                         ),
-                        title: Text(f['title'] ?? 'Fair Item', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                        title: Text(f['title'] ?? 'F.transaction Item', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
                         subtitle: Text('${f['description']}\nDue: ${f['date'] ?? 'N/A'}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                         isThreeLine: true,
                         trailing: Column(
@@ -4156,7 +4158,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
   }
 
   Widget _buildMessageTextWithMentions(String text, Color textColor) {
-    final List<String> mentions = ['@activities', '@fair', '@exam', '@result'];
+    final List<String> mentions = ['@activities', '@f.transactions', '@exam', '@result'];
     final List<TextSpan> spans = [];
     
     text.split(' ').forEach((word) {
@@ -4168,7 +4170,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
             recognizer: TapGestureRecognizer()..onTap = () {
               int targetIndex = 0;
               if (word.toLowerCase() == '@activities') targetIndex = 1;
-              if (word.toLowerCase() == '@fair') targetIndex = 2;
+              if (word.toLowerCase() == '@f.transactions') targetIndex = 2;
               if (word.toLowerCase() == '@exam') targetIndex = 3;
               if (word.toLowerCase() == '@result') targetIndex = 4;
               setState(() => _currentIndex = targetIndex);
@@ -4302,7 +4304,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
     final List<Map<String, dynamic>> allMetrics = [
       {'title': 'Students', 'value': '${_students.length}', 'icon': Icons.people_rounded, 'color': const Color(0xFF6366F1), 'targetIndex': 0, 'feature': 'Students'},
       {'title': 'Activities', 'value': '${_activities.length}', 'icon': Icons.play_circle_fill, 'color': const Color(0xFF10B981), 'targetIndex': 1, 'feature': 'Activities'},
-      {'title': 'Fairs', 'value': '${_fairList.length}', 'icon': Icons.grade_rounded, 'color': const Color(0xFFEC4899), 'targetIndex': 2, 'feature': 'Fairs'},
+      {'title': 'F.transactions', 'value': '${_fairList.length}', 'icon': Icons.grade_rounded, 'color': const Color(0xFFEC4899), 'targetIndex': 2, 'feature': 'F.transactions'},
       {'title': 'Schedule', 'value': '${_exams.length}', 'icon': Icons.event_note_rounded, 'color': const Color(0xFFF59E0B), 'targetIndex': 3, 'feature': 'Schedule'},
       {'title': 'Results', 'value': '${_results.length}', 'icon': Icons.analytics_rounded, 'color': const Color(0xFF8B5CF6), 'targetIndex': 4, 'feature': 'Results'},
       {'title': 'Attendance', 'value': 'LOG', 'icon': Icons.fact_check_rounded, 'color': const Color(0xFF06B6D4), 'targetIndex': 7, 'feature': 'Attendance'},
@@ -4462,7 +4464,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
         const NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Overview')),
         if (isEnabled('Students')) const NavigationRailDestination(icon: Icon(Icons.people_rounded), label: Text('Students')),
         if (isEnabled('Activities')) const NavigationRailDestination(icon: Icon(Icons.play_circle_fill), label: Text('Activities')),
-        if (isEnabled('Fairs')) const NavigationRailDestination(icon: Icon(Icons.local_activity), label: Text('Fairs')),
+        if (isEnabled('F.transactions')) const NavigationRailDestination(icon: Icon(Icons.local_activity), label: Text('F.transactions')),
         if (isEnabled('Schedule')) const NavigationRailDestination(icon: Icon(Icons.calendar_month), label: Text('Schedule')),
         if (isEnabled('Results')) const NavigationRailDestination(icon: Icon(Icons.analytics), label: Text('Results')),
         if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.how_to_reg), label: Text('Attendance')),
@@ -4514,7 +4516,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                 _buildDesktopNavItem(Icons.dashboard_rounded, 'Overview', -1, colorScheme),
                 _buildDesktopNavItem(Icons.people_rounded, 'Students', 0, colorScheme),
                 _buildDesktopNavItem(Icons.play_circle_fill, 'Activities', 1, colorScheme),
-                _buildDesktopNavItem(Icons.local_activity, 'Fairs', 2, colorScheme),
+                _buildDesktopNavItem(Icons.local_activity, 'F.transactions', 2, colorScheme),
                 _buildDesktopNavItem(Icons.calendar_month, 'Schedule', 3, colorScheme),
                 _buildDesktopNavItem(Icons.analytics, 'Results', 4, colorScheme),
                 _buildDesktopNavItem(Icons.how_to_reg, 'Attendance', 7, colorScheme),
@@ -4552,7 +4554,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
 
   Widget _buildDesktopNavItem(IconData icon, String label, int index, ColorScheme colorScheme) {
     final isSelected = _currentIndex == index;
-    final isEnabled = _LoginScreenState._featureConfig[label == 'Overview' ? 'Students' : (label == 'Fairs' ? 'Fairs' : (label == 'Attendance' ? 'Attendance' : (label == 'Announce' ? 'Groups' : label)))] ?? true;
+    final isEnabled = _LoginScreenState._featureConfig[label == 'Overview' ? 'Students' : (label == 'F.transactions' ? 'F.transactions' : (label == 'Attendance' ? 'Attendance' : (label == 'Announce' ? 'Groups' : label)))] ?? true;
     
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -4607,7 +4609,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
     final List<Widget> allItems = [
       _buildNavItem(Icons.class_, 'Students', 0, colorScheme, isEnabled: _LoginScreenState._featureConfig['Students'] ?? true),
       _buildNavItem(Icons.play_circle_fill, 'Activities', 1, colorScheme, isEnabled: _LoginScreenState._featureConfig['Activities'] ?? true),
-      _buildNavItem(Icons.local_activity, 'Fair', 2, colorScheme, isEnabled: _LoginScreenState._featureConfig['Fairs'] ?? true),
+      _buildNavItem(Icons.local_activity, 'F.transactions', 2, colorScheme, isEnabled: _LoginScreenState._featureConfig['F.transactions'] ?? true),
       _buildNavItem(Icons.calendar_month, 'Schedule', 3, colorScheme, isEnabled: _LoginScreenState._featureConfig['Schedule'] ?? true),
       _buildNavItem(Icons.analytics, 'Result', 4, colorScheme, isEnabled: _LoginScreenState._featureConfig['Results'] ?? true),
       _buildNavItem(Icons.how_to_reg, 'Attnd', 7, colorScheme, isEnabled: _LoginScreenState._featureConfig['Attendance'] ?? true),
@@ -4768,12 +4770,12 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(index != null ? 'Edit Fair' : 'Add Fair'),
+        title: Text(index != null ? 'Edit F.transaction' : 'Add F.transaction'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Fair Name', prefixIcon: Icon(Icons.local_activity))),
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'F.transaction Name', prefixIcon: Icon(Icons.local_activity))),
               TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description', prefixIcon: Icon(Icons.description))),
               TextField(controller: amountCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Amount', prefixIcon: Icon(Icons.money))),
               TextField(controller: dateCtrl, decoration: const InputDecoration(labelText: 'Due Date', prefixIcon: Icon(Icons.calendar_today))),
@@ -5389,7 +5391,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
               children: [
                 if (_LoginScreenState._featureConfig['Students'] ?? true) ListTile(leading: const Icon(Icons.person_add), title: const Text('Add Student'), onTap: () { Navigator.pop(context); setState(() { _currentIndex = 0; }); _showAddItemDialog(); }),
                 if (_LoginScreenState._featureConfig['Activities'] ?? true) ListTile(leading: const Icon(Icons.play_circle_fill), title: const Text('Add Activity'), onTap: () { Navigator.pop(context); _showAddActivityDialog(); }),
-                if (_LoginScreenState._featureConfig['Fairs'] ?? true) ListTile(leading: const Icon(Icons.local_activity), title: const Text('Add Fair'), onTap: () { Navigator.pop(context); _showAddFairDialog(); }),
+                if (_LoginScreenState._featureConfig['F.transactions'] ?? true) ListTile(leading: const Icon(Icons.local_activity), title: const Text('Add F.transaction'), onTap: () { Navigator.pop(context); _showAddFairDialog(); }),
                 if (_LoginScreenState._featureConfig['Schedule'] ?? true) ListTile(leading: const Icon(Icons.calendar_month), title: const Text('Add to Schedule'), onTap: () { Navigator.pop(context); _showAddScheduleDialog(); }),
                 if (_LoginScreenState._featureConfig['Results'] ?? true) ListTile(leading: const Icon(Icons.analytics), title: const Text('Add Result'), onTap: () { Navigator.pop(context); _showAddResultDialog(); }),
                 if (_LoginScreenState._featureConfig['Messages'] ?? true) ListTile(leading: const Icon(Icons.message), title: const Text('Send Message'), onTap: () { Navigator.pop(context); _showSendMessageDialog(); }),
@@ -5942,7 +5944,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text('Fairs', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                const Text('F.transactions', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
                 _actionIconBtn(Icons.assignment_add, colorScheme.primary, () => _showAddFairDialog()),
               ],
             ),
@@ -5968,7 +5970,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
   }
 
   Widget _buildFairList(ColorScheme colorScheme) {
-    if (_fairList.isEmpty) return _emptyStateView(Icons.local_activity_outlined, 'No fairs scheduled');
+    if (_fairList.isEmpty) return _emptyStateView(Icons.local_activity_outlined, 'No F.transactions scheduled');
      return ListView.builder(
       padding: const EdgeInsets.all(20),
       itemCount: _fairList.length,
@@ -5988,7 +5990,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
               decoration: BoxDecoration(color: Colors.pink.shade50, borderRadius: BorderRadius.circular(16)),
               child: const Icon(Icons.star_rounded, color: Colors.pink),
             ),
-            title: Text(f['title'] ?? 'Untitled Fair', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+            title: Text(f['title'] ?? 'Untitled F.transaction', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
             subtitle: Text('Due: ${f['date']} • Fee: ${f['amount']}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
             trailing: PopupMenuButton<String>(
               onSelected: (val) {
@@ -6154,7 +6156,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Fair Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const Text('F.transaction Items', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 16),
                       ...studentFairs.map((f) {
                         final bool isPaid = _LoginScreenState._allFairPayments.any((p) => 
@@ -6171,7 +6173,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                           ),
                           child: ListTile(
                             onTap: () => _showFairDetailDialog(f, student['username']!, student['name']!, setModalState),
-                            title: Text(f['title'] ?? 'Untitled Fair', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            title: Text(f['title'] ?? 'Untitled F.transaction', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                             subtitle: Text('Amount: ${f['amount']} | Due: ${f['date']}'),
                             trailing: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -6187,7 +6189,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                           ),
                         );
                       }),
-                      if (studentFairs.isEmpty) const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('No fairs added by teacher'))),
+                      if (studentFairs.isEmpty) const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('No F.transactions added by teacher'))),
                     ],
                   );
                 case 3: // Schedule
@@ -6428,7 +6430,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                         children: [
                           _buildSectionChip('Overview', Icons.info_outline, 0, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
                           _buildSectionChip('Activities', Icons.play_circle_fill, 1, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
-                          _buildSectionChip('Fairs', Icons.local_activity, 2, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
+                          _buildSectionChip('F.transactions', Icons.local_activity, 2, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
                           _buildSectionChip('Schedule', Icons.calendar_month, 3, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
                           _buildSectionChip('Results', Icons.analytics, 4, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
                         ],
@@ -6616,7 +6618,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
               children: [
                 const Icon(Icons.local_activity, color: Colors.pink),
                 const SizedBox(width: 10),
-                const Text('Fair Payment Details'),
+                const Text('F.transaction Payment Details'),
               ],
             ),
             content: Column(
