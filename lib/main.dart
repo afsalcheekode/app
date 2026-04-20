@@ -99,6 +99,7 @@ class _LoginScreenState extends State<LoginScreen> {
   static List<String> _holidayDates = []; // ["2026-04-16", ...]
   static List<Map<String, dynamic>> _allMetrics = [];
   static List<String> _allClasses = ['01', '02', '03', '04', '05'];
+  static String _globalNotice = "Welcome to Bridge Learning Platform! Manage your classes and stay updated with school announcements.";
   static Map<String, bool> _featureConfig = {
     'Students': true,
     'Activities': true,
@@ -265,6 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
       final Map<String, dynamic> decoded = jsonDecode(configStr);
       _featureConfig = decoded.map((key, value) => MapEntry(key, value as bool));
     }
+    _globalNotice = _prefs!.getString('global_notice') ?? "Welcome to Bridge Learning Platform! Manage your classes and stay updated with school announcements.";
   }
 
   static MaterialColor _getColorFromValue(int value) {
@@ -294,6 +296,7 @@ class _LoginScreenState extends State<LoginScreen> {
     await _prefs!.setString('all_fair_payments', jsonEncode(_allFairPayments));
     await _prefs!.setString('all_classes', jsonEncode(_allClasses));
     await _prefs!.setString('feature_config', jsonEncode(_featureConfig));
+    await _prefs!.setString('global_notice', _globalNotice);
     
     // Convert metrics to serializable format (storing codepoints for icons, values for colors)
     final serializableMetrics = _allMetrics.map((m) => {
@@ -2009,6 +2012,8 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
           ),
           const SizedBox(height: 16),
+          _buildGlobalNoticeManagerCard(colorScheme),
+          const SizedBox(height: 24),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -2077,6 +2082,134 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildGlobalNoticeCard(ColorScheme colorScheme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.teal.shade700, Colors.teal.shade500],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.teal.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.campaign_rounded, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              const Text('Notice Board', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _LoginScreenState._globalNotice,
+            style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlobalNoticeManagerCard(ColorScheme colorScheme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+        border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                    child: Icon(Icons.campaign_rounded, color: colorScheme.primary, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text('Notice Board (Shared)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                ],
+              ),
+              TextButton.icon(
+                onPressed: _showEditNoticeDialog,
+                icon: const Icon(Icons.edit_rounded, size: 18),
+                label: const Text('Update Notice'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _LoginScreenState._globalNotice,
+            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditNoticeDialog() {
+    final ctrl = TextEditingController(text: _LoginScreenState._globalNotice);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Update Shared Notice'),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 5,
+          decoration: InputDecoration(
+            hintText: 'Enter notice matter...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _LoginScreenState._globalNotice = ctrl.text;
+                _LoginScreenState.saveAllData();
+              });
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            child: const Text('UPDATE'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  double _getAttendancePct(String username) {
+    int total = 0, present = 0;
+    for (var a in _LoginScreenState._allAttendance) {
+      if (a['studentUsername'] == username) {
+        final periods = Map<String, String>.from((a['periods'] as Map?) ?? {});
+        total++;
+        if (periods['FN'] == 'P' || periods['AN'] == 'P') {
+          present++;
+        }
+      }
+    }
+    return total == 0 ? 0 : present / total;
   }
 
   Widget _buildStudentsTab(ColorScheme colorScheme) {
@@ -2215,7 +2348,14 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
                           children: [
                             Text('Parent: ${s['parents']} | Place: ${s['place']}'),
                             Text('Phone: ${s['phone']} | Blood: ${s['blood'] ??'N/A'}'),
-                            Text('User: ${s['username']} | Pass: ${s['password']}', style: const TextStyle(fontSize: 10, color: Colors.teal)),
+                            Row(
+                              children: [
+                                Text('Attendance: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
+                                Text('${(_getAttendancePct(s['username']!) * 100).toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.teal)),
+                                const Spacer(),
+                                Text('User: ${s['username']} | Pass: ${s['password']}', style: const TextStyle(fontSize: 10, color: Colors.teal)),
+                              ],
+                            ),
                           ],
                         ),
                         isThreeLine: true,
@@ -5451,6 +5591,8 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildGlobalNoticeCard(colorScheme),
+          const SizedBox(height: 24),
           Stack(
             children: [
               Container(
@@ -5584,6 +5726,83 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
             Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildGlobalNoticeManagerCard(ColorScheme colorScheme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+        border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                    child: Icon(Icons.campaign_rounded, color: colorScheme.primary, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text('Notice Board (Shared)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                ],
+              ),
+              TextButton.icon(
+                onPressed: _showEditNoticeDialog,
+                icon: const Icon(Icons.edit_rounded, size: 18),
+                label: const Text('Update Notice'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _LoginScreenState._globalNotice,
+            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditNoticeDialog() {
+    final ctrl = TextEditingController(text: _LoginScreenState._globalNotice);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Update Shared Notice'),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 5,
+          decoration: InputDecoration(
+            hintText: 'Enter notice matter...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _LoginScreenState._globalNotice = ctrl.text;
+                _LoginScreenState.saveAllData();
+              });
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            child: const Text('UPDATE'),
+          ),
+        ],
       ),
     );
   }
@@ -5775,6 +5994,39 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
             });
             Navigator.pop(context);
           }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlobalNoticeCard(ColorScheme colorScheme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.campaign_rounded, color: colorScheme.primary, size: 24),
+              ),
+              const SizedBox(width: 16),
+              const Text('Notice Board', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _LoginScreenState._globalNotice,
+            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
+          ),
         ],
       ),
     );
@@ -6358,11 +6610,11 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                       ))),
                     ],
                   );
-                default: // Info/Overview
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Contact Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                 default: // Info/Overview
+                   return Column(
+                     crossAxisAlignment: CrossAxisAlignment.start,
+                     children: [
+                       const Text('Contact Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 16),
                       _buildInfoRow(Icons.family_restroom, "Parent's Name", student['parents'] ?? 'N/A'),
                       _buildInfoRow(Icons.location_on, "Address", student['address'] ?? 'N/A'),
@@ -6370,6 +6622,10 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                       _buildInfoRow(Icons.phone, "Phone", student['phone'] ?? 'N/A'),
                       _buildInfoRow(Icons.bloodtype, "Blood Group", student['blood'] ?? 'N/A'),
                       _buildInfoRow(Icons.account_circle, "Username", student['username'] ?? 'N/A'),
+                      const SizedBox(height: 32),
+                      const Text('Attendance Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 16),
+                      _buildAttendanceStatusBar(student['username'] ?? ''),
                     ],
                   );
               }
@@ -6449,6 +6705,75 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
           },
         );
       },
+    );
+  }
+
+  Widget _buildAttendanceStatusBar(String username) {
+    final now = DateTime.now();
+    final thisMonthStr = "${now.year}-${now.month}-";
+    final lastMonth = now.month == 1 ? DateTime(now.year - 1, 12) : DateTime(now.year, now.month - 1);
+    final lastMonthStr = "${lastMonth.year}-${lastMonth.month}-";
+
+    int thisMonthP = 0, thisMonthTotal = 0;
+    int lastMonthP = 0, lastMonthTotal = 0;
+    int yearlyP = 0, yearlyTotal = 0;
+
+    for (var a in _LoginScreenState._allAttendance) {
+      if (a['studentUsername'] == username) {
+        final date = a['date'] as String;
+        final periods = Map<String, String>.from((a['periods'] as Map?) ?? {});
+        bool p = (periods['FN'] == 'P' || periods['AN'] == 'P');
+        
+        yearlyTotal++;
+        if (p) yearlyP++;
+
+        if (date.startsWith(thisMonthStr)) {
+          thisMonthTotal++;
+          if (p) thisMonthP++;
+        } else if (date.startsWith(lastMonthStr)) {
+          lastMonthTotal++;
+          if (p) lastMonthP++;
+        }
+      }
+    }
+
+    double thisMonthPct = thisMonthTotal == 0 ? 0 : thisMonthP / thisMonthTotal;
+    double lastMonthPct = lastMonthTotal == 0 ? 0 : lastMonthP / lastMonthTotal;
+    double yearlyPct = yearlyTotal == 0 ? 0 : yearlyP / yearlyTotal;
+
+    return Column(
+      children: [
+        _statusRow("This Month", thisMonthPct, "${(thisMonthPct * 100).toStringAsFixed(0)}%", Colors.blue),
+        const SizedBox(height: 16),
+        _statusRow("Last Month", lastMonthPct, "${(lastMonthPct * 100).toStringAsFixed(0)}%", Colors.orange),
+        const SizedBox(height: 16),
+        _statusRow("Yearly Average", yearlyPct, "${(yearlyPct * 100).toStringAsFixed(0)}%", Colors.teal),
+      ],
+    );
+  }
+
+  Widget _statusRow(String label, double pct, String trailing, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF475569))),
+            Text(trailing, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: color)),
+          ],
+        ),
+        const SizedBox(height: 8),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: LinearProgressIndicator(
+            value: pct,
+            minHeight: 8,
+            backgroundColor: color.withOpacity(0.1),
+            valueColor: AlwaysStoppedAnimation<Color>(color),
+          ),
+        ),
+      ],
     );
   }
 
