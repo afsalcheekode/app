@@ -5800,6 +5800,28 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
             ],
           ),
           const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 4 : (MediaQuery.of(context).size.width > 800 ? 3 : 2),
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 1.1,
+            ),
+            itemCount: _metrics.length,
+            itemBuilder: (context, index) {
+              final m = _metrics[index];
+              return FadeInEntrance(
+                delay: index * 0.1,
+                child: _buildMetricCard(
+                  m['title'],
+                  m['value'],
+                  m['icon'],
+                  m['color'],
+                  m['targetIndex'],
+                ),
+              );
             },
           ),
           const SizedBox(height: 32),
@@ -5810,6 +5832,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
       ),
     );
   }
+
 
   Widget _buildBulletinCards(ColorScheme colorScheme) {
     if (_LoginScreenState._allBulletinCards.isEmpty) {
