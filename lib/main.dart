@@ -282,7 +282,11 @@ class _LoginScreenState extends State<LoginScreen> {
     return Colors.teal; // Default
   }
 
-  static Future<void> saveAllData() async {
+  static void saveAllData() {
+    _saveAllToPrefs();
+  }
+
+  static Future<void> _saveAllToPrefs() async {
     if (_prefs == null) return;
     await _prefs!.setString('all_schools', jsonEncode(_allSchools));
     await _prefs!.setString('all_teachers', jsonEncode(_allTeachers));
@@ -896,13 +900,88 @@ class SchoolDashboardScreen extends StatefulWidget {
   State<SchoolDashboardScreen> createState() => _SchoolDashboardScreenState();
 }
 
+mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
+  int _unreadNoticeCount = 0;
+
+  void initNoticeCount() {
+    _unreadNoticeCount = _LoginScreenState._allBulletinCards.length;
+  }
+
+  void showNoticeCenter(BuildContext context) {
+    setState(() => _unreadNoticeCount = 0);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Icon(Icons.notifications_active_outlined, color: Color(0xFF6366F1)),
+            SizedBox(width: 12),
+            Text('Notice Center', style: TextStyle(fontWeight: FontWeight.w900)),
+          ],
+        ),
+        content: SizedBox(
+          width: 400,
+          child: _LoginScreenState._allBulletinCards.isEmpty
+              ? const Padding(padding: EdgeInsets.all(20), child: Text('No new updates from the manager.'))
+              : Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: _LoginScreenState._allBulletinCards.reversed.take(4).map((b) => Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(color: Colors.grey.withOpacity(0.05), border: Border.all(color: Colors.grey.withOpacity(0.1)), borderRadius: BorderRadius.circular(16)),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.campaign_outlined, color: Color(0xFF6366F1)),
+                        const SizedBox(width: 16),
+                        Expanded(child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(b['title'] ?? 'Notice', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                            Text(b['desc'] ?? '', style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+                          ],
+                        )),
+                      ],
+                    ),
+                  )).toList(),
+                ),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close'))],
+      ),
+    );
+  }
+
+  Widget buildNotificationBell({bool isDark = false}) {
+    return Stack(
+      children: [
+        IconButton(
+          icon: Icon(Icons.notifications_none_rounded, color: isDark ? Colors.white : const Color(0xFF1E293B), size: 28),
+          onPressed: () => showNoticeCenter(context),
+        ),
+        if (_unreadNoticeCount > 0)
+          Positioned(
+            right: 8,
+            top: 8,
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(10), border: Border.all(color: isDark ? Colors.indigo : Colors.white, width: 2)),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              child: Text('$_unreadNoticeCount', style: const TextStyle(color: Colors.white, fontSize: 8, fontWeight: FontWeight.bold), textAlign: TextAlign.center),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 // Update the global teacher list when manager adds/updates teachers
 void _updateGlobalTeacherList(List<Map<String, String>> teachers) {
+
   _LoginScreenState._allTeachers = List.from(teachers);
   _LoginScreenState.saveAllData();
 }
 
-class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
+class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with NoticeCenterMixin {
   int _currentIndex = -1; // -1: Overview, 0: Std, 1: Teacher, 2: Exam, 3: Msg
   final ScrollController _navLeftController = ScrollController();
   final ScrollController _navRightController = ScrollController();
@@ -910,6 +989,8 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
   @override
   void initState() {
     super.initState();
+    initNoticeCount();
+
     _navLeftController.addListener(() {
       if (_navLeftController.offset != _navRightController.offset) {
         _navRightController.jumpTo(_navLeftController.offset);
@@ -1666,6 +1747,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
           ],
         ),
         actions: [
+          buildNotificationBell(isDark: true),
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
@@ -1868,9 +1950,17 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
       color: Colors.white,
       child: Row(
         children: [
-          const Text('Management Terminal', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+          const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('System Control', style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              Text('Manager Dashboard', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+            ],
+          ),
           const Spacer(),
-          IconButton(icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B)), onPressed: () {}),
+          buildNotificationBell(),
+          const SizedBox(width: 8),
+
           const SizedBox(width: 12),
           IconButton(icon: const Icon(Icons.settings_outlined, color: Color(0xFF64748B)), onPressed: () {}),
         ],
@@ -2766,7 +2856,7 @@ class StudentBoardScreen extends StatefulWidget {
   State<StudentBoardScreen> createState() => _StudentBoardScreenState();
 }
 
-class _StudentBoardScreenState extends State<StudentBoardScreen> {
+class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCenterMixin {
   int _currentIndex = 0; 
   
   // Use global static lists for persistence
@@ -3315,16 +3405,23 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
                         Text(widget.studentName, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 30),
+                    Row(
+                      children: [
+                        buildNotificationBell(isDark: true),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 30),
+                        ),
+                      ],
                     ),
                   ],
                 ),
+
                 const SizedBox(height: 24),
                 Container(
                   padding: const EdgeInsets.all(16),
@@ -4404,14 +4501,16 @@ class TeacherBoardScreen extends StatefulWidget {
   State<TeacherBoardScreen> createState() => _TeacherBoardScreenState();
 }
 
-class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
+class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCenterMixin {
   int _currentIndex = -1; // -1: Overview, 0: Students, 1: Activities, 2: Fair, 3: Exam, 4: Result, 5: Message, 6: Group
   String? _teacherSelectedClass;
 
   @override
   void initState() {
     super.initState();
+    initNoticeCount();
     _teacherSelectedClass = widget.assignedClass;
+
     
 
     // Auto-refresh every 3 seconds to ensure real-time sync
@@ -5690,13 +5789,20 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                             Text(widget.teacherName, style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
                           ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
-                          child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
+                        Row(
+                          children: [
+                            buildNotificationBell(isDark: true),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(16)),
+                              child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 24),
+                            ),
+                          ],
                         ),
                       ],
                     ),
+
                     const SizedBox(height: 24),
                     Container(
                       padding: const EdgeInsets.all(16),
