@@ -63,13 +63,28 @@ class _LoginScreenState extends State<LoginScreen> {
   static List<Map<String, String>> _allTeachers = [
     {
       'name': 'Sample Teacher',
-  static String _superAdminPass = "admin123";
-  static List<Map<String, dynamic>> _allSchools = [
-    {'school': 'Bridge International', 'manager': 'Afsal', 'username': 'admin', 'password': '123', 'isLocked': false},
+      'username': 'teacher',
+      'password': '123',
+      'class': '01',
+      'subjects': 'Math, Science'
+    }
   ];
-  static List<Map<String, String>> _allTeachers = [];
-  static Map<String, String> _teacherNotices = {}; // teacherUser -> notice
-  static List<Map<String, String>> _allStudents = [];
+  static List<Map<String, String>> _allSchools = [
+    {'school': 'Sample School', 'username': 'manager', 'password': '123'}
+  ];
+  static List<Map<String, String>> _allStudents = [
+    {
+      'name': 'Sample Student',
+      'username': 'student',
+      'password': '123',
+      'std': '01',
+      'address': 'Sample Address',
+      'parents': 'Sample Parents',
+      'place': 'Sample Place',
+      'phone': '1234567890',
+      'blood': 'O+'
+    }
+  ];
   static List<Map<String, dynamic>> _allExams = [];
   static List<Map<String, dynamic>> _allMessages = [];
   static List<Map<String, dynamic>> _allGroups = []; // Class groups and staff groups
@@ -83,8 +98,8 @@ class _LoginScreenState extends State<LoginScreen> {
   static Map<String, dynamic> _allTimetables = {}; // class -> { dayIndex: [sub1, sub2, ...] }
   static List<String> _holidayDates = []; // ["2026-04-16", ...]
   static List<Map<String, dynamic>> _allMetrics = [];
+  static List<Map<String, dynamic>> _allBulletinCards = [];
   static List<String> _allClasses = ['01', '02', '03', '04', '05'];
-  static String _globalNotice = "Welcome to Bridge Learning Platform! Manage your classes and stay updated with school announcements.";
   static Map<String, bool> _featureConfig = {
     'Students': true,
     'Activities': true,
@@ -110,14 +125,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (schoolsStr != null) {
       final List decoded = jsonDecode(schoolsStr);
       if (decoded.isNotEmpty) {
-        _allSchools = decoded.map((s) => Map<String, dynamic>.from(s)).toList();
+        _allSchools = decoded.map((s) => Map<String, String>.from(s)).toList();
       }
-    }
-
-    final tNoticeStr = _prefs!.getString('teacher_notices');
-    if (tNoticeStr != null) {
-      final Map decoded = jsonDecode(tNoticeStr);
-      _teacherNotices = Map<String, String>.from(decoded);
     }
     
     final teachersStr = _prefs!.getString('all_teachers');
@@ -239,6 +248,9 @@ class _LoginScreenState extends State<LoginScreen> {
       final List decodedList = jsonDecode(metricsStr);
       _allMetrics = decodedList.map((m) {
         final Map<String, dynamic> data = Map<String, dynamic>.from(m);
+        // Recover IconData and MaterialColor from stored values
+        // Note: For simple recovery, we map back codepoints/values. 
+        // This is a simplified reconstruction.
         return {
           'title': data['title'],
           'value': data['value'],
@@ -254,7 +266,12 @@ class _LoginScreenState extends State<LoginScreen> {
       final Map<String, dynamic> decoded = jsonDecode(configStr);
       _featureConfig = decoded.map((key, value) => MapEntry(key, value as bool));
     }
-    _globalNotice = _prefs!.getString('global_notice') ?? "Welcome to Bridge Learning Platform! Manage your classes and stay updated with school announcements.";
+
+    final bulletinStr = _prefs!.getString('all_bulletin_cards');
+    if (bulletinStr != null) {
+      final List decoded = jsonDecode(bulletinStr);
+      _allBulletinCards = decoded.map((b) => Map<String, dynamic>.from(b)).toList();
+    }
   }
 
   static MaterialColor _getColorFromValue(int value) {
@@ -284,9 +301,9 @@ class _LoginScreenState extends State<LoginScreen> {
     await _prefs!.setString('all_fair_payments', jsonEncode(_allFairPayments));
     await _prefs!.setString('all_classes', jsonEncode(_allClasses));
     await _prefs!.setString('feature_config', jsonEncode(_featureConfig));
-    await _prefs!.setString('global_notice', _globalNotice);
-    await _prefs!.setString('teacher_notices', jsonEncode(_teacherNotices));
+    await _prefs!.setString('all_bulletin_cards', jsonEncode(_allBulletinCards));
     
+    // Convert metrics to serializable format (storing codepoints for icons, values for colors)
     final serializableMetrics = _allMetrics.map((m) => {
       'title': m['title'],
       'value': m['value'],
@@ -297,94 +314,93 @@ class _LoginScreenState extends State<LoginScreen> {
     await _prefs!.setString('all_metrics', jsonEncode(serializableMetrics));
   }
 
-  void _showError(String msg) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
-  }
-
   void _login() {
     final user = _userController.text.trim();
     final pass = _passController.text.trim();
 
     if (user.isEmpty || pass.isEmpty) {
-      _showError('Please enter both username and password.');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter both username and password.')),
+      );
       return;
     }
 
-    // Login as Super Admin
-    if (user == "superadmin" && pass == _LoginScreenState._superAdminPass) {
-       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminBoardScreen()));
-       return;
-    }
-
-    // Login as School Manager
-    for (var s in _LoginScreenState._allSchools) {
-      if (s['username'] == user && s['password'] == pass) {
-        if (s['isLocked'] == true) {
-          _showError("This school is currently locked by the administrator.");
-          return;
-        }
-        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SchoolDashboardScreen(schoolName: s['school']!)));
-        return;
+    if (user == 'minad' && pass == '321') {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const AdminBoardScreen()),
+      );
+    } else {
+      // Check if it's a teacher login
+      Map<String, String>? teacher;
+      try {
+        teacher = _allTeachers.firstWhere(
+          (t) => t['username'] == user && t['password'] == pass,
+        );
+      } catch (e) {
+        // Teacher not found
       }
-    }
-
-    // Login as Teacher
-    for (var t in _LoginScreenState._allTeachers) {
-      if (t['username'] == user && t['password'] == pass) {
-        // Find school and check lock status
-        final school = _LoginScreenState._allSchools.firstWhere((s) => s['school'] == t['school'], orElse: () => {});
-        if (school['isLocked'] == true) {
-          _showError("Your school is currently locked by the administrator.");
-          return;
-        }
+      
+      if (teacher != null) {
+        // Teacher login - navigate to teacher board with assigned class
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => TeacherBoardScreen(
-              teacherName: t['name'] ?? 'Teacher',
-              assignedClass: t['class'] ?? '',
-              subjects: t['subjects'] ?? '',
-              teacherUsername: t['username'] ?? '',
-              schoolName: t['school'] ?? '',
+              teacherName: teacher!['name'] ?? 'Teacher',
+              assignedClass: teacher['class'] ?? '',
+              subjects: teacher['subjects'] ?? '',
+              teacherUsername: teacher['username'] ?? '',
             ),
           ),
         );
-        return;
-      }
-    }
-
-    // Login as Student
-    for (var s in _LoginScreenState._allStudents) {
-      if (s['username'] == user && s['password'] == pass) {
-        // Find school and check lock status
-        final school = _LoginScreenState._allSchools.firstWhere((sch) => sch['school'] == s['school'], orElse: () => {});
-        if (school['isLocked'] == true) {
-          _showError("Your school is currently locked by the administrator.");
-          return;
+      } else {
+        // Check student login
+        Map<String, String>? student;
+        try {
+          student = _allStudents.firstWhere((s) => s['username'] == user && s['password'] == pass);
+        } catch(e) {
+          student = null;
         }
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(
-            builder: (_) => StudentBoardScreen(
-              studentName: s['name'] ?? 'Student',
-              studentClass: s['std'] ?? '',
-              studentUsername: s['username'] ?? '',
-              studentData: s,
+        if (student != null) {
+          // Student login - navigate to student board
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => StudentBoardScreen(
+                studentName: student!['name'] ?? 'Student',
+                studentClass: student['std'] ?? '',
+                studentUsername: student['username'] ?? '',
+                studentData: student,
+              ),
             ),
-          ),
-        );
-        return;
+          );
+        } else {
+          // Manager login
+          Map<String, String>? school;
+          try {
+            school = _allSchools.firstWhere((s) => s['username'] == user && s['password'] == pass);
+          } catch (e) {
+            school = null;
+          }
+
+          if (school != null) {
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SchoolDashboardScreen(schoolName: school!['school'] ?? 'Unknown School')));
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials.')));
+          }
+        }
       }
     }
-    _showError('Invalid credentials.');
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
+    return FadeInEntrance(
+      child: Scaffold(
+        backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
@@ -393,119 +409,127 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Column(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(24),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
+                // Logo/Header
+                FadeInEntrance(
+                  delay: 0.2,
+                  child: Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(24),
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF6366F1).withOpacity(0.3),
+                              blurRadius: 20,
+                              offset: const Offset(0, 10),
+                            )
+                          ],
+                        ),
+                        child: const Icon(Icons.auto_awesome_rounded, size: 60, color: Colors.white),
+                      ),
+                      const SizedBox(height: 32),
+                      ShaderMask(
+                        shaderCallback: (bounds) => const LinearGradient(
                           colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                        ).createShader(bounds),
+                        child: const Text(
+                          'BRIDGE',
+                          style: TextStyle(
+                            fontSize: 48,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 10,
+                            color: Colors.white,
+                          ),
                         ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF6366F1).withOpacity(0.3),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          )
-                        ],
                       ),
-                      child: const Icon(Icons.auto_awesome_rounded, size: 60, color: Colors.white),
-                    ),
-                    const SizedBox(height: 32),
-                    ShaderMask(
-                      shaderCallback: (bounds) => const LinearGradient(
-                        colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                      ).createShader(bounds),
-                      child: const Text(
-                        'BRIDGE',
+                      Text(
+                        'NEXT-GEN LEARNING PLATFORM',
                         style: TextStyle(
-                          fontSize: 48,
+                          fontSize: 10,
+                          color: Colors.grey[600],
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 10,
-                          color: Colors.white,
+                          letterSpacing: 3,
                         ),
                       ),
-                    ),
-                    Text(
-                      'NEXT-GEN LEARNING PLATFORM',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 3,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 60),
   
-                Container(
-                  padding: const EdgeInsets.all(32),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(32),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 40, offset: const Offset(0, 20))
-                    ],
-                  ),
-                  child: Column(
-                    children: [
-                      TextField(
-                        controller: _userController,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        onSubmitted: (_) => _login(),
-                        decoration: InputDecoration(
-                          labelText: 'Username',
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          prefixIcon: Icon(Icons.person_outline_rounded, color: colorScheme.primary),
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-                      TextField(
-                        controller: _passController,
-                        obscureText: true,
-                        style: const TextStyle(fontWeight: FontWeight.w600),
-                        onSubmitted: (_) => _login(),
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
-                          ),
-                          prefixIcon: Icon(Icons.lock_outline_rounded, color: colorScheme.primary),
-                        ),
-                      ),
-                      const SizedBox(height: 32),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 60,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: colorScheme.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
+                // Glassmorphism Login Card
+                FadeInEntrance(
+                  delay: 0.4,
+                  child: Container(
+                    padding: const EdgeInsets.all(32),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(32),
+                      boxShadow: [
+                        BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 40, offset: const Offset(0, 20))
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        TextField(
+                          controller: _userController,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          onSubmitted: (_) => _login(),
+                          decoration: InputDecoration(
+                            labelText: 'Username',
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
                             ),
-                            elevation: 0,
-                          ),
-                          onPressed: _login,
-                          child: const Text(
-                            'Sign In',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                            prefixIcon: Icon(Icons.person_outline_rounded, color: colorScheme.primary),
                           ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 20),
+                        TextField(
+                          controller: _passController,
+                          obscureText: true,
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                          onSubmitted: (_) => _login(),
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            filled: true,
+                            fillColor: const Color(0xFFF8FAFC),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              borderSide: BorderSide.none,
+                            ),
+                            prefixIcon: Icon(Icons.lock_outline_rounded, color: colorScheme.primary),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 60,
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(18),
+                              ),
+                              elevation: 0,
+                            ),
+                            onPressed: _login,
+                            child: const Text(
+                              'Sign In',
+                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ],
@@ -513,8 +537,9 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   void dispose() {
@@ -535,7 +560,8 @@ class AdminBoardScreen extends StatefulWidget {
 }
 
 class _AdminBoardScreenState extends State<AdminBoardScreen> {
-  List<Map<String, dynamic>> get _schools => _LoginScreenState._allSchools;
+  // Use the global schools list
+  List<Map<String, String>> get _schools => _LoginScreenState._allSchools;
 
   void _showAddSchoolSheet({int? index}) {
     final s = index != null ? _schools[index] : null;
@@ -601,6 +627,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: passCtrl,
+                obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -620,17 +647,18 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                   onPressed: () {
                     setState(() {
                       if (index != null) {
-                        _schools[index]['school'] = nameCtrl.text;
-                        _schools[index]['manager'] = managerCtrl.text;
-                        _schools[index]['username'] = userCtrl.text;
-                        _schools[index]['password'] = passCtrl.text;
+                        _schools[index] = {
+                          'school': nameCtrl.text,
+                          'manager': managerCtrl.text,
+                          'username': userCtrl.text,
+                          'password': passCtrl.text,
+                        };
                       } else {
                         _schools.add({
                           'school': nameCtrl.text,
                           'manager': managerCtrl.text,
                           'username': userCtrl.text,
                           'password': passCtrl.text,
-                          'isLocked': false,
                         });
                       }
                       _LoginScreenState.saveAllData();
@@ -659,17 +687,137 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final width = MediaQuery.of(context).size.width;
     final isDesktop = width > 1000;
+    final isTablet = width > 600 && width <= 1000;
     
-    return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+    return FadeInEntrance(
+      child: Scaffold(
+        backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: colorScheme.primary,
         centerTitle: true,
-        toolbarHeight: 90,
+        toolbarHeight: isDesktop ? 120 : 90,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
+            tooltip: 'Logout',
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (_) => const LoginScreen()),
+              );
+            },
+          ),
+          const SizedBox(width: 8),
+        ],
+        title: Stack(
+          alignment: Alignment.center,
+          children: [
+            Text(
+              'ADMIN',
+              style: TextStyle(
+                fontSize: isDesktop ? 80 : 64,
+                fontWeight: FontWeight.w100,
+                letterSpacing: 12,
+                color: Colors.white.withOpacity(0.12),
+              ),
+            ),
+            Text(
+              'Bridge',
+              style: TextStyle(
+                fontSize: isDesktop ? 40 : 32,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.5,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+      body: Stack(
+        alignment: Alignment.center,
+        children: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Text(
+                "Let's simplify our curriculum\nand make learning fun!",
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: isDesktop ? 48 : 36,
+                  fontWeight: FontWeight.w200,
+                  height: 1.5,
+                  color: colorScheme.primary.withOpacity(0.08),
+                ),
+              ),
+            ),
+          ),
+          _schools.isEmpty
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.admin_panel_settings, size: 72, color: colorScheme.primary),
+                    const SizedBox(height: 24),
+                    Text(
+                      'Welcome to Bridge Admin',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.w800,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(
+                      height: 4,
+                      width: 64,
+                      decoration: BoxDecoration(
+                        color: colorScheme.secondary,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ],
+                )
+              : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: isDesktop ? 3 : (isTablet ? 2 : 1),
+                      crossAxisSpacing: 16,
+                      mainAxisSpacing: 16,
+                      mainAxisExtent: 100,
+                    ),
+                    itemCount: _schools.length,
+                    itemBuilder: (context, index) {
+                      final s = _schools[index];
+                      return FadeInEntrance(
+                        delay: index * 0.1,
+                        child: Card(
+                          margin: EdgeInsets.zero,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                          elevation: 2,
+                          shadowColor: Colors.black.withOpacity(0.1),
+                          child: Center(
+                            child: ListTile(
+                              leading: CircleAvatar(
+                                backgroundColor: colorScheme.primary.withOpacity(0.1),
+                                child: Icon(Icons.school_rounded, color: colorScheme.primary),
+                              ),
+                              title: Text(s['school'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                              subtitle: Text('Manager: ${s['manager']}', maxLines: 1, overflow: TextOverflow.ellipsis),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(icon: const Icon(Icons.edit_rounded, color: Colors.teal, size: 20), onPressed: () => _showAddSchoolSheet(index: index)),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                                    onPressed: () {
+                                      showDialog(
+                                        context: context,
+                                        builder: (context) => AlertDialog(
+                                          title: const Text('Delete School'),
+                                          content: Text('Are you sure you want to delete ${s['school']}?'),
+                                          actions: [
                                             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                                             TextButton(onPressed: () {
                                               setState(() => _schools.removeAt(index));
@@ -1799,9 +1947,113 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
       case 2: return _buildScheduleTab(colorScheme);
       case 3: return _buildMessagesTab(colorScheme);
       case 4: return _buildFeatureTab(colorScheme);
+      case 7: return _buildAttendanceOverview(colorScheme);
       case -1:
       default: return _buildOverview(colorScheme);
     }
+  }
+
+  Widget _buildAttendanceOverview(ColorScheme colorScheme) {
+    return Column(
+      children: [
+        const Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Text('Global Attendance', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: _LoginScreenState._allClasses.length,
+            itemBuilder: (context, index) {
+              final className = _LoginScreenState._allClasses[index];
+              final classStudents = _LoginScreenState._allStudents.where((s) => s['std'] == className).toList();
+              
+              int totalP = 0, totalA = 0;
+              for (var s in classStudents) {
+                final records = _LoginScreenState._allAttendance.where((a) => a['studentUsername'] == s['username']);
+                for (var r in records) {
+                    final pMap = Map<String, String>.from((r['periods'] as Map?) ?? {});
+                    if (pMap['FN'] == 'P') totalP++; else if (pMap['FN'] == 'A') totalA++;
+                    if (pMap['AN'] == 'P') totalP++; else if (pMap['AN'] == 'A') totalA++;
+                }
+              }
+              final double avg = (totalP + totalA) == 0 ? 0 : (totalP / (totalP + totalA)) * 100;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFE2E8F0))),
+                child: ExpansionTile(
+                  leading: CircleAvatar(backgroundColor: colorScheme.primary.withOpacity(0.1), child: Text(className, style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))),
+                  title: Text('Class $className', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+                  subtitle: Text('${classStudents.length} Students • ${avg.toStringAsFixed(1)}% Avg. Attendance', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  children: classStudents.map((s) {
+                    final sRecords = _LoginScreenState._allAttendance.where((a) => a['studentUsername'] == s['username']);
+                    int sp = 0, sa = 0;
+                    for (var r in sRecords) {
+                       final pMap = Map<String, String>.from((r['periods'] as Map?) ?? {});
+                       if (pMap['FN'] == 'P') sp++; else if (pMap['FN'] == 'A') sa++;
+                       if (pMap['AN'] == 'P') sp++; else if (pMap['AN'] == 'A') sa++;
+                    }
+                    final double sAvg = (sp + sa) == 0 ? 0 : (sp / (sp + sa)) * 100;
+
+                    return ListTile(
+                      title: Text(s['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w700)),
+                      subtitle: Row(
+                        children: [
+                          Expanded(child: LinearProgressIndicator(value: sAvg / 100, backgroundColor: Colors.grey.shade100, color: sAvg > 75 ? Colors.teal : (sAvg > 50 ? Colors.orange : Colors.red), minHeight: 6, borderRadius: BorderRadius.circular(3))),
+                          const SizedBox(width: 12),
+                          Text('${sAvg.toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
+                        ],
+                      ),
+                    );
+                  }).toList(),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showAddBulletinDialog({int? index}) {
+    final b = index != null ? _LoginScreenState._allBulletinCards[index] : null;
+    final titleCtrl = TextEditingController(text: b?['title']);
+    final descCtrl = TextEditingController(text: b?['desc']);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(index == null ? 'Add Bulletin Card' : 'Edit Bulletin Card'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Card Title')),
+            TextField(controller: descCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Matter / Content')),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          if (index != null) TextButton(onPressed: () { _LoginScreenState._allBulletinCards.removeAt(index); _LoginScreenState.saveAllData(); Navigator.pop(context); setState(() {}); }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
+          ElevatedButton(
+            onPressed: () {
+              final data = {
+                'title': titleCtrl.text,
+                'desc': descCtrl.text,
+                'date': "${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}",
+                'publisher': 'Manager',
+              };
+              if (index == null) _LoginScreenState._allBulletinCards.add(data);
+              else _LoginScreenState._allBulletinCards[index] = data;
+              _LoginScreenState.saveAllData();
+              Navigator.pop(context);
+              setState(() {});
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildFeatureTab(ColorScheme colorScheme) {
@@ -1869,8 +2121,6 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
           ),
           const SizedBox(height: 16),
-          _buildGlobalNoticeManagerCard(colorScheme),
-          const SizedBox(height: 24),
           GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -1889,10 +2139,79 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
               );
             },
           ),
+          const SizedBox(height: 32),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Bulletin Cards', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+              TextButton.icon(onPressed: () => _showAddBulletinDialog(), icon: const Icon(Icons.add), label: const Text('Add Card')),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildBulletinSection(colorScheme, true),
         ],
       ),
     );
   }
+
+  Widget _buildBulletinSection(ColorScheme colorScheme, bool isManager) {
+    if (_LoginScreenState._allBulletinCards.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        width: double.infinity,
+        decoration: BoxDecoration(color: Colors.grey.withOpacity(0.05), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.grey.withOpacity(0.1))),
+        child: Column(
+          children: [
+            Icon(Icons.dashboard_customize_outlined, size: 48, color: Colors.grey.withOpacity(0.3)),
+            const SizedBox(height: 12),
+            const Text('No bulletin cards added by manager', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _LoginScreenState._allBulletinCards.length,
+      itemBuilder: (context, index) {
+        final b = _LoginScreenState._allBulletinCards[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899), index % 2 == 0 ? const Color(0xFF818CF8) : const Color(0xFFF472B6)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: (index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899)).withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 8))],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(b['title'] ?? 'Bulletin', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
+                  if (isManager) IconButton(icon: const Icon(Icons.edit, color: Colors.white70, size: 18), onPressed: () => _showAddBulletinDialog(index: index)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(b['desc'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14, height: 1.5)),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Icon(Icons.person_pin, color: Colors.white.withOpacity(0.6), size: 14),
+                  const SizedBox(width: 4),
+                  Text(b['publisher'] ?? 'Manager', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11, fontWeight: FontWeight.w700)),
+                  const Spacer(),
+                  Text(b['date'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
 
   Widget _buildMetricCard(String title, String value, IconData icon, MaterialColor color, int targetIndex, int metricIndex) {
     return GestureDetector(
@@ -1939,134 +2258,6 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
         ),
       ),
     );
-  }
-
-  Widget _buildGlobalNoticeCard(ColorScheme colorScheme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.teal.shade700, Colors.teal.shade500],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.teal.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.campaign_rounded, color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 16),
-              const Text('Notice Board', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _LoginScreenState._globalNotice,
-            style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGlobalNoticeManagerCard(ColorScheme colorScheme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
-        border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                    child: Icon(Icons.campaign_rounded, color: colorScheme.primary, size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  const Text('Notice Board (Shared)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                ],
-              ),
-              TextButton.icon(
-                onPressed: _showEditNoticeDialog,
-                icon: const Icon(Icons.edit_rounded, size: 18),
-                label: const Text('Update Notice'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _LoginScreenState._globalNotice,
-            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditNoticeDialog() {
-    final ctrl = TextEditingController(text: _LoginScreenState._globalNotice);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Update Shared Notice'),
-        content: TextField(
-          controller: ctrl,
-          maxLines: 5,
-          decoration: InputDecoration(
-            hintText: 'Enter notice matter...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _LoginScreenState._globalNotice = ctrl.text;
-                _LoginScreenState.saveAllData();
-              });
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: const Text('UPDATE'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  double _getAttendancePct(String username) {
-    int total = 0, present = 0;
-    for (var a in _LoginScreenState._allAttendance) {
-      if (a['studentUsername'] == username) {
-        final periods = Map<String, String>.from((a['periods'] as Map?) ?? {});
-        total++;
-        if (periods['FN'] == 'P' || periods['AN'] == 'P') {
-          present++;
-        }
-      }
-    }
-    return total == 0 ? 0 : present / total;
   }
 
   Widget _buildStudentsTab(ColorScheme colorScheme) {
@@ -2205,14 +2396,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
                           children: [
                             Text('Parent: ${s['parents']} | Place: ${s['place']}'),
                             Text('Phone: ${s['phone']} | Blood: ${s['blood'] ??'N/A'}'),
-                            Row(
-                              children: [
-                                Text('Attendance: ', style: TextStyle(color: Colors.grey.shade600, fontSize: 11)),
-                                Text('${(_getAttendancePct(s['username']!) * 100).toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.teal)),
-                                const Spacer(),
-                                Text('User: ${s['username']} | Pass: ${s['password']}', style: const TextStyle(fontSize: 10, color: Colors.teal)),
-                              ],
-                            ),
+                            Text('User: ${s['username']} | Pass: ${s['password']}', style: const TextStyle(fontSize: 10, color: Colors.teal)),
                           ],
                         ),
                         isThreeLine: true,
@@ -2813,7 +2997,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
         if (isEnabled('F.transactions')) const NavigationRailDestination(icon: Icon(Icons.local_activity_rounded), label: Text('F.transactions')),
         if (isEnabled('Schedule')) const NavigationRailDestination(icon: Icon(Icons.calendar_month_rounded), label: Text('Schedule')),
         if (isEnabled('Results')) const NavigationRailDestination(icon: Icon(Icons.analytics_rounded), label: Text('Results')),
-        if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.fingerprint_rounded), label: Text('Attendance')),
+        if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.fingerprint_rounded), label: Text('Attendance Report')),
         if (isEnabled('Messages')) const NavigationRailDestination(icon: Icon(Icons.chat_bubble_rounded), label: Text('Messages')),
         if (isEnabled('Groups')) const NavigationRailDestination(icon: Icon(Icons.campaign_rounded), label: Text('Announce')),
       ],
@@ -3172,10 +3356,11 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 24),
-          _buildGlobalNoticeCard(colorScheme),
-          const SizedBox(height: 16),
-          _buildClassNoticeCard(colorScheme),
+          const SizedBox(height: 32),
+          const SizedBox(height: 32),
+          const Text('Bulletin Cards', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+          const SizedBox(height: 12),
+          _buildBulletinList(colorScheme),
           const SizedBox(height: 32),
           Row(
             children: [
@@ -3280,83 +3465,48 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
     );
   }
 
-  Widget _buildClassNoticeCard(ColorScheme colorScheme) {
-    // Find teacher for this student's class
-    final teacher = _LoginScreenState._allTeachers.firstWhere(
-      (t) => t['school'] == widget.studentData['school'] && t['class'] == widget.studentClass,
-      orElse: () => {},
-    );
-    final String? teacherUser = teacher['username'];
-    final notice = teacherUser != null ? (_LoginScreenState._teacherNotices[teacherUser] ?? "No class announcements from your teacher yet.") : "No teacher assigned to this class.";
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.indigo.shade700, Colors.indigo.shade500],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+  Widget _buildBulletinList(ColorScheme colorScheme) {
+    if (_LoginScreenState._allBulletinCards.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        width: double.infinity,
+        decoration: BoxDecoration(color: Colors.grey.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+        child: const Column(
+          children: [
+             Icon(Icons.mark_chat_unread_outlined, size: 48, color: Colors.grey),
+             SizedBox(height: 12),
+             Text('No active cards from manager', style: TextStyle(color: Colors.grey)),
+          ],
         ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.indigo.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+      );
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _LoginScreenState._allBulletinCards.length,
+      itemBuilder: (context, index) {
+        final b = _LoginScreenState._allBulletinCards[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899), index % 2 == 0 ? const Color(0xFF818CF8) : const Color(0xFFF472B6)]),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: (index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899)).withOpacity(0.15), blurRadius: 10)],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
-                child: const Icon(Icons.campaign, color: Colors.white, size: 24),
-              ),
-              const SizedBox(width: 16),
-              Text('Class Notice (${teacher['name'] ?? 'Teacher'})', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(b['title'] ?? 'Bulletin', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              Text(b['desc'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13, height: 1.4)),
             ],
           ),
-          const SizedBox(height: 16),
-          Text(
-            notice,
-            style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildGlobalNoticeCard(ColorScheme colorScheme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Icon(Icons.campaign_rounded, color: colorScheme.primary, size: 24),
-              ),
-              const SizedBox(width: 16),
-              const Text('Notice Board', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _LoginScreenState._globalNotice,
-            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildActivitiesTab(ColorScheme colorScheme) {
     return Column(
@@ -4547,6 +4697,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
         if (isEnabled('Schedule')) const NavigationRailDestination(icon: Icon(Icons.calendar_month), label: Text('Schedule')),
         if (isEnabled('Results')) const NavigationRailDestination(icon: Icon(Icons.analytics), label: Text('Results')),
         if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.how_to_reg), label: Text('Attendance')),
+        const NavigationRailDestination(icon: Icon(Icons.auto_graph_rounded), label: Text('Reports')),
         if (isEnabled('Messages')) const NavigationRailDestination(icon: Icon(Icons.message), label: Text('Messages')),
         if (isEnabled('Groups')) const NavigationRailDestination(icon: Icon(Icons.campaign), label: Text('Announce')),
       ],
@@ -4598,6 +4749,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                 _buildDesktopNavItem(Icons.local_activity, 'F.transactions', 2, colorScheme),
                 _buildDesktopNavItem(Icons.calendar_month, 'Schedule', 3, colorScheme),
                 _buildDesktopNavItem(Icons.analytics, 'Results', 4, colorScheme),
+                _buildDesktopNavItem(Icons.auto_graph_rounded, 'Reports', 8, colorScheme),
                 _buildDesktopNavItem(Icons.how_to_reg, 'Attendance', 7, colorScheme),
                 _buildDesktopNavItem(Icons.message, 'Messages', 5, colorScheme),
                 _buildDesktopNavItem(Icons.campaign, 'Announce', 6, colorScheme),
@@ -5518,10 +5670,62 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
       case 5: return _buildMessagesTab(colorScheme);
       case 6: return _buildGlobalGroupTab(colorScheme);
       case 7: return _buildAttendanceTab(colorScheme);
+      case 8: return _buildAttendanceReportTab(colorScheme);
       case -1:
       default: return _buildOverview(colorScheme);
     }
   }
+
+  Widget _buildAttendanceReportTab(ColorScheme colorScheme) {
+    return Column(
+      children: [
+        const Padding(
+          padding: EdgeInsets.all(24.0),
+          child: Text('Attendance Analytics', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            itemCount: _allStudents.length,
+            itemBuilder: (context, index) {
+              final student = _allStudents[index];
+              final sRecords = _LoginScreenState._allAttendance.where((a) => a['studentUsername'] == student['username']);
+              int sp = 0, sa = 0;
+              for (var r in sRecords) {
+                 final pMap = Map<String, String>.from((r['periods'] as Map?) ?? {});
+                 if (pMap['FN'] == 'P') sp++; else if (pMap['FN'] == 'A') sa++;
+                 if (pMap['AN'] == 'P') sp++; else if (pMap['AN'] == 'A') sa++;
+              }
+              final double sAvg = (sp + sa) == 0 ? 0 : (sp / (sp + sa)) * 100;
+
+              return Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFE2E8F0))),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(student['name'] ?? 'Student', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Expanded(child: LinearProgressIndicator(value: sAvg / 100, minHeight: 8, borderRadius: BorderRadius.circular(4), color: sAvg > 75 ? Colors.teal : Colors.orange)),
+                        const SizedBox(width: 12),
+                        Text('${sAvg.toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text('Month: ${sAvg.toStringAsFixed(0)}% (Projected) | Year: ${sAvg.toStringAsFixed(0)}%', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
 
   Widget _buildOverview(ColorScheme colorScheme) {
     return SingleChildScrollView(
@@ -5530,10 +5734,6 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildGlobalNoticeCard(colorScheme),
-          const SizedBox(height: 16),
-          _buildTeacherNoticeCard(colorScheme),
-          const SizedBox(height: 24),
           Stack(
             children: [
               Container(
@@ -5600,34 +5800,61 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
             ],
           ),
           const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 4 : (MediaQuery.of(context).size.width > 800 ? 3 : 2),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.1,
-            ),
-            itemCount: _metrics.length,
-            itemBuilder: (context, index) {
-              final m = _metrics[index];
-              return FadeInEntrance(
-                delay: index * 0.1,
-                child: _buildMetricCard(
-                  m['title'],
-                  m['value'],
-                  m['icon'],
-                  m['color'],
-                  m['targetIndex'],
-                ),
-              );
             },
           ),
+          const SizedBox(height: 32),
+          const Text('Bulletin Cards', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+          const SizedBox(height: 16),
+          _buildBulletinCards(colorScheme),
         ],
       ),
     );
   }
+
+  Widget _buildBulletinCards(ColorScheme colorScheme) {
+    if (_LoginScreenState._allBulletinCards.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(40),
+        width: double.infinity,
+        decoration: BoxDecoration(color: Colors.grey.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+        child: const Column(
+          children: [
+             Icon(Icons.dashboard_customize_outlined, size: 48, color: Colors.grey),
+             SizedBox(height: 12),
+             Text('No updates from manager yet', style: TextStyle(color: Colors.grey)),
+          ],
+        ),
+      );
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _LoginScreenState._allBulletinCards.length,
+      itemBuilder: (context, index) {
+        final b = _LoginScreenState._allBulletinCards[index];
+        return Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(colors: [index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899), index % 2 == 0 ? const Color(0xFF818CF8) : const Color(0xFFF472B6)]),
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [BoxShadow(color: (index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899)).withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(b['title'] ?? 'Bulletin', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+              const SizedBox(height: 8),
+              Text(b['desc'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13, height: 1.4)),
+              const SizedBox(height: 12),
+              Text('Posted: ${b['date'] ?? ''}', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
 
   Widget _overviewMiniStat(String label, String value, IconData icon) {
     return Expanded(
@@ -5667,83 +5894,6 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
             Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildGlobalNoticeManagerCard(ColorScheme colorScheme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
-        border: Border.all(color: colorScheme.primary.withOpacity(0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                    child: Icon(Icons.campaign_rounded, color: colorScheme.primary, size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  const Text('Notice Board (Shared)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                ],
-              ),
-              TextButton.icon(
-                onPressed: _showEditNoticeDialog,
-                icon: const Icon(Icons.edit_rounded, size: 18),
-                label: const Text('Update Notice'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _LoginScreenState._globalNotice,
-            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditNoticeDialog() {
-    final ctrl = TextEditingController(text: _LoginScreenState._globalNotice);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Update Shared Notice'),
-        content: TextField(
-          controller: ctrl,
-          maxLines: 5,
-          decoration: InputDecoration(
-            hintText: 'Enter notice matter...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _LoginScreenState._globalNotice = ctrl.text;
-                _LoginScreenState.saveAllData();
-              });
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: const Text('UPDATE'),
-          ),
-        ],
       ),
     );
   }
@@ -5935,117 +6085,6 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
             });
             Navigator.pop(context);
           }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTeacherNoticeCard(ColorScheme colorScheme) {
-    final notice = _LoginScreenState._teacherNotices[widget.teacherUsername] ?? "No class-specific announcements yet.";
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
-        border: Border.all(color: Colors.indigo.withOpacity(0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(color: Colors.indigo.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                    child: const Icon(Icons.campaign, color: Colors.indigo, size: 24),
-                  ),
-                  const SizedBox(width: 16),
-                  const Text('Notice Board (Class)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                ],
-              ),
-              TextButton.icon(
-                onPressed: _showEditTeacherNoticeDialog,
-                icon: const Icon(Icons.edit, size: 18),
-                label: const Text('Update Class Notice'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            notice,
-            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showEditTeacherNoticeDialog() {
-    final ctrl = TextEditingController(text: _LoginScreenState._teacherNotices[widget.teacherUsername]);
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Update Class Notice'),
-        content: TextField(
-          controller: ctrl,
-          maxLines: 5,
-          decoration: InputDecoration(
-            hintText: 'Enter class notice...',
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
-          ElevatedButton(
-            onPressed: () {
-              setState(() {
-                _LoginScreenState._teacherNotices[widget.teacherUsername] = ctrl.text;
-                _LoginScreenState.saveAllData();
-              });
-              Navigator.pop(context);
-            },
-            style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
-            child: const Text('UPDATE'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildGlobalNoticeCard(ColorScheme colorScheme) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
-                child: Icon(Icons.campaign_rounded, color: colorScheme.primary, size: 24),
-              ),
-              const SizedBox(width: 16),
-              const Text('Notice Board', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            _LoginScreenState._globalNotice,
-            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
-          ),
         ],
       ),
     );
@@ -6629,11 +6668,11 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                       ))),
                     ],
                   );
-                 default: // Info/Overview
-                   return Column(
-                     crossAxisAlignment: CrossAxisAlignment.start,
-                     children: [
-                       const Text('Contact Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                default: // Info/Overview
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Contact Information', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                       const SizedBox(height: 16),
                       _buildInfoRow(Icons.family_restroom, "Parent's Name", student['parents'] ?? 'N/A'),
                       _buildInfoRow(Icons.location_on, "Address", student['address'] ?? 'N/A'),
@@ -6641,10 +6680,6 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
                       _buildInfoRow(Icons.phone, "Phone", student['phone'] ?? 'N/A'),
                       _buildInfoRow(Icons.bloodtype, "Blood Group", student['blood'] ?? 'N/A'),
                       _buildInfoRow(Icons.account_circle, "Username", student['username'] ?? 'N/A'),
-                      const SizedBox(height: 32),
-                      const Text('Attendance Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 16),
-                      _buildAttendanceStatusBar(student['username'] ?? ''),
                     ],
                   );
               }
@@ -6724,75 +6759,6 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
           },
         );
       },
-    );
-  }
-
-  Widget _buildAttendanceStatusBar(String username) {
-    final now = DateTime.now();
-    final thisMonthStr = "${now.year}-${now.month}-";
-    final lastMonth = now.month == 1 ? DateTime(now.year - 1, 12) : DateTime(now.year, now.month - 1);
-    final lastMonthStr = "${lastMonth.year}-${lastMonth.month}-";
-
-    int thisMonthP = 0, thisMonthTotal = 0;
-    int lastMonthP = 0, lastMonthTotal = 0;
-    int yearlyP = 0, yearlyTotal = 0;
-
-    for (var a in _LoginScreenState._allAttendance) {
-      if (a['studentUsername'] == username) {
-        final date = a['date'] as String;
-        final periods = Map<String, String>.from((a['periods'] as Map?) ?? {});
-        bool p = (periods['FN'] == 'P' || periods['AN'] == 'P');
-        
-        yearlyTotal++;
-        if (p) yearlyP++;
-
-        if (date.startsWith(thisMonthStr)) {
-          thisMonthTotal++;
-          if (p) thisMonthP++;
-        } else if (date.startsWith(lastMonthStr)) {
-          lastMonthTotal++;
-          if (p) lastMonthP++;
-        }
-      }
-    }
-
-    double thisMonthPct = thisMonthTotal == 0 ? 0 : thisMonthP / thisMonthTotal;
-    double lastMonthPct = lastMonthTotal == 0 ? 0 : lastMonthP / lastMonthTotal;
-    double yearlyPct = yearlyTotal == 0 ? 0 : yearlyP / yearlyTotal;
-
-    return Column(
-      children: [
-        _statusRow("This Month", thisMonthPct, "${(thisMonthPct * 100).toStringAsFixed(0)}%", Colors.blue),
-        const SizedBox(height: 16),
-        _statusRow("Last Month", lastMonthPct, "${(lastMonthPct * 100).toStringAsFixed(0)}%", Colors.orange),
-        const SizedBox(height: 16),
-        _statusRow("Yearly Average", yearlyPct, "${(yearlyPct * 100).toStringAsFixed(0)}%", Colors.teal),
-      ],
-    );
-  }
-
-  Widget _statusRow(String label, double pct, String trailing, Color color) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF475569))),
-            Text(trailing, style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: color)),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(10),
-          child: LinearProgressIndicator(
-            value: pct,
-            minHeight: 8,
-            backgroundColor: color.withOpacity(0.1),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
-          ),
-        ),
-      ],
     );
   }
 
