@@ -972,7 +972,84 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
       ],
     );
   }
+
+  static const List<List<Color>> _cardGradients = [
+    [Color(0xFF6366F1), Color(0xFF8B5CF6)], // Indigo - Violet
+    [Color(0xFFEC4899), Color(0xFFF43F5E)], // Rose - Pink
+    [Color(0xFF10B981), Color(0xFF0D9488)], // Emerald - Teal
+    [Color(0xFFF59E0B), Color(0xFFD97706)], // Amber - Orange
+    [Color(0xFF0EA5E9), Color(0xFF2563EB)], // Sky - Blue
+  ];
+
+  Widget buildNoticeBoardCard(Map<String, dynamic> b, int index, {VoidCallback? onEdit}) {
+    final gradient = _cardGradients[index % _cardGradients.length];
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(color: gradient[0].withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(28),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -20, top: -20,
+              child: Icon(Icons.campaign_outlined, size: 100, color: Colors.white.withOpacity(0.07)),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(child: Text(b['title'] ?? 'Notice', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5))),
+                      if (onEdit != null)
+                        IconButton(
+                          icon: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                            child: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                          ),
+                          onPressed: onEdit,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(b['desc'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 15, height: 1.6, fontWeight: FontWeight.w500)),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(30)),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.person_pin, color: Colors.white, size: 14),
+                            const SizedBox(width: 6),
+                            Text(b['publisher'] ?? 'Manager', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(b['date'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11, fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
+
 
 // Update the global teacher list when manager adds/updates teachers
 void _updateGlobalTeacherList(List<Map<String, String>> teachers) {
@@ -2266,42 +2343,11 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
       itemCount: _LoginScreenState._allBulletinCards.length,
       itemBuilder: (context, index) {
         final b = _LoginScreenState._allBulletinCards[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899), index % 2 == 0 ? const Color(0xFF818CF8) : const Color(0xFFF472B6)], begin: Alignment.topLeft, end: Alignment.bottomRight),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [BoxShadow(color: (index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899)).withOpacity(0.2), blurRadius: 15, offset: const Offset(0, 8))],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(b['title'] ?? 'Bulletin', style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w900)),
-                  if (isManager) IconButton(icon: const Icon(Icons.edit, color: Colors.white70, size: 18), onPressed: () => _showAddBulletinDialog(index: index)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(b['desc'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 14, height: 1.5)),
-              const SizedBox(height: 16),
-              Row(
-                children: [
-                  Icon(Icons.person_pin, color: Colors.white.withOpacity(0.6), size: 14),
-                  const SizedBox(width: 4),
-                  Text(b['publisher'] ?? 'Manager', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11, fontWeight: FontWeight.w700)),
-                  const Spacer(),
-                  Text(b['date'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11)),
-                ],
-              ),
-            ],
-          ),
-        );
+        return buildNoticeBoardCard(b, index, onEdit: isManager ? () => _showAddBulletinDialog(index: index) : null);
       },
     );
   }
+
 
 
   Widget _buildMetricCard(String title, String value, IconData icon, MaterialColor color, int targetIndex, int metricIndex) {
@@ -3511,26 +3557,11 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
       itemCount: _LoginScreenState._allBulletinCards.length,
       itemBuilder: (context, index) {
         final b = _LoginScreenState._allBulletinCards[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899), index % 2 == 0 ? const Color(0xFF818CF8) : const Color(0xFFF472B6)]),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [BoxShadow(color: (index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899)).withOpacity(0.15), blurRadius: 10)],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(b['title'] ?? 'Bulletin', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 8),
-              Text(b['desc'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13, height: 1.4)),
-            ],
-          ),
-        );
+        return buildNoticeBoardCard(b, index);
       },
     );
   }
+
 
 
   Widget _buildActivitiesTab(ColorScheme colorScheme) {
@@ -5857,28 +5888,11 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
       itemCount: _LoginScreenState._allBulletinCards.length,
       itemBuilder: (context, index) {
         final b = _LoginScreenState._allBulletinCards[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(colors: [index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899), index % 2 == 0 ? const Color(0xFF818CF8) : const Color(0xFFF472B6)]),
-            borderRadius: BorderRadius.circular(24),
-            boxShadow: [BoxShadow(color: (index % 2 == 0 ? const Color(0xFF6366F1) : const Color(0xFFEC4899)).withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(b['title'] ?? 'Bulletin', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
-              const SizedBox(height: 8),
-              Text(b['desc'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13, height: 1.4)),
-              const SizedBox(height: 12),
-              Text('Posted: ${b['date'] ?? ''}', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
-            ],
-          ),
-        );
+        return buildNoticeBoardCard(b, index);
       },
     );
   }
+
 
 
   Widget _overviewMiniStat(String label, String value, IconData icon) {
