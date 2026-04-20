@@ -63,28 +63,13 @@ class _LoginScreenState extends State<LoginScreen> {
   static List<Map<String, String>> _allTeachers = [
     {
       'name': 'Sample Teacher',
-      'username': 'teacher',
-      'password': '123',
-      'class': '01',
-      'subjects': 'Math, Science'
-    }
+  static String _superAdminPass = "admin123";
+  static List<Map<String, dynamic>> _allSchools = [
+    {'school': 'Bridge International', 'manager': 'Afsal', 'username': 'admin', 'password': '123', 'isLocked': false},
   ];
-  static List<Map<String, String>> _allSchools = [
-    {'school': 'Sample School', 'username': 'manager', 'password': '123'}
-  ];
-  static List<Map<String, String>> _allStudents = [
-    {
-      'name': 'Sample Student',
-      'username': 'student',
-      'password': '123',
-      'std': '01',
-      'address': 'Sample Address',
-      'parents': 'Sample Parents',
-      'place': 'Sample Place',
-      'phone': '1234567890',
-      'blood': 'O+'
-    }
-  ];
+  static List<Map<String, String>> _allTeachers = [];
+  static Map<String, String> _teacherNotices = {}; // teacherUser -> notice
+  static List<Map<String, String>> _allStudents = [];
   static List<Map<String, dynamic>> _allExams = [];
   static List<Map<String, dynamic>> _allMessages = [];
   static List<Map<String, dynamic>> _allGroups = []; // Class groups and staff groups
@@ -125,8 +110,14 @@ class _LoginScreenState extends State<LoginScreen> {
     if (schoolsStr != null) {
       final List decoded = jsonDecode(schoolsStr);
       if (decoded.isNotEmpty) {
-        _allSchools = decoded.map((s) => Map<String, String>.from(s)).toList();
+        _allSchools = decoded.map((s) => Map<String, dynamic>.from(s)).toList();
       }
+    }
+
+    final tNoticeStr = _prefs!.getString('teacher_notices');
+    if (tNoticeStr != null) {
+      final Map decoded = jsonDecode(tNoticeStr);
+      _teacherNotices = Map<String, String>.from(decoded);
     }
     
     final teachersStr = _prefs!.getString('all_teachers');
@@ -248,9 +239,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final List decodedList = jsonDecode(metricsStr);
       _allMetrics = decodedList.map((m) {
         final Map<String, dynamic> data = Map<String, dynamic>.from(m);
-        // Recover IconData and MaterialColor from stored values
-        // Note: For simple recovery, we map back codepoints/values. 
-        // This is a simplified reconstruction.
         return {
           'title': data['title'],
           'value': data['value'],
@@ -297,8 +285,8 @@ class _LoginScreenState extends State<LoginScreen> {
     await _prefs!.setString('all_classes', jsonEncode(_allClasses));
     await _prefs!.setString('feature_config', jsonEncode(_featureConfig));
     await _prefs!.setString('global_notice', _globalNotice);
+    await _prefs!.setString('teacher_notices', jsonEncode(_teacherNotices));
     
-    // Convert metrics to serializable format (storing codepoints for icons, values for colors)
     final serializableMetrics = _allMetrics.map((m) => {
       'title': m['title'],
       'value': m['value'],
@@ -309,93 +297,94 @@ class _LoginScreenState extends State<LoginScreen> {
     await _prefs!.setString('all_metrics', jsonEncode(serializableMetrics));
   }
 
+  void _showError(String msg) {
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg), backgroundColor: Colors.red));
+  }
+
   void _login() {
     final user = _userController.text.trim();
     final pass = _passController.text.trim();
 
     if (user.isEmpty || pass.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter both username and password.')),
-      );
+      _showError('Please enter both username and password.');
       return;
     }
 
-    if (user == 'minad' && pass == '321') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const AdminBoardScreen()),
-      );
-    } else {
-      // Check if it's a teacher login
-      Map<String, String>? teacher;
-      try {
-        teacher = _allTeachers.firstWhere(
-          (t) => t['username'] == user && t['password'] == pass,
-        );
-      } catch (e) {
-        // Teacher not found
+    // Login as Super Admin
+    if (user == "superadmin" && pass == _LoginScreenState._superAdminPass) {
+       Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const AdminBoardScreen()));
+       return;
+    }
+
+    // Login as School Manager
+    for (var s in _LoginScreenState._allSchools) {
+      if (s['username'] == user && s['password'] == pass) {
+        if (s['isLocked'] == true) {
+          _showError("This school is currently locked by the administrator.");
+          return;
+        }
+        Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SchoolDashboardScreen(schoolName: s['school']!)));
+        return;
       }
-      
-      if (teacher != null) {
-        // Teacher login - navigate to teacher board with assigned class
+    }
+
+    // Login as Teacher
+    for (var t in _LoginScreenState._allTeachers) {
+      if (t['username'] == user && t['password'] == pass) {
+        // Find school and check lock status
+        final school = _LoginScreenState._allSchools.firstWhere((s) => s['school'] == t['school'], orElse: () => {});
+        if (school['isLocked'] == true) {
+          _showError("Your school is currently locked by the administrator.");
+          return;
+        }
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(
             builder: (_) => TeacherBoardScreen(
-              teacherName: teacher!['name'] ?? 'Teacher',
-              assignedClass: teacher['class'] ?? '',
-              subjects: teacher['subjects'] ?? '',
-              teacherUsername: teacher['username'] ?? '',
+              teacherName: t['name'] ?? 'Teacher',
+              assignedClass: t['class'] ?? '',
+              subjects: t['subjects'] ?? '',
+              teacherUsername: t['username'] ?? '',
+              schoolName: t['school'] ?? '',
             ),
           ),
         );
-      } else {
-        // Check student login
-        Map<String, String>? student;
-        try {
-          student = _allStudents.firstWhere((s) => s['username'] == user && s['password'] == pass);
-        } catch(e) {
-          student = null;
-        }
-        if (student != null) {
-          // Student login - navigate to student board
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => StudentBoardScreen(
-                studentName: student!['name'] ?? 'Student',
-                studentClass: student['std'] ?? '',
-                studentUsername: student['username'] ?? '',
-                studentData: student,
-              ),
-            ),
-          );
-        } else {
-          // Manager login
-          Map<String, String>? school;
-          try {
-            school = _allSchools.firstWhere((s) => s['username'] == user && s['password'] == pass);
-          } catch (e) {
-            school = null;
-          }
-
-          if (school != null) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SchoolDashboardScreen(schoolName: school!['school'] ?? 'Unknown School')));
-          } else {
-            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials.')));
-          }
-        }
+        return;
       }
     }
+
+    // Login as Student
+    for (var s in _LoginScreenState._allStudents) {
+      if (s['username'] == user && s['password'] == pass) {
+        // Find school and check lock status
+        final school = _LoginScreenState._allSchools.firstWhere((sch) => sch['school'] == s['school'], orElse: () => {});
+        if (school['isLocked'] == true) {
+          _showError("Your school is currently locked by the administrator.");
+          return;
+        }
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(
+            builder: (_) => StudentBoardScreen(
+              studentName: s['name'] ?? 'Student',
+              studentClass: s['std'] ?? '',
+              studentUsername: s['username'] ?? '',
+              studentData: s,
+            ),
+          ),
+        );
+        return;
+      }
+    }
+    _showError('Invalid credentials.');
   }
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return FadeInEntrance(
-      child: Scaffold(
-        backgroundColor: Colors.white,
+    return Scaffold(
+      backgroundColor: Colors.white,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 40),
@@ -404,127 +393,119 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo/Header
-                FadeInEntrance(
-                  delay: 0.2,
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF6366F1).withOpacity(0.3),
-                              blurRadius: 20,
-                              offset: const Offset(0, 10),
-                            )
-                          ],
-                        ),
-                        child: const Icon(Icons.auto_awesome_rounded, size: 60, color: Colors.white),
-                      ),
-                      const SizedBox(height: 32),
-                      ShaderMask(
-                        shaderCallback: (bounds) => const LinearGradient(
+                Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
                           colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
-                        ).createShader(bounds),
-                        child: const Text(
-                          'BRIDGE',
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 10,
-                            color: Colors.white,
-                          ),
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF6366F1).withOpacity(0.3),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          )
+                        ],
                       ),
-                      Text(
-                        'NEXT-GEN LEARNING PLATFORM',
+                      child: const Icon(Icons.auto_awesome_rounded, size: 60, color: Colors.white),
+                    ),
+                    const SizedBox(height: 32),
+                    ShaderMask(
+                      shaderCallback: (bounds) => const LinearGradient(
+                        colors: [Color(0xFF6366F1), Color(0xFFEC4899)],
+                      ).createShader(bounds),
+                      child: const Text(
+                        'BRIDGE',
                         style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey[600],
+                          fontSize: 48,
                           fontWeight: FontWeight.w900,
-                          letterSpacing: 3,
+                          letterSpacing: 10,
+                          color: Colors.white,
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                    Text(
+                      'NEXT-GEN LEARNING PLATFORM',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 60),
   
-                // Glassmorphism Login Card
-                FadeInEntrance(
-                  delay: 0.4,
-                  child: Container(
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(32),
-                      boxShadow: [
-                        BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 40, offset: const Offset(0, 20))
-                      ],
-                    ),
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: _userController,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                          onSubmitted: (_) => _login(),
-                          decoration: InputDecoration(
-                            labelText: 'Username',
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(32),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 40, offset: const Offset(0, 20))
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      TextField(
+                        controller: _userController,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        onSubmitted: (_) => _login(),
+                        decoration: InputDecoration(
+                          labelText: 'Username',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          prefixIcon: Icon(Icons.person_outline_rounded, color: colorScheme.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      TextField(
+                        controller: _passController,
+                        obscureText: true,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        onSubmitted: (_) => _login(),
+                        decoration: InputDecoration(
+                          labelText: 'Password',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(16),
+                            borderSide: BorderSide.none,
+                          ),
+                          prefixIcon: Icon(Icons.lock_outline_rounded, color: colorScheme.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 60,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
                             ),
-                            prefixIcon: Icon(Icons.person_outline_rounded, color: colorScheme.primary),
+                            elevation: 0,
+                          ),
+                          onPressed: _login,
+                          child: const Text(
+                            'Sign In',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5),
                           ),
                         ),
-                        const SizedBox(height: 20),
-                        TextField(
-                          controller: _passController,
-                          obscureText: true,
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                          onSubmitted: (_) => _login(),
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            filled: true,
-                            fillColor: const Color(0xFFF8FAFC),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(16),
-                              borderSide: BorderSide.none,
-                            ),
-                            prefixIcon: Icon(Icons.lock_outline_rounded, color: colorScheme.primary),
-                          ),
-                        ),
-                        const SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 60,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: colorScheme.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(18),
-                              ),
-                              elevation: 0,
-                            ),
-                            onPressed: _login,
-                            child: const Text(
-                              'Sign In',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -532,9 +513,8 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   @override
   void dispose() {
@@ -555,8 +535,7 @@ class AdminBoardScreen extends StatefulWidget {
 }
 
 class _AdminBoardScreenState extends State<AdminBoardScreen> {
-  // Use the global schools list
-  List<Map<String, String>> get _schools => _LoginScreenState._allSchools;
+  List<Map<String, dynamic>> get _schools => _LoginScreenState._allSchools;
 
   void _showAddSchoolSheet({int? index}) {
     final s = index != null ? _schools[index] : null;
@@ -622,7 +601,6 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: passCtrl,
-                obscureText: true,
                 decoration: InputDecoration(
                   labelText: 'Password',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -642,18 +620,17 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                   onPressed: () {
                     setState(() {
                       if (index != null) {
-                        _schools[index] = {
-                          'school': nameCtrl.text,
-                          'manager': managerCtrl.text,
-                          'username': userCtrl.text,
-                          'password': passCtrl.text,
-                        };
+                        _schools[index]['school'] = nameCtrl.text;
+                        _schools[index]['manager'] = managerCtrl.text;
+                        _schools[index]['username'] = userCtrl.text;
+                        _schools[index]['password'] = passCtrl.text;
                       } else {
                         _schools.add({
                           'school': nameCtrl.text,
                           'manager': managerCtrl.text,
                           'username': userCtrl.text,
                           'password': passCtrl.text,
+                          'isLocked': false,
                         });
                       }
                       _LoginScreenState.saveAllData();
@@ -682,137 +659,17 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
     final colorScheme = Theme.of(context).colorScheme;
     final width = MediaQuery.of(context).size.width;
     final isDesktop = width > 1000;
-    final isTablet = width > 600 && width <= 1000;
     
-    return FadeInEntrance(
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF8FAFC),
+    return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         backgroundColor: colorScheme.primary,
         centerTitle: true,
-        toolbarHeight: isDesktop ? 120 : 90,
+        toolbarHeight: 90,
         elevation: 0,
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
-            tooltip: 'Logout',
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
-        title: Stack(
-          alignment: Alignment.center,
-          children: [
-            Text(
-              'ADMIN',
-              style: TextStyle(
-                fontSize: isDesktop ? 80 : 64,
-                fontWeight: FontWeight.w100,
-                letterSpacing: 12,
-                color: Colors.white.withOpacity(0.12),
-              ),
-            ),
-            Text(
-              'Bridge',
-              style: TextStyle(
-                fontSize: isDesktop ? 40 : 32,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
-                color: Colors.white,
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: Stack(
-        alignment: Alignment.center,
-        children: [
-          Center(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Text(
-                "Let's simplify our curriculum\nand make learning fun!",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: isDesktop ? 48 : 36,
-                  fontWeight: FontWeight.w200,
-                  height: 1.5,
-                  color: colorScheme.primary.withOpacity(0.08),
-                ),
-              ),
-            ),
-          ),
-          _schools.isEmpty
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.admin_panel_settings, size: 72, color: colorScheme.primary),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Welcome to Bridge Admin',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w800,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(
-                      height: 4,
-                      width: 64,
-                      decoration: BoxDecoration(
-                        color: colorScheme.secondary,
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ],
-                )
-              : Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: isDesktop ? 3 : (isTablet ? 2 : 1),
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                      mainAxisExtent: 100,
-                    ),
-                    itemCount: _schools.length,
-                    itemBuilder: (context, index) {
-                      final s = _schools[index];
-                      return FadeInEntrance(
-                        delay: index * 0.1,
-                        child: Card(
-                          margin: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                          elevation: 2,
-                          shadowColor: Colors.black.withOpacity(0.1),
-                          child: Center(
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: colorScheme.primary.withOpacity(0.1),
-                                child: Icon(Icons.school_rounded, color: colorScheme.primary),
-                              ),
-                              title: Text(s['school'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text('Manager: ${s['manager']}', maxLines: 1, overflow: TextOverflow.ellipsis),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(icon: const Icon(Icons.edit_rounded, color: Colors.teal, size: 20), onPressed: () => _showAddSchoolSheet(index: index)),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text('Delete School'),
-                                          content: Text('Are you sure you want to delete ${s['school']}?'),
-                                          actions: [
                                             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                                             TextButton(onPressed: () {
                                               setState(() => _schools.removeAt(index));
@@ -3315,6 +3172,10 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 24),
+          _buildGlobalNoticeCard(colorScheme),
+          const SizedBox(height: 16),
+          _buildClassNoticeCard(colorScheme),
           const SizedBox(height: 32),
           Row(
             children: [
@@ -3415,6 +3276,84 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
             Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF64748B))),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildClassNoticeCard(ColorScheme colorScheme) {
+    // Find teacher for this student's class
+    final teacher = _LoginScreenState._allTeachers.firstWhere(
+      (t) => t['school'] == widget.studentData['school'] && t['class'] == widget.studentClass,
+      orElse: () => {},
+    );
+    final String? teacherUser = teacher['username'];
+    final notice = teacherUser != null ? (_LoginScreenState._teacherNotices[teacherUser] ?? "No class announcements from your teacher yet.") : "No teacher assigned to this class.";
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.indigo.shade700, Colors.indigo.shade500],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.indigo.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), borderRadius: BorderRadius.circular(12)),
+                child: const Icon(Icons.campaign, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Text('Class Notice (${teacher['name'] ?? 'Teacher'})', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            notice,
+            style: const TextStyle(color: Colors.white, fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildGlobalNoticeCard(ColorScheme colorScheme) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                child: Icon(Icons.campaign_rounded, color: colorScheme.primary, size: 24),
+              ),
+              const SizedBox(width: 16),
+              const Text('Notice Board', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            _LoginScreenState._globalNotice,
+            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
+          ),
+        ],
       ),
     );
   }
@@ -5592,6 +5531,8 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildGlobalNoticeCard(colorScheme),
+          const SizedBox(height: 16),
+          _buildTeacherNoticeCard(colorScheme),
           const SizedBox(height: 24),
           Stack(
             children: [
@@ -5994,6 +5935,84 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
             });
             Navigator.pop(context);
           }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTeacherNoticeCard(ColorScheme colorScheme) {
+    final notice = _LoginScreenState._teacherNotices[widget.teacherUsername] ?? "No class-specific announcements yet.";
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+        border: Border.all(color: Colors.indigo.withOpacity(0.1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: Colors.indigo.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                    child: const Icon(Icons.campaign, color: Colors.indigo, size: 24),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text('Notice Board (Class)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+                ],
+              ),
+              TextButton.icon(
+                onPressed: _showEditTeacherNoticeDialog,
+                icon: const Icon(Icons.edit, size: 18),
+                label: const Text('Update Class Notice'),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            notice,
+            style: const TextStyle(color: Color(0xFF475569), fontSize: 15, height: 1.5, fontWeight: FontWeight.w500),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showEditTeacherNoticeDialog() {
+    final ctrl = TextEditingController(text: _LoginScreenState._teacherNotices[widget.teacherUsername]);
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Update Class Notice'),
+        content: TextField(
+          controller: ctrl,
+          maxLines: 5,
+          decoration: InputDecoration(
+            hintText: 'Enter class notice...',
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('CANCEL')),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _LoginScreenState._teacherNotices[widget.teacherUsername] = ctrl.text;
+                _LoginScreenState.saveAllData();
+              });
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            child: const Text('UPDATE'),
+          ),
         ],
       ),
     );
