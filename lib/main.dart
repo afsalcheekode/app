@@ -2143,12 +2143,13 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Bulletin Cards', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+              const Text('Notice Board', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
               TextButton.icon(onPressed: () => _showAddBulletinDialog(), icon: const Icon(Icons.add), label: const Text('Add Card')),
             ],
           ),
           const SizedBox(height: 12),
           _buildBulletinSection(colorScheme, true),
+
         ],
       ),
     );
@@ -3357,82 +3358,9 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> {
             ),
           ),
           const SizedBox(height: 32),
-          const SizedBox(height: 32),
-          const Text('Bulletin Cards', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
-          const SizedBox(height: 12),
-          _buildBulletinList(colorScheme),
-          const SizedBox(height: 32),
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 24,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Text('Your Learning Path', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
-            ],
-          ),
+          const Text('Notice Board', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
           const SizedBox(height: 16),
-          GridView.builder(
-
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-              childAspectRatio: 1.2,
-            ),
-            itemCount: _metrics.length,
-            itemBuilder: (context, index) {
-              final m = _metrics[index];
-              return FadeInEntrance(
-                delay: index * 0.1,
-                child: _buildMetricCard(m['title'], m['value'], m['icon'], m['color'], index: m['targetIndex']),
-              );
-            },
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: colorScheme.secondary.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: colorScheme.secondary.withOpacity(0.1)),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.lightbulb_outline_rounded, color: colorScheme.secondary, size: 30),
-                const SizedBox(width: 16),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Tip of the Day', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
-                      Text('Break large tasks into smaller steps to stay focused and productive!', style: TextStyle(fontSize: 12, color: Color(0xFF64748B))),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 32),
-          const Text('Recent Activities', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-          const SizedBox(height: 12),
-          ...(_activities.take(3).map((a) => Card(
-            margin: const EdgeInsets.only(bottom: 8),
-            child: ListTile(
-              leading: const CircleAvatar(child: Icon(Icons.play_circle_fill)),
-              title: Text(a['title'] ?? 'Activity'),
-              subtitle: Text(a['description'] ?? ''),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => setState(() => _currentIndex = 1),
-            ),
-          ))),
+          _buildBulletinList(colorScheme),
         ],
       ),
     );
@@ -5792,46 +5720,14 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> {
             ],
           ),
           const SizedBox(height: 32),
-          Row(
-            children: [
-              Container(width: 4, height: 24, decoration: BoxDecoration(color: colorScheme.primary, borderRadius: BorderRadius.circular(2))),
-              const SizedBox(width: 12),
-              const Text('Management Hub', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
-            ],
-          ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 4 : (MediaQuery.of(context).size.width > 800 ? 3 : 2),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.1,
-            ),
-            itemCount: _metrics.length,
-            itemBuilder: (context, index) {
-              final m = _metrics[index];
-              return FadeInEntrance(
-                delay: index * 0.1,
-                child: _buildMetricCard(
-                  m['title'],
-                  m['value'],
-                  m['icon'],
-                  m['color'],
-                  m['targetIndex'],
-                ),
-              );
-            },
-          ),
-          const SizedBox(height: 32),
-          const Text('Bulletin Cards', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+          const Text('Notice Board', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
           const SizedBox(height: 16),
           _buildBulletinCards(colorScheme),
         ],
       ),
     );
   }
+
 
 
   Widget _buildBulletinCards(ColorScheme colorScheme) {
