@@ -5274,6 +5274,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   @override
   String get currentUsername => widget.teacherUsername;
   int _currentIndex = -1; // -1: Overview, 0: Students, 1: Activities, 2: Fair, 3: Exam, 4: Result, 5: Message, 6: Group
+  Timer? _refreshTimer;
   String? _teacherSelectedClass;
   int _attMonth = DateTime.now().month;
 
@@ -5343,13 +5344,13 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   List<Map<String, dynamic>> get _groupMembers => _LoginScreenState._allGroupMembers;
   List<Map<String, String>> get _teachers => _LoginScreenState._allTeachers;
 
-  List<Map<String, String>> get _students => _allStudents.where((s) => s['std'] == (_teacherSelectedClass ?? widget.assignedClass)).toList();
+  List<Map<String, String>> get _students => _allStudents.where((s) => s['std'] == (_teacherSelectedClass ?? widget.assignedClass) && (s['academicYear'] == _LoginScreenState._selectedAcademicYear || s['academicYear'] == null)).toList();
+  
+  final Map<String, List<Map<String, dynamic>>> _studentFairs = {}; // studentName -> list of fairs with status
+  final Map<String, double> _studentProgress = {}; // studentName -> progress percentage
   
   // New data for Fair and Progress
   final List<String> _fairs = ['Science Fair 2024', 'Arts & Crafts', 'Coding Challenge', 'Math Olympiad'];
-  // Data is loaded from static lists via getters. 
-  List<Map<String, String>> get _students => _allStudents.where((s) => s['std'] == (_teacherSelectedClass ?? widget.assignedClass) && (s['academicYear'] == _LoginScreenState._selectedAcademicYear || s['academicYear'] == null)).toList();
-  List<Map<String, dynamic>> get _activities => _allActivities.where((a) => a['std'] == (_teacherSelectedClass ?? widget.assignedClass) && (a['academicYear'] == _LoginScreenState._selectedAcademicYear || a['academicYear'] == null)).toList();
 
   void _loadDataForAssignedClass() {
     // Data is loaded from static lists via getters. 
@@ -6021,8 +6022,8 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     
     // State for the new subject row
     String? tempSelectedSubject;
-    final tempTotalMarkCtrl = TextEditingController(text: '100');
-    final tempScoredMarkCtrl = TextEditingController();
+    final totalMarkCtrl = TextEditingController(text: '100');
+    final scoredMarkCtrl = TextEditingController();
     
     // Get all exams for this teacher's class
     List<Map<String, dynamic>> classExams = [];
@@ -6088,7 +6089,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                     selectedExam = val;
                     subjectResults.clear();
                     tempSelectedSubject = null;
-                    tempScoredMarkCtrl.clear();
+                    scoredMarkCtrl.clear();
                   }),
                 ),
                 const SizedBox(height: 24),
@@ -6139,7 +6140,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: TextField(
-                                    controller: tempTotalMarkCtrl,
+                                    controller: totalMarkCtrl,
                                     keyboardType: TextInputType.number,
                                     decoration: const InputDecoration(labelText: 'Total', prefixIcon: Icon(Icons.star_outline)),
                                   ),
@@ -6147,7 +6148,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: TextField(
-                                    controller: tempScoredMarkCtrl,
+                                    controller: scoredMarkCtrl,
                                     keyboardType: TextInputType.number,
                                     onChanged: (val) => setStateDialog((){}),
                                     decoration: const InputDecoration(labelText: 'Scored', prefixIcon: Icon(Icons.star)),
@@ -6157,15 +6158,15 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                             ),
                             const SizedBox(height: 8),
                             ElevatedButton.icon(
-                              onPressed: tempSelectedSubject == null || tempScoredMarkCtrl.text.isEmpty ? null : () {
+                              onPressed: tempSelectedSubject == null || scoredMarkCtrl.text.isEmpty ? null : () {
                                 setStateDialog(() {
                                   subjectResults.add({
                                     'subject': tempSelectedSubject,
-                                    'totalMarks': tempTotalMarkCtrl.text,
-                                    'scoredMark': tempScoredMarkCtrl.text,
+                                    'totalMarks': totalMarkCtrl.text,
+                                    'scoredMark': scoredMarkCtrl.text,
                                   });
                                   tempSelectedSubject = null;
-                                  tempScoredMarkCtrl.clear();
+                                  scoredMarkCtrl.clear();
                                 });
                               },
                               icon: const Icon(Icons.add),
@@ -8248,6 +8249,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                                                       final double pct = (scored / total) * 100;
                                                       String grade = pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B+' : pct >= 60 ? 'B' : pct >= 50 ? 'C+' : pct >= 40 ? 'C' : 'D';
                                                       final bool isPass = pct >= 40;
+                                                      final String status = isPass ? 'Pass' : 'Failed';
                                                       final Color statusColor = isPass ? Colors.green : Colors.red;
                                                       
                                                       return TableRow(
