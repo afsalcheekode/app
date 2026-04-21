@@ -1057,6 +1057,7 @@ class SchoolDashboardScreen extends StatefulWidget {
 
 mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
   int _unreadNoticeCount = 0;
+  String get currentUsername;
 
   void initNoticeCount() {
     _updateNoticeCount();
@@ -1064,23 +1065,16 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
 
   void _updateNoticeCount() {
     int total = _LoginScreenState._allBulletinCards.length;
-    int lastSeen = _LoginScreenState.loadInt('last_seen_notice_count', 0);
+    int lastSeen = _LoginScreenState.loadInt('last_seen_notice_count_$currentUsername', 0);
     int newCount = max(0, total - lastSeen);
     
     if (newCount != _unreadNoticeCount) {
        setState(() => _unreadNoticeCount = newCount);
-       if (newCount > 0 && total > 0) {
-         // Show system notification for new notices if count increased
-         // But only if we are not already at this count (to avoid spam on refresh)
-         if (lastSeen < total) {
-            // NotificationService.showNotification(title: 'New Notice', body: _LoginScreenState._allBulletinCards.last['title'] ?? 'Check notice center');
-         }
-       }
     }
   }
 
   void showNoticeCenter(BuildContext context) async {
-    await _LoginScreenState.saveInt('last_seen_notice_count', _LoginScreenState._allBulletinCards.length);
+    await _LoginScreenState.saveInt('last_seen_notice_count_$currentUsername', _LoginScreenState._allBulletinCards.length);
     setState(() => _unreadNoticeCount = 0);
     showDialog(
       context: context,
@@ -1232,6 +1226,8 @@ void _updateGlobalTeacherList(List<Map<String, String>> teachers) {
 }
 
 class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with NoticeCenterMixin {
+  @override
+  String get currentUsername => widget.username;
   int _currentIndex = -1; // -1: Overview, 0: Std, 1: Teacher, 2: Exam, 3: Msg
   int _attMonth = DateTime.now().month;
 
@@ -3406,6 +3402,8 @@ class StudentBoardScreen extends StatefulWidget {
 }
 
 class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCenterMixin {
+  @override
+  String get currentUsername => widget.studentUsername;
   int _currentIndex = 0; 
   
   // Use global static lists for persistence
@@ -5083,6 +5081,8 @@ class TeacherBoardScreen extends StatefulWidget {
 }
 
 class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCenterMixin {
+  @override
+  String get currentUsername => widget.teacherUsername;
   int _currentIndex = -1; // -1: Overview, 0: Students, 1: Activities, 2: Fair, 3: Exam, 4: Result, 5: Message, 6: Group
   String? _teacherSelectedClass;
   int _attMonth = DateTime.now().month;
