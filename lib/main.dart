@@ -1240,7 +1240,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
   void initState() {
     super.initState();
     initNoticeCount();
-    _currentIndex = _LoginScreenState.loadInt('school_dashboard_index', 3);
+    _currentIndex = _LoginScreenState.loadInt('school_dashboard_index', 0);
 
 
 
@@ -2220,20 +2220,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
               ],
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: ElevatedButton.icon(
-              onPressed: () => _showEditMetricDialog(),
-              icon: const Icon(Icons.add, size: 18),
-              label: const Text('CUSTOM CARD', style: TextStyle(fontWeight: FontWeight.bold)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: colorScheme.primary,
-                foregroundColor: Colors.white,
-                minimumSize: const Size(double.infinity, 50),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              ),
-            ),
-          ),
+          const Spacer(),
           const Divider(height: 1),
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
@@ -2424,7 +2411,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
       case 3: return _buildMessagesTab(colorScheme);
       case 4: return _buildFeatureTab(colorScheme);
       case 7: return _buildAttendanceOverview(colorScheme);
-      default: return _buildMessagesTab(colorScheme);
+      default: return _buildStudentsTab(colorScheme);
     }
   }
 
@@ -2655,117 +2642,8 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
   }
 
 
-  Widget _buildBulletinSection(ColorScheme colorScheme, bool isManager) {
-    if (_LoginScreenState._allBulletinCards.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(40),
-        width: double.infinity,
-        decoration: BoxDecoration(color: Colors.grey.withOpacity(0.05), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.grey.withOpacity(0.1))),
-        child: Column(
-          children: [
-            Icon(Icons.dashboard_customize_outlined, size: 48, color: Colors.grey.withOpacity(0.3)),
-            const SizedBox(height: 12),
-            const Text('No bulletin cards added by director', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
-          ],
-        ),
-      );
-    }
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: _LoginScreenState._allBulletinCards.length,
-      itemBuilder: (context, index) {
-        final b = _LoginScreenState._allBulletinCards[index];
-        return buildNoticeBoardCard(b, index, onEdit: isManager ? () => _showAddBulletinDialog(index: index) : null);
-      },
-    );
-  }
+  // Removed unused Overview cards
 
-  int _getWingCount(String dept) {
-    int count = 0;
-    for (var s in _LoginScreenState._allStudents) {
-      if (_LoginScreenState._classDepts[s['std']] == dept) {
-        count++;
-      }
-    }
-    return count;
-  }
-
-  Widget _buildWingCard(String title, int count, MaterialColor color) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: color.shade50,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(color: color.shade100),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: color.shade100, borderRadius: BorderRadius.circular(12)),
-              child: Icon(title == 'DA\'WA' ? Icons.menu_book : Icons.mosque, color: color.shade700, size: 24),
-            ),
-            const SizedBox(height: 16),
-            Text('$count Students', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color.shade900)),
-            Text('$title Wing', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color.shade700, letterSpacing: 1.2)),
-          ],
-        ),
-      ),
-    );
-  }
-
-
-
-  Widget _buildMetricCard(String title, String value, IconData icon, MaterialColor color, int targetIndex, int metricIndex) {
-    return GestureDetector(
-      onTap: () {
-        if (targetIndex != -1) _setTab(targetIndex);
-      },
-
-      onLongPress: () => _showEditMetricDialog(index: metricIndex),
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-        ),
-        child: Stack(
-          children: [
-            Align(
-              alignment: Alignment.center,
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircleAvatar(
-                    backgroundColor: color.shade50,
-                    radius: 24,
-                    child: Icon(icon, color: color.shade700, size: 24),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-                  Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF64748B))),
-                ],
-              ),
-            ),
-            Positioned(
-              top: 8,
-              right: 8,
-              child: IconButton(
-                icon: const Icon(Icons.edit, size: 18, color: Colors.grey),
-                onPressed: () => _showEditMetricDialog(index: metricIndex),
-                tooltip: 'Edit / Delete',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildStudentsTab(ColorScheme colorScheme) {
     if (_selectedClassInTab == null) {
