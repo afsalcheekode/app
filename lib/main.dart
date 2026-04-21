@@ -6,11 +6,45 @@ import 'dart:math';
 import 'dart:async';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await _LoginScreenState.initPrefs();
+  await NotificationService.init();
   runApp(const BridgeApp());
+}
+
+class NotificationService {
+  static final _notifications = FlutterLocalNotificationsPlugin();
+  static bool _isInitialized = false;
+
+  static Future<void> init() async {
+    if (kIsWeb) return;
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const ios = DarwinInitializationSettings();
+    const settings = InitializationSettings(android: android, iOS: ios);
+    await _notifications.initialize(settings);
+    _isInitialized = true;
+  }
+
+  static Future<void> showNotification({required String title, required String body}) async {
+    if (kIsWeb) {
+      // Basic Web Notification fallback if possible
+      return;
+    }
+    if (!_isInitialized) await init();
+    const android = AndroidNotificationDetails(
+      'bridge_channel',
+      'Bridge Notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    const ios = DarwinNotificationDetails();
+    const details = NotificationDetails(android: android, iOS: ios);
+    await _notifications.show(DateTime.now().millisecond, title, body, details);
+  }
 }
 
 class BridgeApp extends StatelessWidget {
@@ -100,6 +134,8 @@ class _LoginScreenState extends State<LoginScreen> {
   static List<Map<String, dynamic>> _allMetrics = [];
   static List<Map<String, dynamic>> _allBulletinCards = [];
   static List<String> _allClasses = ['01', '02', '03', '04', '05'];
+  static List<String> _academicYears = ['2024-2025'];
+  static String _selectedAcademicYear = '2024-2025';
   static Map<String, bool> _featureConfig = {
     'Students': true,
     'Activities': true,
@@ -110,8 +146,45 @@ class _LoginScreenState extends State<LoginScreen> {
     'Groups': true,
     'Attendance': true,
   };
+  static Map<String, String> _classDepts = {}; // className -> 'DA\'WA' or 'HIFZ'
+
+  static Future<void> saveInt(String key, int val) async => await _prefs?.setInt(key, val);
+  static int loadInt(String key, int def) => _prefs?.getInt(key) ?? def;
+  static Future<void> saveString(String key, String val) async => await _prefs?.setString(key, val);
+  static String? loadString(String key) => _prefs?.getString(key);
   
-  static SharedPreferences? _prefs;
+  static int getUnreadMessageCount(String username) {
+    if (_allMessages.isEmpty) return 0;
+    int totalForMe = _allMessages.where((m) {
+      final recipients = m['recipients'] as List?;
+      return (m['receiverId'] == username || recipients?.contains(username) == true) && m['senderId'] != username;
+    }).length;
+    int lastSeen = loadInt('last_seen_msg_count_$username', 0);
+    return max(0, totalForMe - lastSeen);
+  }
+  
+  static void markMessagesAsRead(String username) async {
+    int totalForMe = _allMessages.where((m) {
+       final recipients = m['recipients'] as List?;
+       return (m['receiverId'] == username || recipients?.contains(username) == true) && m['senderId'] != username;
+    }).length;
+    await saveInt('last_seen_msg_count_$username', totalForMe);
+  }
+
+  
+  static Map<String, int> _lastNotifiedMsgCount = {};
+
+  static void checkForNewAndNotify(String username) {
+     int currentCount = getUnreadMessageCount(username);
+     int lastNotified = _lastNotifiedMsgCount[username] ?? 0;
+     if (currentCount > lastNotified) {
+        NotificationService.showNotification(
+          title: 'New Message',
+          body: 'You have $currentCount unread message(s)',
+        );
+     }
+     _lastNotifiedMsgCount[username] = currentCount;
+  }
 
   static Future<void> initPrefs() async {
     _prefs = await SharedPreferences.getInstance();
@@ -202,7 +275,22 @@ class _LoginScreenState extends State<LoginScreen> {
     final attStr = _prefs!.getString('all_attendance');
     if (attStr != null) {
       final List decoded = jsonDecode(attStr);
-      _allAttendance = decoded.map((a) => Map<String, dynamic>.from(a)).toList();
+      _allAttendance = decoded.map((a) {
+        final map = Map<String, dynamic>.from(a);
+        if (map['academicYear'] == null) map['academicYear'] = '2024-2025'; // Basic migration
+        
+        // Padded Date Migration (Ensure yyyy-mm-dd for parsing)
+        if (map['date'] != null && map['date'].toString().contains('-')) {
+          final parts = map['date'].toString().split('-');
+          if (parts.length == 3) {
+            final y = parts[0];
+            final m = parts[1].padLeft(2, '0');
+            final d = parts[2].padLeft(2, '0');
+            map['date'] = "$y-$m-$d";
+          }
+        }
+        return map;
+      }).toList();
     }
 
     final ttStr = _prefs!.getString('all_timetables');
@@ -243,6 +331,20 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
 
+    final deptsStr = _prefs!.getString('all_class_depts');
+    if (deptsStr != null) {
+      _classDepts = Map<String, String>.from(jsonDecode(deptsStr));
+    }
+    // Migration: Ensure all classes have a department
+    bool deptsChanged = false;
+    for (var c in _allClasses) {
+      if (_classDepts[c] == null) {
+        _classDepts[c] = 'DA\'WA'; // Default
+        deptsChanged = true;
+      }
+    }
+    if (deptsChanged) saveAllData();
+
     final metricsStr = _prefs!.getString('all_metrics');
     if (metricsStr != null) {
       final List decodedList = jsonDecode(metricsStr);
@@ -272,9 +374,60 @@ class _LoginScreenState extends State<LoginScreen> {
       final List decoded = jsonDecode(bulletinStr);
       _allBulletinCards = decoded.map((b) => Map<String, dynamic>.from(b)).toList();
     }
+
+    if (_allMetrics.isEmpty) {
+      _allMetrics = [
+        {'title': 'Classes', 'value': '3', 'icon': Icons.class_, 'color': Colors.teal, 'targetIndex': 0},
+        {'title': 'Teachers', 'value': '50+', 'icon': Icons.badge, 'color': Colors.green, 'targetIndex': 1},
+        {'title': 'Schedule', 'value': '5+', 'icon': Icons.calendar_month, 'color': Colors.orange, 'targetIndex': 2},
+        {'title': 'Rewards', 'value': '100+', 'icon': Icons.emoji_events, 'color': Colors.purple, 'targetIndex': -1},
+      ];
+    }
   }
 
-  static MaterialColor _getColorFromValue(int value) {
+
+  static Map<String, int> _getColorFromValue(int value) { // existing placeholder for range
+      return {};
+  }
+  
+  static Map<String, int> getAttendanceStats(String username, int? month, int? year) {
+    int total = 0;
+    int present = 0;
+    for (var a in _allAttendance) {
+      if (a['studentUsername'] != username) continue;
+      // Filter by current academic year by default if no specific year provided
+      if (a['academicYear'] != _selectedAcademicYear && year == null) continue; 
+      
+      final date = DateTime.tryParse(a['date'] ?? '');
+      if (date == null) continue;
+      if (month != null && date.month != month) continue;
+      if (year != null && date.year != year) continue;
+      final periods = Map<String, String>.from(a['periods'] ?? {});
+      if (periods.isNotEmpty) {
+        total++;
+        if (periods.values.contains('P')) present++;
+      }
+    }
+    return {'total': total, 'present': present};
+  }
+
+  static Map<String, int> getAcademicYearStats(String username, String academicYear) {
+    int total = 0;
+    int present = 0;
+    for (var a in _allAttendance) {
+      if (a['studentUsername'] == username && a['academicYear'] == academicYear) {
+        final periods = Map<String, String>.from(a['periods'] ?? {});
+        if (periods.isNotEmpty) {
+          total++;
+          if (periods.values.contains('P')) present++;
+        }
+      }
+    }
+    return {'total': total, 'present': present};
+  }
+
+  static MaterialColor _getColorFromValueActual(int value) {
+
     const colors = [Colors.teal, Colors.green, Colors.orange, Colors.purple, Colors.red, Colors.pink, Colors.teal, Colors.green];
     for (var c in colors) {
        if (c.value == value) return c;
@@ -300,11 +453,12 @@ class _LoginScreenState extends State<LoginScreen> {
     await _prefs!.setString('all_results', jsonEncode(_allResults));
     await _prefs!.setString('all_attendance', jsonEncode(_allAttendance));
     await _prefs!.setString('all_timetables', jsonEncode(_allTimetables));
-    await _prefs!.setString('holiday_dates', jsonEncode(_holidayDates));
     await _prefs!.setString('all_activity_submissions', jsonEncode(_allActivitySubmissions));
     await _prefs!.setString('all_fair_payments', jsonEncode(_allFairPayments));
     await _prefs!.setString('all_classes', jsonEncode(_allClasses));
-    await _prefs!.setString('feature_config', jsonEncode(_featureConfig));
+    await _prefs!.setString('all_class_depts', jsonEncode(_classDepts));
+    await _prefs!.setString('academic_years', jsonEncode(_academicYears));
+    await _prefs!.setString('selected_academic_year', _selectedAcademicYear);
     await _prefs!.setString('all_bulletin_cards', jsonEncode(_allBulletinCards));
     
     // Convert metrics to serializable format (storing codepoints for icons, values for colors)
@@ -380,7 +534,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           );
         } else {
-          // Manager login
+          // Academic Director login
           Map<String, String>? school;
           try {
             school = _allSchools.firstWhere((s) => s['username'] == user && s['password'] == pass);
@@ -389,7 +543,7 @@ class _LoginScreenState extends State<LoginScreen> {
           }
 
           if (school != null) {
-            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SchoolDashboardScreen(schoolName: school!['school'] ?? 'Unknown School')));
+            Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => SchoolDashboardScreen(schoolName: school!['school'] ?? 'Unknown School', username: school['username'] ?? 'manager')));
           } else {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid credentials.')));
           }
@@ -614,7 +768,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
               TextField(
                 controller: managerCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Manager Name',
+                  labelText: 'Academic Director Name',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   prefixIcon: const Icon(Icons.person, color: Colors.grey),
                 ),
@@ -894,7 +1048,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
 // ==========================================
 class SchoolDashboardScreen extends StatefulWidget {
   final String schoolName;
-  const SchoolDashboardScreen({super.key, required this.schoolName});
+  final String username;
+  const SchoolDashboardScreen({super.key, required this.schoolName, required this.username});
 
   @override
   State<SchoolDashboardScreen> createState() => _SchoolDashboardScreenState();
@@ -904,10 +1059,28 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
   int _unreadNoticeCount = 0;
 
   void initNoticeCount() {
-    _unreadNoticeCount = _LoginScreenState._allBulletinCards.length;
+    _updateNoticeCount();
   }
 
-  void showNoticeCenter(BuildContext context) {
+  void _updateNoticeCount() {
+    int total = _LoginScreenState._allBulletinCards.length;
+    int lastSeen = _LoginScreenState.loadInt('last_seen_notice_count', 0);
+    int newCount = max(0, total - lastSeen);
+    
+    if (newCount != _unreadNoticeCount) {
+       setState(() => _unreadNoticeCount = newCount);
+       if (newCount > 0 && total > 0) {
+         // Show system notification for new notices if count increased
+         // But only if we are not already at this count (to avoid spam on refresh)
+         if (lastSeen < total) {
+            // NotificationService.showNotification(title: 'New Notice', body: _LoginScreenState._allBulletinCards.last['title'] ?? 'Check notice center');
+         }
+       }
+    }
+  }
+
+  void showNoticeCenter(BuildContext context) async {
+    await _LoginScreenState.saveInt('last_seen_notice_count', _LoginScreenState._allBulletinCards.length);
     setState(() => _unreadNoticeCount = 0);
     showDialog(
       context: context,
@@ -1060,6 +1233,10 @@ void _updateGlobalTeacherList(List<Map<String, String>> teachers) {
 
 class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with NoticeCenterMixin {
   int _currentIndex = -1; // -1: Overview, 0: Std, 1: Teacher, 2: Exam, 3: Msg
+  int _attMonth = DateTime.now().month;
+
+  int _attYear = DateTime.now().year;
+
   final ScrollController _navLeftController = ScrollController();
   final ScrollController _navRightController = ScrollController();
 
@@ -1067,6 +1244,9 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
   void initState() {
     super.initState();
     initNoticeCount();
+    _currentIndex = _LoginScreenState.loadInt('school_dashboard_index', 3);
+
+
 
     _navLeftController.addListener(() {
       if (_navLeftController.offset != _navRightController.offset) {
@@ -1097,12 +1277,8 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
   List<Map<String, dynamic>> get _groupMembers => _LoginScreenState._allGroupMembers;
 
   // Metrics for Overview page
-  final List<Map<String, dynamic>> _metrics = [
-    {'title': 'Classes', 'value': '3', 'icon': Icons.class_, 'color': Colors.teal, 'targetIndex': 0},
-    {'title': 'Teachers', 'value': '50+', 'icon': Icons.badge, 'color': Colors.green, 'targetIndex': 1},
-    {'title': 'Schedule', 'value': '5+', 'icon': Icons.calendar_month, 'color': Colors.orange, 'targetIndex': 2},
-    {'title': 'Rewards', 'value': '100+', 'icon': Icons.emoji_events, 'color': Colors.purple, 'targetIndex': -1},
-  ];
+  List<Map<String, dynamic>> get _metrics => _LoginScreenState._allMetrics;
+
 
   String? _selectedClassInTab; // New state to handle drill-down
 
@@ -1620,6 +1796,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
                     'examName': nameCtrl.text,
                     'class': selectedClass,
                     'subjects': subjects,
+                    'academicYear': _LoginScreenState._selectedAcademicYear,
                   };
                   if (index != null) {
                     _exams[index] = newData;
@@ -1634,6 +1811,76 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
             )
           ],
         ),
+      ),
+    );
+  }
+
+  void _showAcademicYearDialog() {
+    final yearCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Row(
+          children: [
+            Icon(Icons.history_edu_rounded, color: Color(0xFF6366F1)),
+            SizedBox(width: 12),
+            Text('Manage Sessions', style: TextStyle(fontWeight: FontWeight.w900)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Add a new academic year period (e.g., 2024-2025). All new attendance, activities, and results will be linked to the active session.', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 20),
+            TextField(
+              controller: yearCtrl,
+              decoration: InputDecoration(
+                labelText: 'Session Name',
+                hintText: '2025-2026',
+                prefixIcon: const Icon(Icons.calendar_today),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text('Existing Sessions:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            SizedBox(
+              height: 120,
+              width: double.maxFinite,
+              child: ListView(
+                shrinkWrap: true,
+                children: _LoginScreenState._academicYears.map((y) => ListTile(
+                  dense: true,
+                  title: Text(y, style: const TextStyle(fontWeight: FontWeight.bold)),
+                  trailing: y != _LoginScreenState._selectedAcademicYear ? IconButton(icon: const Icon(Icons.delete_outline, size: 16), onPressed: () {
+                    setState(() { _LoginScreenState._academicYears.remove(y); _LoginScreenState.saveAllData(); });
+                    Navigator.pop(context); _showAcademicYearDialog();
+                  }) : const Icon(Icons.check_circle, color: Colors.green, size: 16),
+                )).toList(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF6366F1), foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            onPressed: () {
+              if (yearCtrl.text.isNotEmpty) {
+                setState(() {
+                  if (!_LoginScreenState._academicYears.contains(yearCtrl.text)) {
+                    _LoginScreenState._academicYears.add(yearCtrl.text);
+                  }
+                  _LoginScreenState._selectedAcademicYear = yearCtrl.text;
+                  _LoginScreenState.saveAllData();
+                });
+                Navigator.pop(context);
+              }
+            },
+            child: const Text('Add & Set Active'),
+          ),
+        ],
       ),
     );
   }
@@ -1718,8 +1965,10 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
               TextButton(
                 onPressed: () {
                   setState(() => _metrics.removeAt(index));
+                  _LoginScreenState.saveAllData();
                   Navigator.pop(context);
                 },
+
                 child: const Text('Delete Card', style: TextStyle(color: Colors.red)),
               ),
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
@@ -1740,9 +1989,11 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
                   } else {
                     _metrics.add(newData);
                   }
+                  _LoginScreenState.saveAllData();
                 });
                 Navigator.pop(context);
               },
+
               child: Text(index != null ? 'Save Changes' : 'Add Card'),
             )
           ],
@@ -1793,7 +2044,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
       appBar: AppBar(
         leading: _currentIndex != -1 ? IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => setState(() => _currentIndex = -1),
+          onPressed: () => setState(() => _currentIndex = 3),
         ) : null,
         backgroundColor: colorScheme.primary,
         centerTitle: true,
@@ -1811,7 +2062,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
               ),
             ),
             Text(
-              '${widget.schoolName.toUpperCase()} MANAGER',
+              '${widget.schoolName.toUpperCase()} ACADEMIC DIRECTOR',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
@@ -1824,6 +2075,11 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
           ],
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.history_edu_rounded),
+            onPressed: () => _showAcademicYearDialog(),
+            tooltip: 'Manage Sessions',
+          ),
           buildNotificationBell(isDark: true),
           IconButton(
             icon: const Icon(Icons.logout),
@@ -1862,7 +2118,6 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
                 scrollDirection: Axis.horizontal,
                 physics: const BouncingScrollPhysics(),
                 children: [
-                   _buildNavItem(Icons.dashboard_rounded, 'Overall', -1, colorScheme),
                    _buildNavItem(Icons.grid_view_rounded, 'Class', 0, colorScheme),
                    _buildNavItem(Icons.badge_rounded, 'Teacher', 1, colorScheme),
                 ],
@@ -1876,7 +2131,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
                 physics: const BouncingScrollPhysics(),
                 children: [
                    _buildNavItem(Icons.calendar_today_rounded, 'Sched', 2, colorScheme),
-                   _buildNavItem(Icons.chat_bubble_rounded, 'Msg', 3, colorScheme),
+                   _buildNavItem(Icons.chat_bubble_rounded, 'Msg', 3, colorScheme, hasBadge: _LoginScreenState.getUnreadMessageCount(widget.username) > 0),
                    _buildNavItem(Icons.tune_rounded, 'Feat', 4, colorScheme),
                 ],
               ),
@@ -1891,8 +2146,9 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
     return NavigationRail(
       selectedIndex: _currentIndex + 1, // mapping -1 to 0
       onDestinationSelected: (int index) {
-        setState(() => _currentIndex = index - 1);
+        _setTab(index - 1);
       },
+
       backgroundColor: Colors.white,
       labelType: NavigationRailLabelType.selected,
       selectedIconTheme: IconThemeData(color: colorScheme.primary),
@@ -1903,11 +2159,19 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
         child: Icon(Icons.auto_awesome_rounded, color: colorScheme.primary, size: 32),
       ),
       destinations: const [
-        NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Overview')),
         NavigationRailDestination(icon: Icon(Icons.grid_view_rounded), label: Text('Classes')),
         NavigationRailDestination(icon: Icon(Icons.badge_rounded), label: Text('Teachers')),
         NavigationRailDestination(icon: Icon(Icons.calendar_today_rounded), label: Text('Schedule')),
-        NavigationRailDestination(icon: Icon(Icons.chat_bubble_rounded), label: Text('Messages')),
+        NavigationRailDestination(
+          icon: Stack(
+            children: [
+              const Icon(Icons.chat_bubble_rounded),
+              if (_LoginScreenState.getUnreadMessageCount(widget.username) > 0)
+                Positioned(right: 0, top: 0, child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle))),
+            ],
+          ),
+          label: Text('Messages'),
+        ),
         NavigationRailDestination(icon: Icon(Icons.tune_rounded), label: Text('Features')),
       ],
       trailing: Expanded(
@@ -1944,7 +2208,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
               children: [
                 const Text('ANTIGRAVITY', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, letterSpacing: 4, color: Color(0xFF1E293B))),
                 const SizedBox(height: 8),
-                Text('SCHOOL MANAGER', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colorScheme.primary, letterSpacing: 2)),
+                Text('ACADEMIC DIRECTOR', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colorScheme.primary, letterSpacing: 2)),
               ],
             ),
           ),
@@ -1952,11 +2216,10 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
-                _buildDesktopNavItem(Icons.dashboard_rounded, 'Overview', -1, colorScheme),
-                _buildDesktopNavItem(Icons.class_, 'Classes', 0, colorScheme),
+                _buildDesktopNavItem(Icons.category_rounded, 'Departments', 0, colorScheme),
                 _buildDesktopNavItem(Icons.person_rounded, 'Teachers', 1, colorScheme),
                 _buildDesktopNavItem(Icons.calendar_month, 'Schedule', 2, colorScheme),
-                _buildDesktopNavItem(Icons.message_rounded, 'Messages', 3, colorScheme),
+                _buildDesktopNavItem(Icons.message_rounded, 'Messages', 3, colorScheme, hasBadge: _LoginScreenState.getUnreadMessageCount(widget.username) > 0),
                 _buildDesktopNavItem(Icons.settings_suggest_rounded, 'Feature Config', 4, colorScheme),
               ],
             ),
@@ -1988,12 +2251,13 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
     );
   }
 
-  Widget _buildDesktopNavItem(IconData icon, String label, int index, ColorScheme colorScheme) {
+  Widget _buildDesktopNavItem(IconData icon, String label, int index, ColorScheme colorScheme, {bool hasBadge = false}) {
     final isSelected = _currentIndex == index;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        onTap: () => setState(() => _currentIndex = index),
+        onTap: () => _setTab(index),
+
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -2004,7 +2268,16 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
           ),
           child: Row(
             children: [
-              Icon(icon, color: isSelected ? colorScheme.primary : const Color(0xFF64748B), size: 20),
+              Stack(
+                children: [
+                  Icon(icon, color: isSelected ? colorScheme.primary : const Color(0xFF64748B), size: 20),
+                  if (hasBadge)
+                    Positioned(
+                      right: 0, top: 0,
+                      child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                    ),
+                ],
+              ),
               const SizedBox(width: 16),
               Text(
                 label,
@@ -2030,11 +2303,34 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
           const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('System Control', style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
-              Text('Manager Dashboard', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+              Text('Director Control', style: TextStyle(color: Color(0xFF64748B), fontSize: 12, fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+              Text('Academic Director', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
             ],
           ),
           const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(12), border: Border.all(color: const Color(0xFFE2E8F0))),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.history_edu, size: 14, color: Colors.indigo),
+                const SizedBox(width: 8),
+                DropdownButton<String>(
+                  value: _LoginScreenState._selectedAcademicYear,
+                  underline: const SizedBox(),
+                  icon: const Icon(Icons.keyboard_arrow_down, size: 14),
+                  items: _LoginScreenState._academicYears.map((y) => DropdownMenuItem(value: y, child: Text(y, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12, color: Color(0xFF1E293B))))).toList(),
+                  onChanged: (v) {
+                    if (v != null) setState(() { _LoginScreenState._selectedAcademicYear = v; _LoginScreenState.saveAllData(); });
+                  },
+                ),
+                const SizedBox(width: 4),
+                IconButton(icon: const Icon(Icons.add_circle_outline, size: 14, color: Colors.indigo), onPressed: () => _showAcademicYearDialog(), padding: EdgeInsets.zero, constraints: const BoxConstraints()),
+              ],
+            ),
+          ),
+          const SizedBox(width: 16),
           buildNotificationBell(),
           const SizedBox(width: 8),
 
@@ -2068,20 +2364,27 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index, ColorScheme colorScheme, {bool isEnabled = true}) {
+  void _setTab(int index) {
+    setState(() {
+      _currentIndex = index;
+      _LoginScreenState.saveInt('school_dashboard_index', index);
+      _selectedClassInTab = null; 
+      if (index == 3) {
+        _LoginScreenState.markMessagesAsRead(widget.username);
+      }
+    });
+  }
+
+  Widget _buildNavItem(IconData icon, String label, int index, ColorScheme colorScheme, {bool isEnabled = true, bool hasBadge = false}) {
     final isSelected = _currentIndex == index;
     final color = isSelected ? colorScheme.primary : (isEnabled ? Colors.grey : Colors.grey.withOpacity(0.2));
     
     return InkWell(
       onTap: isEnabled ? () {
-        setState(() {
-          if (_currentIndex == index) {
-            _currentIndex = -1;
-          } else {
-            _currentIndex = index;
-            _selectedClassInTab = null; 
-          }
-        });
+        _setTab(index);
+        if (label == 'Messages' || label == 'Announce') {
+           _LoginScreenState.markMessagesAsRead(widget.username);
+        }
       } : null,
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 300),
@@ -2097,7 +2400,16 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 24),
+              Stack(
+                children: [
+                  Icon(icon, color: color, size: 24),
+                  if (hasBadge)
+                    Positioned(
+                      right: 0, top: 0,
+                      child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                    ),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(label, style: TextStyle(color: color, fontSize: 11, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
             ],
@@ -2107,6 +2419,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
     );
   }
 
+
   Widget _buildBody(ColorScheme colorScheme) {
     switch (_currentIndex) {
       case 0: return _buildStudentsTab(colorScheme);
@@ -2115,73 +2428,118 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
       case 3: return _buildMessagesTab(colorScheme);
       case 4: return _buildFeatureTab(colorScheme);
       case 7: return _buildAttendanceOverview(colorScheme);
-      case -1:
-      default: return _buildOverview(colorScheme);
+      default: return _buildMessagesTab(colorScheme);
     }
   }
 
   Widget _buildAttendanceOverview(ColorScheme colorScheme) {
     return Column(
       children: [
-        const Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Text('Global Attendance', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Global Attendance', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+              _buildMonthYearPicker(),
+            ],
+          ),
         ),
+
         Expanded(
-          child: ListView.builder(
+          child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 24),
-            itemCount: _LoginScreenState._allClasses.length,
-            itemBuilder: (context, index) {
-              final className = _LoginScreenState._allClasses[index];
-              final classStudents = _LoginScreenState._allStudents.where((s) => s['std'] == className).toList();
-              
-              int totalP = 0, totalA = 0;
-              for (var s in classStudents) {
-                final records = _LoginScreenState._allAttendance.where((a) => a['studentUsername'] == s['username']);
-                for (var r in records) {
-                    final pMap = Map<String, String>.from((r['periods'] as Map?) ?? {});
-                    if (pMap['FN'] == 'P') totalP++; else if (pMap['FN'] == 'A') totalA++;
-                    if (pMap['AN'] == 'P') totalP++; else if (pMap['AN'] == 'A') totalA++;
-                }
-              }
-              final double avg = (totalP + totalA) == 0 ? 0 : (totalP / (totalP + totalA)) * 100;
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 16),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFE2E8F0))),
-                child: ExpansionTile(
-                  leading: CircleAvatar(backgroundColor: colorScheme.primary.withOpacity(0.1), child: Text(className, style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))),
-                  title: Text('Class $className', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
-                  subtitle: Text('${classStudents.length} Students • ${avg.toStringAsFixed(1)}% Avg. Attendance', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                  children: classStudents.map((s) {
-                    final sRecords = _LoginScreenState._allAttendance.where((a) => a['studentUsername'] == s['username']);
-                    int sp = 0, sa = 0;
-                    for (var r in sRecords) {
-                       final pMap = Map<String, String>.from((r['periods'] as Map?) ?? {});
-                       if (pMap['FN'] == 'P') sp++; else if (pMap['FN'] == 'A') sa++;
-                       if (pMap['AN'] == 'P') sp++; else if (pMap['AN'] == 'A') sa++;
-                    }
-                    final double sAvg = (sp + sa) == 0 ? 0 : (sp / (sp + sa)) * 100;
-
-                    return ListTile(
-                      title: Text(s['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w700)),
-                      subtitle: Row(
-                        children: [
-                          Expanded(child: LinearProgressIndicator(value: sAvg / 100, backgroundColor: Colors.grey.shade100, color: sAvg > 75 ? Colors.teal : (sAvg > 50 ? Colors.orange : Colors.red), minHeight: 6, borderRadius: BorderRadius.circular(3))),
-                          const SizedBox(width: 12),
-                          Text('${sAvg.toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 12)),
-                        ],
-                      ),
-                    );
-                  }).toList(),
-                ),
-              );
-            },
+            children: [
+              _buildDeptAttendanceSection('DA\'WA', colorScheme),
+              const SizedBox(height: 32),
+              _buildDeptAttendanceSection('HIFZ', colorScheme),
+            ],
           ),
         ),
       ],
     );
   }
+
+  Widget _buildDeptAttendanceSection(String dept, ColorScheme colorScheme) {
+    final deptClasses = _classes.where((c) => _LoginScreenState._classDepts[c] == dept).toList();
+    if (deptClasses.isEmpty) return const SizedBox();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(color: dept == 'DA\'WA' ? Colors.green.shade50 : Colors.orange.shade50, borderRadius: BorderRadius.circular(10)),
+          child: Text(dept, style: TextStyle(color: dept == 'DA\'WA' ? Colors.green.shade700 : Colors.orange.shade700, fontWeight: FontWeight.w900, letterSpacing: 1.5)),
+        ),
+        const SizedBox(height: 16),
+        ...deptClasses.map((className) {
+          final classStudents = _LoginScreenState._allStudents.where((s) => s['std'] == className).toList();
+          int totalP = 0, totalT = 0;
+          for (var s in classStudents) {
+            final stats = _LoginScreenState.getAttendanceStats(s['username']!, _attMonth == 0 ? null : _attMonth, _attYear);
+            totalP += stats['present']!;
+            totalT += stats['total']!;
+          }
+          final double avg = totalT == 0 ? 0 : (totalP / totalT) * 100;
+
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(24), border: Border.all(color: const Color(0xFFE2E8F0))),
+            child: ExpansionTile(
+              leading: CircleAvatar(backgroundColor: colorScheme.primary.withOpacity(0.1), child: Text(className, style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))),
+              title: Text('Class $className', style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 18)),
+              subtitle: Text('${classStudents.length} Students • ${avg.toStringAsFixed(1)}% Avg. Attendance', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+              children: classStudents.map((s) {
+                final sStats = _LoginScreenState.getAttendanceStats(s['username']!, _attMonth == 0 ? null : _attMonth, _attYear);
+                return ListTile(
+                  title: Text(s['name'] ?? 'Unknown', style: const TextStyle(fontWeight: FontWeight.w700)),
+                  trailing: Text('${sStats['present']}/${sStats['total']}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  subtitle: Text('Class: $className', style: const TextStyle(fontSize: 10)),
+                );
+              }).toList(),
+            ),
+          );
+        }).toList(),
+      ],
+    );
+  }
+
+  Widget _buildMonthYearPicker() {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade200), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)]),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.calendar_month, size: 16, color: Colors.grey),
+          const SizedBox(width: 8),
+          DropdownButton<int>(
+            value: _attMonth == 0 ? DateTime.now().month : _attMonth,
+            underline: const SizedBox(),
+            items: List.generate(12, (i) => DropdownMenuItem(value: i + 1, child: Text(_getMonthName(i + 1), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)))),
+            onChanged: (v) => setState(() => _attMonth = v ?? DateTime.now().month),
+          ),
+
+          const VerticalDivider(width: 20, indent: 12, endIndent: 12),
+          DropdownButton<int>(
+            value: _attYear,
+            underline: const SizedBox(),
+            items: List.generate(5, (i) => DropdownMenuItem(value: 2024 + i, child: Text('${2024 + i}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)))),
+            onChanged: (v) => setState(() => _attYear = v ?? 2024),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getMonthName(int m) {
+    if (m == 0) return 'All';
+    return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
+  }
+
+
 
   void _showAddBulletinDialog({int? index}) {
     final b = index != null ? _LoginScreenState._allBulletinCards[index] : null;
@@ -2273,54 +2631,33 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
             }).toList(),
           ),
         ),
+        Container(
+          padding: const EdgeInsets.all(20),
+          margin: const EdgeInsets.all(16),
+          decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.05), borderRadius: BorderRadius.circular(24), border: Border.all(color: colorScheme.primary.withOpacity(0.1))),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Current Academic Session', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                    Text(_LoginScreenState._selectedAcademicYear, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: colorScheme.primary)),
+                  ],
+                ),
+              ),
+              ElevatedButton(
+                onPressed: () => _showAcademicYearDialog(),
+                style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+                child: const Text('Manage Sessions'),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildOverview(ColorScheme colorScheme) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Overview',
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
-          ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 5 : (MediaQuery.of(context).size.width > 800 ? 4 : 2),
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 1.5,
-            ),
-            itemCount: _metrics.length,
-            itemBuilder: (context, index) {
-              final m = _metrics[index];
-              return FadeInEntrance(
-                delay: index * 0.1,
-                child: _buildMetricCard(m['title'], m['value'], m['icon'], m['color'], m['targetIndex'], index),
-              );
-            },
-          ),
-          const SizedBox(height: 32),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Notice Board', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
-              TextButton.icon(onPressed: () => _showAddBulletinDialog(), icon: const Icon(Icons.add), label: const Text('Add Card')),
-            ],
-          ),
-          const SizedBox(height: 12),
-          _buildBulletinSection(colorScheme, true),
-
-        ],
-      ),
-    );
-  }
 
   Widget _buildBulletinSection(ColorScheme colorScheme, bool isManager) {
     if (_LoginScreenState._allBulletinCards.isEmpty) {
@@ -2332,7 +2669,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
           children: [
             Icon(Icons.dashboard_customize_outlined, size: 48, color: Colors.grey.withOpacity(0.3)),
             const SizedBox(height: 12),
-            const Text('No bulletin cards added by manager', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
+            const Text('No bulletin cards added by director', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w600)),
           ],
         ),
       );
@@ -2348,13 +2685,50 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
     );
   }
 
+  int _getWingCount(String dept) {
+    int count = 0;
+    for (var s in _LoginScreenState._allStudents) {
+      if (_LoginScreenState._classDepts[s['std']] == dept) {
+        count++;
+      }
+    }
+    return count;
+  }
+
+  Widget _buildWingCard(String title, int count, MaterialColor color) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: color.shade50,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: color.shade100),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: color.shade100, borderRadius: BorderRadius.circular(12)),
+              child: Icon(title == 'DA\'WA' ? Icons.menu_book : Icons.mosque, color: color.shade700, size: 24),
+            ),
+            const SizedBox(height: 16),
+            Text('$count Students', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color.shade900)),
+            Text('$title Wing', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: color.shade700, letterSpacing: 1.2)),
+          ],
+        ),
+      ),
+    );
+  }
+
 
 
   Widget _buildMetricCard(String title, String value, IconData icon, MaterialColor color, int targetIndex, int metricIndex) {
     return GestureDetector(
       onTap: () {
-        if (targetIndex != -1) setState(() => _currentIndex = targetIndex);
+        if (targetIndex != -1) _setTab(targetIndex);
       },
+
       onLongPress: () => _showEditMetricDialog(index: metricIndex),
       child: Container(
         decoration: BoxDecoration(
@@ -2399,92 +2773,22 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
 
   Widget _buildStudentsTab(ColorScheme colorScheme) {
     if (_selectedClassInTab == null) {
-      // Show Classes List
+      // Show Departments List
       return Column(
         children: [
           const Padding(
             padding: EdgeInsets.all(16.0),
-            child: Text('Classes', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            child: Text('Departments', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
           ),
           Expanded(
-            child: ListView.builder(
-              itemCount: _classes.length,
-              itemBuilder: (context, index) {
-                final c = _classes[index];
-                final count = _students.where((s) => s['std'] == c).length;
-                    return FadeInEntrance(
-                      delay: index * 0.05,
-                      child: Card(
-                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                        child: ListTile(
-                          leading: const CircleAvatar(child: Icon(Icons.class_)),
-                          title: Text(c, style: const TextStyle(fontWeight: FontWeight.bold)),
-                          subtitle: Text('$count Students'),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red, size: 20),
-                                onPressed: () => showDialog(
-                                  context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Delete Class'),
-                                    content: Text('Are you sure you want to delete Class $c? Students in this class will not be deleted but will no longer be grouped under this class.'),
-                                    actions: [
-                                      TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                                      TextButton(onPressed: () {
-                                        setState(() {
-                                          _LoginScreenState._allClasses.remove(c);
-                                          _LoginScreenState.saveAllData();
-                                        });
-                                        Navigator.pop(context);
-                                      }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                              const Icon(Icons.chevron_right),
-                            ],
-                          ),
-                          onTap: () => setState(() => _selectedClassInTab = c),
-                        ),
-                      ),
-                    );
-              },
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                   final classCtrl = TextEditingController();
-                   showDialog(
-                     context: context,
-                     builder: (context) => AlertDialog(
-                       title: const Text('Add Class'),
-                       content: TextField(controller: classCtrl, decoration: const InputDecoration(labelText: 'Class Name (e.g. Class 9)')),
-                       actions: [
-                         TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                         TextButton(onPressed: () {
-                           if (classCtrl.text.isNotEmpty) {
-                             setState(() {
-                               _LoginScreenState._allClasses.add(classCtrl.text);
-                               _LoginScreenState.saveAllData();
-                             });
-                           }
-                           Navigator.pop(context);
-                         }, child: const Text('Add')),
-                       ],
-                     ),
-                   );
-                },
-                icon: const Icon(Icons.add),
-                label: const Text('Add Class', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                style: ElevatedButton.styleFrom(backgroundColor: colorScheme.primary, foregroundColor: Colors.white),
-              ),
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              children: [
+                _buildDepartmentGroup('DA\'WA', colorScheme),
+                const SizedBox(height: 32),
+                _buildDepartmentGroup('HIFZ', colorScheme),
+                const SizedBox(height: 100), // padding for FAB
+              ],
             ),
           ),
         ],
@@ -2501,9 +2805,12 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
               children: [
                 IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => setState(() => _selectedClassInTab = null)),
                 Text('$_selectedClassInTab - Students', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                _buildMonthYearPicker(),
               ],
             ),
           ),
+
           Expanded(
             child: filteredStudents.isEmpty
               ? Center(child: Column(
@@ -2533,7 +2840,37 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
                           children: [
                             Text('Parent: ${s['parents']} | Place: ${s['place']}'),
                             Text('Phone: ${s['phone']} | Blood: ${s['blood'] ??'N/A'}'),
+                            const SizedBox(height: 8),
+                            Builder(
+                              builder: (context) {
+                                final stats = _LoginScreenState.getAttendanceStats(s['username']!, _attMonth == 0 ? null : _attMonth, _attYear);
+
+                                final double avg = stats['total'] == 0 ? 0 : (stats['present']! / stats['total']!) * 100;
+                                return Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: avg/100, minHeight: 6, backgroundColor: Colors.grey.shade100, color: avg > 75 ? Colors.teal : (avg > 50 ? Colors.orange : Colors.red)))),
+                                        const SizedBox(width: 10),
+                                        Text('${avg.toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('Attendance: ${stats['present']}/${stats['total']}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+                                        Text(_getMonthName(_attMonth), style: TextStyle(fontSize: 11, color: colorScheme.primary, fontWeight: FontWeight.w900)),
+
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              }
+                            ),
+                            const SizedBox(height: 8),
                             Text('User: ${s['username']} | Pass: ${s['password']}', style: const TextStyle(fontSize: 10, color: Colors.teal)),
+
                           ],
                         ),
                         isThreeLine: true,
@@ -2565,6 +2902,167 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
         ],
       );
     }
+  }
+
+  Widget _buildDepartmentGroup(String dept, ColorScheme colorScheme) {
+    final deptClasses = _classes.where((c) => _LoginScreenState._classDepts[c] == dept).toList();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: dept == 'DA\'WA' ? Colors.green.shade50 : Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                dept,
+                style: TextStyle(
+                  color: dept == 'DA\'WA' ? Colors.green.shade700 : Colors.orange.shade700,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 2,
+                ),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => _showAddClassToDeptDialog(dept),
+              icon: const Icon(Icons.add_circle, size: 20),
+              label: const Text('Add Class', style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        if (deptClasses.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.grey.shade200, style: BorderStyle.solid)),
+            child: Center(child: Text('No classes added to $dept yet', style: TextStyle(color: Colors.grey.shade400, fontWeight: FontWeight.bold))),
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.of(context).size.width > 1200 ? 3 : (MediaQuery.of(context).size.width > 800 ? 2 : 1),
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              childAspectRatio: 3,
+            ),
+            itemCount: deptClasses.length,
+            itemBuilder: (context, index) {
+              final c = deptClasses[index];
+              final count = _students.where((s) => s['std'] == c).length;
+              return MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedClassInTab = c),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.02), blurRadius: 10)],
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                          child: Icon(Icons.book_rounded, color: colorScheme.primary, size: 20),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(c, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF1E293B))),
+                              Text('$count Students', style: const TextStyle(color: Color(0xFF64748B), fontWeight: FontWeight.w600, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete_outline_rounded, color: Colors.grey, size: 20),
+                          onPressed: () => _showDeleteClassConfirm(c),
+                        ),
+                        const Icon(Icons.arrow_forward_ios_rounded, color: Color(0xFFCBD5E1), size: 14),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  void _showAddClassToDeptDialog(String dept) {
+    final classCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Text('Add Class to $dept'),
+        content: TextField(
+          controller: classCtrl,
+          decoration: InputDecoration(
+            labelText: 'Class Name',
+            hintText: 'e.g. Class 06',
+            filled: true,
+            fillColor: Colors.grey.shade50,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (classCtrl.text.isNotEmpty) {
+                setState(() {
+                  _LoginScreenState._allClasses.add(classCtrl.text);
+                  _LoginScreenState._classDepts[classCtrl.text] = dept;
+                  _LoginScreenState.saveAllData();
+                });
+              }
+              Navigator.pop(context);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.primary, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
+            child: const Text('Create Class'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteClassConfirm(String className) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text('Delete Class?'),
+        content: Text('Are you sure you want to remove Class $className? Student records will be preserved but they will lose their class assignment.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Keep it')),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                _LoginScreenState._allClasses.remove(className);
+                _LoginScreenState.saveAllData();
+              });
+              Navigator.pop(context);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTeachersTab(ColorScheme colorScheme) {
@@ -2745,6 +3243,11 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
                   'Messages',
                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
                 ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.campaign_rounded, color: Colors.white),
+                onPressed: _showAddMessageDialog,
+                tooltip: 'Send Broadcast Message',
               ),
             ],
           ),
@@ -2930,12 +3433,29 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
   @override
   void initState() {
     super.initState();
+    initNoticeCount();
+    _currentIndex = _LoginScreenState.loadInt('student_dashboard_index', 0);
     // Auto-refresh every 3 seconds to ensure real-time sync with teacher board
     _refreshTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted) setState(() {});
+      if (mounted) {
+        _updateNoticeCount();
+        _LoginScreenState.checkForNewAndNotify(widget.studentUsername);
+        setState(() {});
+      }
     });
     _loadAllDataIfNecessary();
   }
+
+  void _setTab(int index) {
+    setState(() {
+      _currentIndex = index;
+      _LoginScreenState.saveInt('student_dashboard_index', index);
+      if (index == 5 || index == 6) { // Messages or Groups
+         _LoginScreenState.markMessagesAsRead(widget.studentUsername);
+      }
+    });
+  }
+
 
   @override
   void dispose() {
@@ -3065,7 +3585,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
             _buildNavItem(Icons.calendar_month_rounded, 'Sched', 3, colorScheme, isEnabled: _LoginScreenState._featureConfig['Schedule'] ?? true),
             _buildNavItem(Icons.analytics_rounded, 'Res', 4, colorScheme, isEnabled: _LoginScreenState._featureConfig['Results'] ?? true),
             _buildNavItem(Icons.fingerprint_rounded, 'Attnd', 7, colorScheme, isEnabled: _LoginScreenState._featureConfig['Attendance'] ?? true),
-            _buildNavItem(Icons.chat_bubble_rounded, 'Msg', 5, colorScheme, isEnabled: _LoginScreenState._featureConfig['Messages'] ?? true),
+            _buildNavItem(Icons.chat_bubble_rounded, 'Msg', 5, colorScheme, isEnabled: _LoginScreenState._featureConfig['Messages'] ?? true, hasBadge: _LoginScreenState.getUnreadMessageCount(widget.studentUsername) > 0),
             _buildNavItem(Icons.campaign_rounded, 'Announce', 6, colorScheme, isEnabled: _LoginScreenState._featureConfig['Groups'] ?? true),
           ],
         ),
@@ -3100,7 +3620,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                 _buildDesktopNavItem(Icons.calendar_month_rounded, 'Schedule', 3, colorScheme),
                 _buildDesktopNavItem(Icons.analytics_rounded, 'Results', 4, colorScheme),
                 _buildDesktopNavItem(Icons.fingerprint_rounded, 'Attendance', 7, colorScheme),
-                _buildDesktopNavItem(Icons.chat_bubble_rounded, 'Messages', 5, colorScheme),
+                _buildDesktopNavItem(Icons.chat_bubble_rounded, 'Messages', 5, colorScheme, hasBadge: _LoginScreenState.getUnreadMessageCount(widget.studentUsername) > 0),
                 _buildDesktopNavItem(Icons.campaign_rounded, 'Announce', 6, colorScheme),
               ],
             ),
@@ -3124,7 +3644,8 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
 
     return NavigationRail(
       selectedIndex: _currentIndex,
-      onDestinationSelected: (int index) => setState(() => _currentIndex = index),
+      onDestinationSelected: (int index) => _setTab(index),
+
       backgroundColor: Colors.white,
       labelType: NavigationRailLabelType.selected,
       selectedIconTheme: IconThemeData(color: colorScheme.primary),
@@ -3135,7 +3656,16 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         if (isEnabled('Schedule')) const NavigationRailDestination(icon: Icon(Icons.calendar_month_rounded), label: Text('Schedule')),
         if (isEnabled('Results')) const NavigationRailDestination(icon: Icon(Icons.analytics_rounded), label: Text('Results')),
         if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.fingerprint_rounded), label: Text('Attendance Report')),
-        if (isEnabled('Messages')) const NavigationRailDestination(icon: Icon(Icons.chat_bubble_rounded), label: Text('Messages')),
+        if (isEnabled('Messages')) NavigationRailDestination(
+          icon: Stack(
+            children: [
+              const Icon(Icons.chat_bubble_rounded),
+              if (_LoginScreenState.getUnreadMessageCount(widget.studentUsername) > 0)
+                Positioned(right: 0, top: 0, child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle))),
+            ],
+          ),
+          label: const Text('Messages'),
+        ),
         if (isEnabled('Groups')) const NavigationRailDestination(icon: Icon(Icons.campaign_rounded), label: Text('Announce')),
       ],
       trailing: Expanded(
@@ -3153,7 +3683,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
     );
   }
 
-  Widget _buildDesktopNavItem(IconData icon, String label, int index, ColorScheme colorScheme) {
+  Widget _buildDesktopNavItem(IconData icon, String label, int index, ColorScheme colorScheme, {bool hasBadge = false}) {
     final isSelected = _currentIndex == index;
     final isEnabled = _LoginScreenState._featureConfig[label == 'Home' ? 'Activities' : (label == 'Attendance' ? 'Attendance' : (label == 'Announce' ? 'Groups' : label))] ?? true;
     if (label == 'Home') { /* Always enabled */ } 
@@ -3162,7 +3692,8 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        onTap: () => setState(() => _currentIndex = index),
+        onTap: () => _setTab(index),
+
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -3173,7 +3704,16 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
           ),
           child: Row(
             children: [
-              Icon(icon, color: isSelected ? colorScheme.primary : const Color(0xFF64748B), size: 20),
+              Stack(
+                children: [
+                  Icon(icon, color: isSelected ? colorScheme.primary : const Color(0xFF64748B), size: 20),
+                  if (hasBadge)
+                    Positioned(
+                      right: 0, top: 0,
+                      child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                    ),
+                ],
+              ),
               const SizedBox(width: 16),
               Text(
                 label,
@@ -3210,11 +3750,12 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index, ColorScheme colorScheme, {bool isEnabled = true}) {
+  Widget _buildNavItem(IconData icon, String label, int index, ColorScheme colorScheme, {bool isEnabled = true, bool hasBadge = false}) {
     final isSelected = _currentIndex == index;
     final color = isSelected ? colorScheme.primary : (isEnabled ? Colors.grey : Colors.grey.withOpacity(0.2));
     return InkWell(
-      onTap: isEnabled ? () => setState(() => _currentIndex = index) : null,
+      onTap: isEnabled ? () { _setTab(index); if (label == 'Msg' || label == 'Announce') _LoginScreenState.markMessagesAsRead(widget.studentUsername); } : null,
+
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 300),
         opacity: isEnabled ? 1.0 : 0.3,
@@ -3229,7 +3770,16 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 22),
+              Stack(
+                children: [
+                  Icon(icon, color: color, size: 22),
+                  if (hasBadge)
+                    Positioned(
+                      right: 0, top: 0,
+                      child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                    ),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
             ],
@@ -4535,23 +5085,53 @@ class TeacherBoardScreen extends StatefulWidget {
 class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCenterMixin {
   int _currentIndex = -1; // -1: Overview, 0: Students, 1: Activities, 2: Fair, 3: Exam, 4: Result, 5: Message, 6: Group
   String? _teacherSelectedClass;
+  int _attMonth = DateTime.now().month;
+
+  int _attYear = DateTime.now().year;
+
 
   @override
   void initState() {
     super.initState();
     initNoticeCount();
-    _teacherSelectedClass = widget.assignedClass;
+    _currentIndex = _LoginScreenState.loadInt('teacher_dashboard_index', -1);
+    _teacherSelectedClass = _LoginScreenState.loadString('teacher_selected_class_${widget.teacherUsername}') ?? widget.assignedClass;
+
 
     
 
     // Auto-refresh every 3 seconds to ensure real-time sync
     _refreshTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-       if (mounted) setState(() {});
+       if (mounted) {
+         _updateNoticeCount();
+         _LoginScreenState.checkForNewAndNotify(widget.teacherUsername);
+         setState(() {});
+       }
     });
     
     // Load data for assigned class
     _loadDataForAssignedClass();
   }
+
+  void _setTab(int index) {
+    setState(() {
+      _currentIndex = index;
+      _LoginScreenState.saveInt('teacher_dashboard_index', index);
+      if (index == 5 || index == 6) { // Messages or Groups
+         _LoginScreenState.markMessagesAsRead(widget.teacherUsername);
+      }
+    });
+  }
+
+  void _setSelectedClass(String? className) {
+    setState(() {
+      _teacherSelectedClass = className;
+      if (className != null) {
+        _LoginScreenState.saveString('teacher_selected_class_${widget.teacherUsername}', className);
+      }
+    });
+  }
+
 
   @override
   void dispose() {
@@ -4562,13 +5142,13 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   // Use global static lists for persistence
   List<String> get _classes => _LoginScreenState._allClasses;
   List<Map<String, String>> get _allStudents => _LoginScreenState._allStudents;
-  List<Map<String, dynamic>> get _activities => _LoginScreenState._allActivities.where((a) => a['std'] == (_teacherSelectedClass ?? widget.assignedClass)).toList();
-  List<Map<String, dynamic>> get _exams => _LoginScreenState._allExams.where((e) => e['class'] == (_teacherSelectedClass ?? widget.assignedClass)).toList();
+  List<Map<String, dynamic>> get _activities => _LoginScreenState._allActivities.where((a) => a['std'] == (_teacherSelectedClass ?? widget.assignedClass) && (a['academicYear'] == _LoginScreenState._selectedAcademicYear || a['academicYear'] == null)).toList();
+  List<Map<String, dynamic>> get _exams => _LoginScreenState._allExams.where((e) => e['class'] == (_teacherSelectedClass ?? widget.assignedClass) && (e['academicYear'] == _LoginScreenState._selectedAcademicYear || e['academicYear'] == null)).toList();
   List<Map<String, dynamic>> get _results => _LoginScreenState._allResults.where((r) => 
-    _students.any((s) => s['name'] == r['studentName'])
+    _students.any((s) => s['name'] == r['studentName']) && (r['academicYear'] == _LoginScreenState._selectedAcademicYear || r['academicYear'] == null)
   ).toList();
   List<Map<String, dynamic>> get _messages => _LoginScreenState._allMessages;
-  List<Map<String, dynamic>> get _fairList => _LoginScreenState._allFairItems.where((f) => f['class'] == (_teacherSelectedClass ?? widget.assignedClass) || f['class'] == null).toList();
+  List<Map<String, dynamic>> get _fairList => _LoginScreenState._allFairItems.where((f) => (f['class'] == (_teacherSelectedClass ?? widget.assignedClass) || f['class'] == null) && (f['academicYear'] == _LoginScreenState._selectedAcademicYear || f['academicYear'] == null)).toList();
   List<Map<String, dynamic>> get _groups => _LoginScreenState._allGroups;
   List<Map<String, dynamic>> get _groupMembers => _LoginScreenState._allGroupMembers;
   List<Map<String, String>> get _teachers => _LoginScreenState._allTeachers;
@@ -4755,8 +5335,16 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
         if (isEnabled('Schedule')) const NavigationRailDestination(icon: Icon(Icons.calendar_month), label: Text('Schedule')),
         if (isEnabled('Results')) const NavigationRailDestination(icon: Icon(Icons.analytics), label: Text('Results')),
         if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.how_to_reg), label: Text('Attendance')),
-        const NavigationRailDestination(icon: Icon(Icons.auto_graph_rounded), label: Text('Reports')),
-        if (isEnabled('Messages')) const NavigationRailDestination(icon: Icon(Icons.message), label: Text('Messages')),
+        if (isEnabled('Messages')) NavigationRailDestination(
+          icon: Stack(
+            children: [
+              const Icon(Icons.message),
+              if (_LoginScreenState.getUnreadMessageCount(widget.teacherUsername) > 0)
+                Positioned(right: 0, top: 0, child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle))),
+            ],
+          ),
+          label: const Text('Messages'),
+        ),
         if (isEnabled('Groups')) const NavigationRailDestination(icon: Icon(Icons.campaign), label: Text('Announce')),
       ],
       trailing: Expanded(
@@ -4807,9 +5395,8 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                 _buildDesktopNavItem(Icons.local_activity, 'F.transactions', 2, colorScheme),
                 _buildDesktopNavItem(Icons.calendar_month, 'Schedule', 3, colorScheme),
                 _buildDesktopNavItem(Icons.analytics, 'Results', 4, colorScheme),
-                _buildDesktopNavItem(Icons.auto_graph_rounded, 'Reports', 8, colorScheme),
                 _buildDesktopNavItem(Icons.how_to_reg, 'Attendance', 7, colorScheme),
-                _buildDesktopNavItem(Icons.message, 'Messages', 5, colorScheme),
+                _buildDesktopNavItem(Icons.message, 'Messages', 5, colorScheme, hasBadge: _LoginScreenState.getUnreadMessageCount(widget.teacherUsername) > 0),
                 _buildDesktopNavItem(Icons.campaign, 'Announce', 6, colorScheme),
               ],
             ),
@@ -4841,14 +5428,15 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     );
   }
 
-  Widget _buildDesktopNavItem(IconData icon, String label, int index, ColorScheme colorScheme) {
+  Widget _buildDesktopNavItem(IconData icon, String label, int index, ColorScheme colorScheme, {bool hasBadge = false}) {
     final isSelected = _currentIndex == index;
     final isEnabled = _LoginScreenState._featureConfig[label == 'Overview' ? 'Students' : (label == 'F.transactions' ? 'F.transactions' : (label == 'Attendance' ? 'Attendance' : (label == 'Announce' ? 'Groups' : label)))] ?? true;
     
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: InkWell(
-        onTap: isEnabled ? () => setState(() => _currentIndex = index) : null,
+        onTap: isEnabled ? () => _setTab(index) : null,
+
         borderRadius: BorderRadius.circular(12),
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -4859,7 +5447,16 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
           ),
           child: Row(
             children: [
-              Icon(icon, color: isSelected ? colorScheme.primary : (isEnabled ? const Color(0xFF64748B) : Colors.grey.withOpacity(0.2)), size: 20),
+              Stack(
+                children: [
+                  Icon(icon, color: isSelected ? colorScheme.primary : (isEnabled ? const Color(0xFF64748B) : Colors.grey.withOpacity(0.2)), size: 20),
+                  if (hasBadge)
+                    Positioned(
+                      right: 0, top: 0,
+                      child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                    ),
+                ],
+              ),
               const SizedBox(width: 16),
               Text(
                 label,
@@ -4884,7 +5481,8 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
         children: [
           const Text('Dashboard', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
           const Spacer(),
-          Text('Assigned Class: ${widget.assignedClass}', style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+          Text('Current View: ${_teacherSelectedClass ?? widget.assignedClass}', style: TextStyle(fontWeight: FontWeight.bold, color: colorScheme.primary)),
+
           const SizedBox(width: 24),
           IconButton(icon: const Icon(Icons.notifications_none_rounded, color: Color(0xFF64748B)), onPressed: () {}),
           const SizedBox(width: 12),
@@ -4902,7 +5500,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
       _buildNavItem(Icons.calendar_month, 'Schedule', 3, colorScheme, isEnabled: _LoginScreenState._featureConfig['Schedule'] ?? true),
       _buildNavItem(Icons.analytics, 'Result', 4, colorScheme, isEnabled: _LoginScreenState._featureConfig['Results'] ?? true),
       _buildNavItem(Icons.how_to_reg, 'Attnd', 7, colorScheme, isEnabled: _LoginScreenState._featureConfig['Attendance'] ?? true),
-      _buildNavItem(Icons.message, 'Msg', 5, colorScheme, isEnabled: _LoginScreenState._featureConfig['Messages'] ?? true),
+      _buildNavItem(Icons.message, 'Msg', 5, colorScheme, isEnabled: _LoginScreenState._featureConfig['Messages'] ?? true, hasBadge: _LoginScreenState.getUnreadMessageCount(widget.teacherUsername) > 0),
       _buildNavItem(Icons.campaign, 'Announce', 6, colorScheme, isEnabled: _LoginScreenState._featureConfig['Groups'] ?? true),
     ];
 
@@ -4944,19 +5542,12 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, int index, ColorScheme colorScheme, {bool isEnabled = true}) {
+  Widget _buildNavItem(IconData icon, String label, int index, ColorScheme colorScheme, {bool isEnabled = true, bool hasBadge = false}) {
     final isSelected = _currentIndex == index;
     final color = isSelected ? colorScheme.primary : (isEnabled ? Colors.grey : Colors.grey.withOpacity(0.2));
     return InkWell(
-      onTap: isEnabled ? () {
-        setState(() {
-          if (_currentIndex == index) {
-            _currentIndex = -1;
-          } else {
-            _currentIndex = index;
-          }
-        });
-      } : null,
+      onTap: isEnabled ? () { _setTab(index); if (label == 'Msg' || label == 'Announce') _LoginScreenState.markMessagesAsRead(widget.teacherUsername); } : null,
+
       child: AnimatedOpacity(
         duration: const Duration(milliseconds: 300),
         opacity: isEnabled ? 1.0 : 0.3,
@@ -4971,7 +5562,16 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, color: color, size: 22),
+              Stack(
+                children: [
+                  Icon(icon, color: color, size: 22),
+                  if (hasBadge)
+                    Positioned(
+                      right: 0, top: 0,
+                      child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle)),
+                    ),
+                ],
+              ),
               const SizedBox(height: 4),
               Text(label, style: TextStyle(color: color, fontSize: 10, fontWeight: isSelected ? FontWeight.bold : FontWeight.normal)),
             ],
@@ -5029,6 +5629,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   'marks': markCtrl.text,
                   'date': dateCtrl.text,
                   'std': widget.assignedClass,
+                  'academicYear': _LoginScreenState._selectedAcademicYear,
                 };
                 if (index != null) {
                   final oldData = _activities[index];
@@ -5084,6 +5685,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   'amount': amountCtrl.text,
                   'date': dateCtrl.text,
                   'class': widget.assignedClass,
+                  'academicYear': _LoginScreenState._selectedAcademicYear,
                 };
                 if (index != null) {
                   final oldData = _fairList[index];
@@ -5416,6 +6018,8 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                     'studentName': selectedStudent,
                     'examName': selectedExam,
                     'subjectResults': List<Map<String, dynamic>>.from(subjectResults),
+                    'class': widget.assignedClass,
+                    'academicYear': _LoginScreenState._selectedAcademicYear,
                   };
                   if (index != null) {
                     final oldData = _results[index];
@@ -5559,10 +6163,9 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   decoration: const InputDecoration(labelText: 'Select Class', prefixIcon: Icon(Icons.class_)),
                   items: _classes.map((c) => DropdownMenuItem(value: c, child: Text('Class $c'))).toList(),
                   onChanged: (val) {
-                    setStateDialog(() {
-                       _teacherSelectedClass = val;
-                    });
+                    setStateDialog(() => _setSelectedClass(val));
                   },
+
                 ),
               ],
             ),
@@ -5728,61 +6331,11 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
       case 5: return _buildMessagesTab(colorScheme);
       case 6: return _buildGlobalGroupTab(colorScheme);
       case 7: return _buildAttendanceTab(colorScheme);
-      case 8: return _buildAttendanceReportTab(colorScheme);
       case -1:
       default: return _buildOverview(colorScheme);
     }
   }
 
-  Widget _buildAttendanceReportTab(ColorScheme colorScheme) {
-    return Column(
-      children: [
-        const Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Text('Attendance Analytics', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900)),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            itemCount: _allStudents.length,
-            itemBuilder: (context, index) {
-              final student = _allStudents[index];
-              final sRecords = _LoginScreenState._allAttendance.where((a) => a['studentUsername'] == student['username']);
-              int sp = 0, sa = 0;
-              for (var r in sRecords) {
-                 final pMap = Map<String, String>.from((r['periods'] as Map?) ?? {});
-                 if (pMap['FN'] == 'P') sp++; else if (pMap['FN'] == 'A') sa++;
-                 if (pMap['AN'] == 'P') sp++; else if (pMap['AN'] == 'A') sa++;
-              }
-              final double sAvg = (sp + sa) == 0 ? 0 : (sp / (sp + sa)) * 100;
-
-              return Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: const Color(0xFFE2E8F0))),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(student['name'] ?? 'Student', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(child: LinearProgressIndicator(value: sAvg / 100, minHeight: 8, borderRadius: BorderRadius.circular(4), color: sAvg > 75 ? Colors.teal : Colors.orange)),
-                        const SizedBox(width: 12),
-                        Text('${sAvg.toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text('Month: ${sAvg.toStringAsFixed(0)}% (Projected) | Year: ${sAvg.toStringAsFixed(0)}%', style: const TextStyle(fontSize: 10, color: Colors.grey)),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
 
 
   Widget _buildOverview(ColorScheme colorScheme) {
@@ -5937,6 +6490,42 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     );
   }
 
+  Widget _buildMonthYearPicker() {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade100), boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10)]),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.calendar_month, size: 16, color: Colors.grey),
+          const SizedBox(width: 8),
+          DropdownButton<int>(
+            value: _attMonth == 0 ? DateTime.now().month : _attMonth,
+            underline: const SizedBox(),
+            items: List.generate(12, (i) => DropdownMenuItem(value: i + 1, child: Text(_getMonthName(i + 1), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)))),
+            onChanged: (v) => setState(() => _attMonth = v ?? DateTime.now().month),
+          ),
+
+          const VerticalDivider(width: 20, indent: 12, endIndent: 12),
+          DropdownButton<int>(
+            value: _attYear,
+            underline: const SizedBox(),
+            items: List.generate(5, (i) => DropdownMenuItem(value: 2024 + i, child: Text('${2024 + i}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)))),
+            onChanged: (v) => setState(() => _attYear = v ?? 2024),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getMonthName(int m) {
+    if (m == 0) return 'All';
+    return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m - 1];
+  }
+
+
+
   Widget _buildStudentsTab(ColorScheme colorScheme) {
     return Column(
       children: [
@@ -5966,7 +6555,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   children: _classes.map((c) {
                     final bool isSelected = _teacherSelectedClass == c;
                     return GestureDetector(
-                      onTap: () => setState(() => _teacherSelectedClass = c),
+                      onTap: () => _setSelectedClass(c),
                       child: Container(
                         margin: const EdgeInsets.only(right: 10),
                         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -5988,6 +6577,11 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   }).toList(),
                 ),
               ),
+              const SizedBox(height: 16),
+
+
+              _buildMonthYearPicker(),
+
             ],
           ),
         ),
@@ -6029,13 +6623,47 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                           child: Text(s['name']?[0] ?? 'S', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 18)),
                         ),
                         title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B))),
-                        subtitle: Row(
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.location_on_rounded, size: 12, color: Colors.grey.shade400),
-                            const SizedBox(width: 4),
-                            Text(s['place'] ?? '', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                            Row(
+                              children: [
+                                Icon(Icons.location_on_rounded, size: 12, color: Colors.grey.shade400),
+                                const SizedBox(width: 4),
+                                Text(s['place'] ?? '', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Builder(
+                              builder: (context) {
+                                final stats = _LoginScreenState.getAttendanceStats(s['username']!, _attMonth == 0 ? null : _attMonth, _attYear);
+
+                                final double avg = stats['total'] == 0 ? 0 : (stats['present']! / stats['total']!) * 100;
+                                return Column(
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Expanded(child: ClipRRect(borderRadius: BorderRadius.circular(4), child: LinearProgressIndicator(value: avg/100, minHeight: 4, backgroundColor: Colors.grey.shade100, color: avg > 75 ? Colors.teal : (avg > 50 ? Colors.orange : Colors.red)))),
+                                        const SizedBox(width: 10),
+                                        Text('${avg.toStringAsFixed(0)}%', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 10)),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Text('Attendance: ${stats['present']}/${stats['total']}', style: TextStyle(fontSize: 10, color: Colors.grey.shade500, fontWeight: FontWeight.bold)),
+                                        Text(_getMonthName(_attMonth), style: TextStyle(fontSize: 10, color: colorScheme.primary.withOpacity(0.7), fontWeight: FontWeight.w900)),
+
+                                      ],
+                                    ),
+                                  ],
+                                );
+                              }
+                            ),
                           ],
                         ),
+
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -6416,14 +7044,41 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     );
   }
 
+  Widget _attendanceTagRow(Map<dynamic, dynamic> periods) {
+     final pMap = Map<String, String>.from(periods);
+     return Row(
+       mainAxisSize: MainAxisSize.min, 
+       children: [
+         _attMiniCircle('FN', pMap['FN'] ?? '-'),
+         const SizedBox(width: 4),
+         _attMiniCircle('AN', pMap['AN'] ?? '-'),
+       ],
+     );
+  }
+
+  Widget _attMiniCircle(String label, String status) {
+     final Color color = status == 'P' ? Colors.green : (status == 'A' ? Colors.red : Colors.grey);
+     return Column(
+       mainAxisSize: MainAxisSize.min,
+       children: [
+         Text(label, style: const TextStyle(fontSize: 8, fontWeight: FontWeight.bold, color: Colors.grey)),
+         Container(
+           width: 22, height: 22,
+           decoration: BoxDecoration(color: color.withOpacity(0.1), shape: BoxShape.circle, border: Border.all(color: color.withOpacity(0.5))),
+           child: Center(child: Text(status, style: TextStyle(color: color, fontSize: 10, fontWeight: FontWeight.bold))),
+         ),
+       ],
+     );
+  }
+
   void _showStudentDetails(Map<String, String> student) {
     final name = student['name'] ?? '';
     
-    // Fetch data for the student
-    final studentActivities = _activities; 
-    final studentFairs = _fairList;
-    final studentResults = _LoginScreenState._allResults.where((r) => r['studentName'] == name).toList();
-    final studentExams = _exams;
+    // Fetch data for the student (session-aware)
+    final studentActivities = _activities.where((a) => a['academicYear'] == _LoginScreenState._selectedAcademicYear || a['academicYear'] == null).toList(); 
+    final studentFairs = _fairList; // Fairs are usually per class/year too
+    final studentResults = _LoginScreenState._allResults.where((r) => r['studentName'] == name && (r['academicYear'] == _LoginScreenState._selectedAcademicYear || r['academicYear'] == null)).toList();
+    final studentExams = _exams.where((e) => e['academicYear'] == _LoginScreenState._selectedAcademicYear || e['academicYear'] == null).toList();
 
     // Calculate progress
     final completedActivitiesCount = studentActivities.where((a) {
@@ -6605,6 +7260,97 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                       if (studentExams.isEmpty) const Center(child: Padding(padding: EdgeInsets.all(20), child: Text('No schedule items assigned yet.'))),
                     ],
                   );
+                case 5: // Attendance
+                  final String currentAY = _LoginScreenState._selectedAcademicYear;
+                  final statsM = _LoginScreenState.getAttendanceStats(student['username']!, _attMonth == 0 ? DateTime.now().month : _attMonth, _attYear);
+                  final statsY = _LoginScreenState.getAcademicYearStats(student['username']!, currentAY);
+                  
+                  final double avgM = statsM['total'] == 0 ? 0 : (statsM['present']! / statsM['total']!) * 100;
+                  final double avgY = statsY['total'] == 0 ? 0 : (statsY['present']! / statsY['total']!) * 100;
+
+                  return Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('Attendance Metrics', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF0F172A))),
+                          _buildMonthYearPicker(),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(color: Colors.indigo.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.indigo.shade100)),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(_attMonth == 0 ? 'Monthly (Current)' : _getMonthName(_attMonth), style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                                  const SizedBox(height: 4),
+                                  Text('${avgM.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.indigo)),
+                                  Text('${statsM['present']}/${statsM['total']} Days', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.indigo)),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(color: Colors.teal.shade50, borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.teal.shade100)),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text('Academic Year', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.teal)),
+                                  const SizedBox(height: 4),
+                                  Text('${avgY.toStringAsFixed(1)}%', style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Colors.teal)),
+                                  Text('${statsY['present']}/${statsY['total']} Days', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 32),
+                      const Text('Attendance Log', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900)),
+                      const SizedBox(height: 12),
+                      ..._LoginScreenState._allAttendance.where((a) {
+                         final dt = DateTime.tryParse(a['date'] ?? '');
+                         if (a['studentUsername'] != student['username']) return false;
+                         final targetMonth = _attMonth == 0 ? DateTime.now().month : _attMonth;
+                         return dt != null && dt.month == targetMonth && dt.year == _attYear;
+                      }).toList().reversed.map((a) {
+                         return Container(
+                           margin: const EdgeInsets.only(bottom: 12),
+                           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                           decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16), border: Border.all(color: Colors.grey.shade100)),
+                           child: Row(
+                             children: [
+                               Container(
+                                 padding: const EdgeInsets.all(8),
+                                 decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(10)),
+                                 child: const Icon(Icons.event_note, size: 18, color: Colors.grey),
+                               ),
+                               const SizedBox(width: 16),
+                               Expanded(
+                                 child: Column(
+                                   crossAxisAlignment: CrossAxisAlignment.start,
+                                   children: [
+                                     Text(a['date'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                                     Text(a['academicYear'] ?? '', style: const TextStyle(fontSize: 10, color: Colors.grey)),
+                                   ],
+                                 ),
+                               ),
+                               _attendanceTagRow(a['periods'] ?? {}),
+                             ],
+                           ),
+                         );
+                      }),
+                    ],
+                  );
                 case 4: // Results
                   return Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -6778,6 +7524,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                       child: Row(
                         children: [
                           _buildSectionChip('Overview', Icons.info_outline, 0, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
+                          _buildSectionChip('Attendance', Icons.fact_check_rounded, 5, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
                           _buildSectionChip('Activities', Icons.play_circle_fill, 1, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
                           _buildSectionChip('F.transactions', Icons.local_activity, 2, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
                           _buildSectionChip('Schedule', Icons.calendar_month, 3, selectedSection, (idx) => setModalState(() => selectedSection = idx)),
@@ -8331,12 +9078,12 @@ class _AttendanceTabState extends State<_AttendanceTab> {
   }
 
   bool get _isHoliday {
-    final dateStr = "${_selectedDate.year}-${_selectedDate.month}-${_selectedDate.day}";
+    final dateStr = "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
     return _LoginScreenState._holidayDates.contains(dateStr);
   }
 
   void _toggleHoliday() {
-    final dateStr = "${_selectedDate.year}-${_selectedDate.month}-${_selectedDate.day}";
+    final dateStr = "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
     setState(() {
       if (_LoginScreenState._holidayDates.contains(dateStr)) {
         _LoginScreenState._holidayDates.remove(dateStr);
@@ -8350,7 +9097,9 @@ class _AttendanceTabState extends State<_AttendanceTab> {
 
   Map<String, int> _getAttendanceStats() {
     int fnP = 0, fnA = 0, anP = 0, anA = 0;
-    final dateStr = "${_selectedDate.year}-${_selectedDate.month}-${_selectedDate.day}";
+    int overallP = 0;
+    int totalCount = widget.students.length;
+    final dateStr = "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
     for (var student in widget.students) {
       final record = _LoginScreenState._allAttendance.firstWhere(
         (a) => a['studentUsername'] == student['username'] && a['date'] == dateStr,
@@ -8360,9 +9109,13 @@ class _AttendanceTabState extends State<_AttendanceTab> {
         final pMap = Map<String, String>.from((record['periods'] as Map?) ?? {});
         if (pMap['FN'] == 'P') fnP++; else if (pMap['FN'] == 'A') fnA++;
         if (pMap['AN'] == 'P') anP++; else if (pMap['AN'] == 'A') anA++;
+        
+        if (pMap.values.contains('P')) {
+          overallP++;
+        }
       }
     }
-    return {'fnP': fnP, 'fnA': fnA, 'anP': anP, 'anA': anA};
+    return {'fnP': fnP, 'fnA': fnA, 'anP': anP, 'anA': anA, 'overallP': overallP, 'total': totalCount};
   }
 
   Widget _statCard(String label, int present, int absent, Color color) {
@@ -8407,7 +9160,7 @@ class _AttendanceTabState extends State<_AttendanceTab> {
 
   @override
   Widget build(BuildContext context) {
-    final dateStr = "${_selectedDate.year}-${_selectedDate.month}-${_selectedDate.day}";
+    final dateStr = "${_selectedDate.year}-${_selectedDate.month.toString().padLeft(2, '0')}-${_selectedDate.day.toString().padLeft(2, '0')}";
     final bool isHoliday = _isHoliday;
 
     return Container(
@@ -8496,7 +9249,6 @@ class _AttendanceTabState extends State<_AttendanceTab> {
           ),
 
           if (!isHoliday) ...[
-            // Stats Banner
             Builder(
               builder: (context) {
                 final stats = _getAttendanceStats();
@@ -8504,8 +9256,10 @@ class _AttendanceTabState extends State<_AttendanceTab> {
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 10),
                   child: Row(
                     children: [
-                      _statCard('Morning', stats['fnP']!, stats['fnA']!, Colors.blue),
-                      const SizedBox(width: 12),
+                      _statCard('Total Day', stats['overallP']!, stats['total']! - stats['overallP']!, Colors.indigo),
+                      const SizedBox(width: 8),
+                      _statCard('Morning', stats['fnP']!, stats['fnA']!, Colors.teal),
+                      const SizedBox(width: 8),
                       _statCard('Afternoon', stats['anP']!, stats['anA']!, Colors.orange),
                     ],
                   ),
@@ -8687,6 +9441,7 @@ class _TwoSessionAttendanceRowState extends State<_TwoSessionAttendanceRow> {
       : {
           'studentUsername': widget.student['username'],
           'date': widget.date,
+          'academicYear': _LoginScreenState._selectedAcademicYear,
           'periods': <String, String>{},
           'leaveReason': '',
           'timetable': List<String>.from(widget.subjects),
@@ -8835,7 +9590,11 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     super.initState();
     // Refresh for incoming messages
     _refreshTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
-      if (mounted) setState(() {});
+      if (mounted) {
+        _updateNoticeCount();
+        _LoginScreenState.checkForNewAndNotify(widget.username);
+        setState(() {});
+      }
     });
   }
 
