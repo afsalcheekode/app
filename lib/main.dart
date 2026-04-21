@@ -147,6 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
     'Attendance': true,
   };
   static Map<String, String> _classDepts = {}; // className -> 'DA\'WA' or 'HIFZ'
+  static SharedPreferences? _prefs;
 
   static Future<void> saveInt(String key, int val) async => await _prefs?.setInt(key, val);
   static int loadInt(String key, int def) => _prefs?.getInt(key) ?? def;
@@ -222,6 +223,21 @@ class _LoginScreenState extends State<LoginScreen> {
     if (examsStr != null) {
       final List decoded = jsonDecode(examsStr);
       _allExams = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+
+    // Inject System Update Notification if not present
+    bool exists = _allExams.any((e) => e['title'] == 'System Enhancement Summary');
+    if (!exists) {
+      _allExams.add({
+        'type': 'Announcement',
+        'title': 'System Enhancement Summary',
+        'description': 'Director Board updated with Broadcast system, quick-action shortcuts, and colorful announcement cards for all users. Check the sidebar for new commands.',
+        'date': '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}',
+        'day': 'Product Update',
+        'time': 'NEW',
+        'class': null,
+        'academicYear': _selectedAcademicYear,
+      });
     }
 
     final messagesStr = _prefs!.getString('all_messages');
@@ -1327,38 +1343,67 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
   }
 
   void _showAddMessageDialog() {
-    final receiverCtrl = TextEditingController();
     final messageCtrl = TextEditingController();
+    String selectedBroadCast = 'All Members'; // All Teachers, All Students, All Members
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Send Message'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: receiverCtrl, decoration: const InputDecoration(labelText: 'Receivers (e.g. All Teachers)', prefixIcon: Icon(Icons.people))),
-            TextField(controller: messageCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Message Body', prefixIcon: Icon(Icons.text_fields))),
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('New Broadcast Message'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                value: selectedBroadCast,
+                decoration: const InputDecoration(labelText: 'Receivers', prefixIcon: Icon(Icons.people)),
+                items: ['All Teachers', 'All Students', 'All Members']
+                    .map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                onChanged: (val) => setDialogState(() => selectedBroadCast = val!),
+              ),
+              const SizedBox(height: 16),
+              TextField(controller: messageCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Message Body', prefixIcon: Icon(Icons.text_fields))),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            ElevatedButton(
+              onPressed: () {
+                if (messageCtrl.text.isEmpty) return;
+                
+                setState(() {
+                  List<String> targetIds = [];
+                  if (selectedBroadCast == 'All Teachers' || selectedBroadCast == 'All Members') {
+                    targetIds.addAll(_teachers.map((t) => t['username'] ?? '').where((id) => id.isNotEmpty));
+                  }
+                  if (selectedBroadCast == 'All Students' || selectedBroadCast == 'All Members') {
+                    targetIds.addAll(_students.map((s) => s['username'] ?? '').where((id) => id.isNotEmpty));
+                  }
+
+                  for (var peerId in targetIds) {
+                    final roomId = ['manager', peerId]..sort();
+                    final convKey = roomId.join('::');
+                    
+                    _LoginScreenState._allMessages.add({
+                      'senderId': 'manager',
+                      'senderName': 'Academic Director',
+                      'receiverId': peerId,
+                      'convKey': convKey,
+                      'text': messageCtrl.text,
+                      'timestamp': DateTime.now().toIso8601String(),
+                      'isBroadcast': true,
+                    });
+                  }
+                  _LoginScreenState.saveAllData();
+                });
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Broadcast sent to $selectedBroadCast')));
+              },
+              child: const Text('Send'),
+            )
           ],
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              if (messageCtrl.text.isEmpty) return;
-              setState(() {
-                _messages.add({
-                  'receivers': receiverCtrl.text,
-                  'text': messageCtrl.text,
-                });
-                _LoginScreenState.saveAllData();
-              });
-              Navigator.pop(context);
-            },
-            child: const Text('Send'),
-          )
-        ],
-      )
+      ),
     );
   }
 
@@ -1688,7 +1733,12 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
 
   void _showAddExamDialog({int? index}) {
     final e = index != null ? _exams[index] : null;
-    final nameCtrl = TextEditingController(text: e?['examName'] ?? '');
+    final nameCtrl = TextEditingController(text: e?['examName'] ?? e?['title'] ?? '');
+    final descCtrl = TextEditingController(text: e?['description'] ?? '');
+    final dateCtrl = TextEditingController(text: e?['date'] ?? e?['dates'] ?? '');
+    final dayCtrl = TextEditingController(text: e?['day'] ?? e?['days'] ?? '');
+    final timeCtrl = TextEditingController(text: e?['time'] ?? '');
+    String selectedType = e?['type'] ?? 'Exam';
     String? selectedClass = e?['class'];
     if ((selectedClass == null || !_classes.contains(selectedClass)) && _classes.isNotEmpty) {
       selectedClass = _classes.first;
@@ -1701,95 +1751,132 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (context, setFullState) => AlertDialog(
-          title: Text(index != null ? 'Edit Exam' : 'Add Exam'),
+          title: Text(index != null ? 'Edit Schedule Item' : 'Add Schedule Item'),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Exam Name', prefixIcon: Icon(Icons.assignment))),
+                DropdownButtonFormField<String>(
+                  value: selectedType,
+                  decoration: const InputDecoration(labelText: 'Type', prefixIcon: Icon(Icons.category)),
+                  items: ['Exam', 'Announcement'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
+                  onChanged: (val) => setFullState(() => selectedType = val!),
+                ),
+                const SizedBox(height: 16),
+                TextField(controller: nameCtrl, decoration: InputDecoration(labelText: selectedType == 'Exam' ? 'Exam Name' : 'Announcement Title', prefixIcon: Icon(selectedType == 'Exam' ? Icons.assignment : Icons.campaign))),
+                const SizedBox(height: 16),
+                if (selectedType == 'Announcement') ...[
+                  TextField(controller: descCtrl, decoration: const InputDecoration(labelText: 'Description', prefixIcon: Icon(Icons.description)), maxLines: 2),
+                  const SizedBox(height: 16),
+                  TextField(controller: dateCtrl, decoration: const InputDecoration(labelText: 'Date (optional)', prefixIcon: Icon(Icons.calendar_today))),
+                  const SizedBox(height: 16),
+                  TextField(controller: dayCtrl, decoration: const InputDecoration(labelText: 'Day (optional)', prefixIcon: Icon(Icons.wb_sunny))),
+                  const SizedBox(height: 16),
+                  TextField(controller: timeCtrl, decoration: const InputDecoration(labelText: 'Time (optional)', prefixIcon: Icon(Icons.access_time))),
+                ],
                 if (_classes.isNotEmpty) ...[
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     value: selectedClass,
                     decoration: const InputDecoration(
-                      labelText: 'Class',
+                      labelText: 'Apply to Class',
                       prefixIcon: Icon(Icons.class_),
                       border: OutlineInputBorder(),
                     ),
-                    items: _classes.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                    items: [
+                      const DropdownMenuItem(value: null, child: Text('Global / All Classes')),
+                      ..._classes.map((c) => DropdownMenuItem(value: c, child: Text(c))),
+                    ],
                     onChanged: (val) => setFullState(() => selectedClass = val),
                   ),
-                ] else
-                   const Padding(
-                     padding: EdgeInsets.only(top: 8),
-                     child: Text('Add a class first in Students tab!', style: TextStyle(color: Colors.red, fontSize: 12)),
-                   ),
-                const SizedBox(height: 16),
-                const Text('Subjects', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                const Divider(),
-                ...subjects.asMap().entries.map((entry) {
-                  int idx = entry.key;
-                  var sub = entry.value;
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 8.0),
-                    child: Row(
-                      children: [
-                        Expanded(child: Text('${sub['name']} (${sub['date']} ${sub['time']})', style: const TextStyle(fontSize: 12))),
-                        IconButton(icon: const Icon(Icons.delete, size: 18, color: Colors.red), onPressed: () => setFullState(() => subjects.removeAt(idx))),
-                      ],
-                    ),
-                  );
-                }),
-                TextButton.icon(
-                  onPressed: () {
-                    final subNameCtrl = TextEditingController();
-                    final subDateCtrl = TextEditingController();
-                    final subTimeCtrl = TextEditingController();
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text('Add Subject'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            TextField(controller: subNameCtrl, decoration: const InputDecoration(labelText: 'Subject Name')),
-                            TextField(controller: subDateCtrl, decoration: const InputDecoration(labelText: 'Date (YYYY-MM-DD)')),
-                            TextField(controller: subTimeCtrl, decoration: const InputDecoration(labelText: 'Time (HH:MM AM/PM)')),
-                          ],
-                        ),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                          TextButton(onPressed: () {
-                            if (subNameCtrl.text.isNotEmpty) {
-                              setFullState(() {
-                                subjects.add({
-                                  'name': subNameCtrl.text,
-                                  'date': subDateCtrl.text,
-                                  'time': subTimeCtrl.text,
-                                });
-                              });
-                            }
-                            Navigator.pop(context);
-                          }, child: const Text('Add')),
+                ],
+                if (selectedType == 'Exam') ...[
+                  const SizedBox(height: 16),
+                  const Text('Subjects', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  const Divider(),
+                  ...subjects.asMap().entries.map((entry) {
+                    int idx = entry.key;
+                    var sub = entry.value;
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8.0),
+                      child: Row(
+                        children: [
+                          Expanded(child: Text('${sub['name']} (${sub['date']} ${sub['time']})', style: const TextStyle(fontSize: 12))),
+                          IconButton(icon: const Icon(Icons.delete, size: 18, color: Colors.red), onPressed: () => setFullState(() => subjects.removeAt(idx))),
                         ],
                       ),
                     );
-                  },
-                  icon: const Icon(Icons.add, size: 18),
-                  label: const Text('Add Subject', style: TextStyle(fontSize: 12)),
-                ),
+                  }),
+                  TextButton.icon(
+                    onPressed: () {
+                      final subNameCtrl = TextEditingController();
+                      final subDateCtrl = TextEditingController();
+                      final subTimeCtrl = TextEditingController();
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text('Add Subject'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              TextField(controller: subNameCtrl, decoration: const InputDecoration(labelText: 'Subject Name')),
+                              TextField(controller: subDateCtrl, decoration: const InputDecoration(labelText: 'Date (YYYY-MM-DD)')),
+                              TextField(controller: subTimeCtrl, decoration: const InputDecoration(labelText: 'Time (HH:MM AM/PM)')),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                            TextButton(onPressed: () {
+                              if (subNameCtrl.text.isNotEmpty) {
+                                setFullState(() {
+                                  subjects.add({
+                                    'name': subNameCtrl.text,
+                                    'date': subDateCtrl.text,
+                                    'time': subTimeCtrl.text,
+                                  });
+                                });
+                              }
+                              Navigator.pop(context);
+                            }, child: const Text('Add')),
+                          ],
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('Add Subject', style: TextStyle(fontSize: 12)),
+                  ),
+                ],
               ],
             ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+            if (index != null)
+              TextButton(
+                onPressed: () {
+                  setState(() {
+                    _exams.removeAt(index);
+                    _LoginScreenState.saveAllData();
+                  });
+                  Navigator.pop(context);
+                },
+                child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              ),
             ElevatedButton(
               onPressed: () {
                 if (nameCtrl.text.isEmpty) return;
                 setState(() {
                   final newData = {
+                    'type': selectedType,
+                    'title': nameCtrl.text,
                     'examName': nameCtrl.text,
+                    'description': descCtrl.text,
+                    'dates': dateCtrl.text,
+                    'date': dateCtrl.text,
+                    'days': dayCtrl.text,
+                    'day': dayCtrl.text,
+                    'time': timeCtrl.text,
                     'class': selectedClass,
                     'subjects': subjects,
                     'academicYear': _LoginScreenState._selectedAcademicYear,
@@ -2154,21 +2241,21 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: Icon(Icons.auto_awesome_rounded, color: colorScheme.primary, size: 32),
       ),
-      destinations: const [
-        NavigationRailDestination(icon: Icon(Icons.grid_view_rounded), label: Text('Classes')),
-        NavigationRailDestination(icon: Icon(Icons.badge_rounded), label: Text('Teachers')),
-        NavigationRailDestination(icon: Icon(Icons.calendar_today_rounded), label: Text('Schedule')),
+      destinations: [
+        const NavigationRailDestination(icon: Icon(Icons.grid_view_rounded), label: Text('Classes')),
+        const NavigationRailDestination(icon: Icon(Icons.badge_rounded), label: Text('Teachers')),
+        const NavigationRailDestination(icon: Icon(Icons.calendar_today_rounded), label: Text('Schedule')),
         NavigationRailDestination(
           icon: Stack(
             children: [
               const Icon(Icons.chat_bubble_rounded),
               if (_LoginScreenState.getUnreadMessageCount(widget.username) > 0)
-                Positioned(right: 0, top: 0, child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle))),
+                Positioned(right: 0, top: 0, child: Container(width: 8, height: 8, decoration: BoxDecoration(color: Colors.red, shape: BoxShape.circle))),
             ],
           ),
-          label: Text('Messages'),
+          label: const Text('Messages'),
         ),
-        NavigationRailDestination(icon: Icon(Icons.tune_rounded), label: Text('Features')),
+        const NavigationRailDestination(icon: Icon(Icons.tune_rounded), label: Text('Features')),
       ],
       trailing: Expanded(
         child: Column(
@@ -2218,6 +2305,35 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
                 _buildDesktopNavItem(Icons.message_rounded, 'Messages', 3, colorScheme, hasBadge: _LoginScreenState.getUnreadMessageCount(widget.username) > 0),
                 _buildDesktopNavItem(Icons.settings_suggest_rounded, 'Feature Config', 4, colorScheme),
               ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ElevatedButton.icon(
+              onPressed: () => _showAddMessageDialog(),
+              icon: const Icon(Icons.campaign_rounded),
+              label: const Text('  + BROADCAST', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: colorScheme.primary,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: 0,
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: OutlinedButton.icon(
+              onPressed: () => _showAddExamDialog(),
+              icon: const Icon(Icons.add_circle_outline),
+              label: const Text('  ADD SCHEDULE', style: TextStyle(fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: colorScheme.primary,
+                side: BorderSide(color: colorScheme.primary, width: 2),
+                minimumSize: const Size(double.infinity, 50),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              ),
             ),
           ),
           const Spacer(),
@@ -2658,6 +2774,8 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               children: [
+                _buildImportantBulletins(colorScheme),
+                const SizedBox(height: 24),
                 _buildDepartmentGroup('DA\'WA', colorScheme),
                 const SizedBox(height: 32),
                 _buildDepartmentGroup('HIFZ', colorScheme),
@@ -3079,6 +3197,44 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
                                       ],
                                     ),
                                   )).toList(),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      TextButton.icon(
+                                        onPressed: () => _showAddExamDialog(index: index),
+                                        icon: const Icon(Icons.edit_outlined, size: 16),
+                                        label: const Text('Edit'),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      TextButton.icon(
+                                        onPressed: () {
+                                          showDialog(
+                                            context: context,
+                                            builder: (context) => AlertDialog(
+                                              title: const Text('Delete Item?'),
+                                              content: const Text('Are you sure you want to remove this schedule item?'),
+                                              actions: [
+                                                TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                                TextButton(
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _LoginScreenState._allExams.removeAt(index);
+                                                      _LoginScreenState.saveAllData();
+                                                    });
+                                                    Navigator.pop(context);
+                                                  },
+                                                  child: const Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                                ),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.delete_outline, size: 16, color: Colors.red),
+                                        label: const Text('Delete', style: TextStyle(color: Colors.red)),
+                                      ),
+                                    ],
+                                  ),
                                 ],
                               ),
                             ),
@@ -3088,6 +3244,91 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
                     );
                   },
                 ),
+        ),
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () => _showAddExamDialog(),
+                icon: const Icon(Icons.add_circle_outline),
+                label: const Text('Add Schedule Item', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: colorScheme.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+  }
+
+  Widget _buildImportantBulletins(ColorScheme colorScheme) {
+    final bulletins = _exams.where((e) => e['type'] == 'Announcement').toList();
+    if (bulletins.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(bottom: 12),
+          child: Text('Important Announcements', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B))),
+        ),
+        SizedBox(
+          height: 180,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: bulletins.length,
+            itemBuilder: (context, index) {
+              final b = bulletins[index];
+              final colors = [const Color(0xFF6366F1), const Color(0xFFEC4899), const Color(0xFF06B6D4), const Color(0xFF8B5CF6)];
+              final cardColor = colors[index % colors.length];
+
+              return Container(
+                width: 300,
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: [cardColor, cardColor.withOpacity(0.8)], begin: Alignment.topLeft, end: Alignment.bottomRight),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [BoxShadow(color: cardColor.withOpacity(0.3), blurRadius: 10, offset: const Offset(0, 4))],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text(b['title'] ?? 'Announcement', style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                        const Icon(Icons.campaign, color: Colors.white70),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(child: Text(b['description'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        if (b['date']?.toString().isNotEmpty == true) ...[
+                          const Icon(Icons.calendar_today, size: 12, color: Colors.white70),
+                          const SizedBox(width: 4),
+                          Text(b['date'], style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 12),
+                        ],
+                        if (b['day']?.toString().isNotEmpty == true) ...[
+                          const Icon(Icons.wb_sunny, size: 12, color: Colors.white70),
+                          const SizedBox(width: 4),
+                          Text(b['day'], style: const TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -3108,7 +3349,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen> with Noti
             color: colorScheme.primary,
             boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 8)],
           ),
-          child: const Row(
+          child: Row(
             children: [
               Icon(Icons.chat_bubble_rounded, color: Colors.white, size: 28),
               SizedBox(width: 12),
@@ -3287,7 +3528,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
   // Use global static lists for persistence
   List<Map<String, String>> get _allStudents => _LoginScreenState._allStudents;
   List<Map<String, dynamic>> get _activities => _LoginScreenState._allActivities.where((a) => a['std'] == widget.studentClass).toList();
-  List<Map<String, dynamic>> get _exams => _LoginScreenState._allExams.where((e) => e['class'] == widget.studentClass).toList();
+  List<Map<String, dynamic>> get _exams => _LoginScreenState._allExams.where((e) => e['class'] == widget.studentClass || e['class'] == null).toList();
   List<Map<String, dynamic>> get _results => _LoginScreenState._allResults.where((r) => r['studentName'] == widget.studentName).toList();
   List<Map<String, dynamic>> get _messages => _LoginScreenState._allMessages;
   List<Map<String, dynamic>> get _fairList => _LoginScreenState._allFairItems.where((f) => f['class'] == widget.studentClass || f['class'] == null).toList();
@@ -3867,6 +4108,8 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                _buildImportantBulletins(colorScheme),
+                const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -4389,6 +4632,75 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                   },
                 ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildImportantBulletins(ColorScheme colorScheme) {
+    final bulletins = _exams.where((e) => e['type'] == 'Announcement').toList();
+    if (bulletins.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Text('Important Announcements', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+        ),
+        SizedBox(
+          height: 180,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: bulletins.length,
+            itemBuilder: (context, index) {
+              final b = bulletins[index];
+              final colors = [const Color(0xFF6366F1), const Color(0xFFEC4899), const Color(0xFF06B6D4), const Color(0xFF8B5CF6)];
+              final cardColor = colors[index % colors.length];
+
+              return Container(
+                width: 300,
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text(b['title'] ?? 'Announcement', style: TextStyle(color: cardColor, fontSize: 18, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                        Icon(Icons.campaign, color: cardColor),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(child: Text(b['description'] ?? '', style: TextStyle(color: Colors.grey.shade700, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        if (b['date']?.toString().isNotEmpty == true) ...[
+                          Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade500),
+                          const SizedBox(width: 4),
+                          Text(b['date'], style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 12),
+                        ],
+                        if (b['day']?.toString().isNotEmpty == true) ...[
+                          Icon(Icons.wb_sunny, size: 12, color: Colors.grey.shade500),
+                          const SizedBox(width: 4),
+                          Text(b['day'], style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
       ],
     );
   }
@@ -5021,7 +5333,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   List<String> get _classes => _LoginScreenState._allClasses;
   List<Map<String, String>> get _allStudents => _LoginScreenState._allStudents;
   List<Map<String, dynamic>> get _activities => _LoginScreenState._allActivities.where((a) => a['std'] == (_teacherSelectedClass ?? widget.assignedClass) && (a['academicYear'] == _LoginScreenState._selectedAcademicYear || a['academicYear'] == null)).toList();
-  List<Map<String, dynamic>> get _exams => _LoginScreenState._allExams.where((e) => e['class'] == (_teacherSelectedClass ?? widget.assignedClass) && (e['academicYear'] == _LoginScreenState._selectedAcademicYear || e['academicYear'] == null)).toList();
+  List<Map<String, dynamic>> get _exams => _LoginScreenState._allExams.where((e) => (e['class'] == (_teacherSelectedClass ?? widget.assignedClass) || e['class'] == null) && (e['academicYear'] == _LoginScreenState._selectedAcademicYear || e['academicYear'] == null)).toList();
   List<Map<String, dynamic>> get _results => _LoginScreenState._allResults.where((r) => 
     _students.any((s) => s['name'] == r['studentName']) && (r['academicYear'] == _LoginScreenState._selectedAcademicYear || r['academicYear'] == null)
   ).toList();
@@ -5035,29 +5347,9 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   
   // New data for Fair and Progress
   final List<String> _fairs = ['Science Fair 2024', 'Arts & Crafts', 'Coding Challenge', 'Math Olympiad'];
-  final Map<String, List<Map<String, dynamic>>> _studentFairs = {}; // studentName -> list of fairs with status
-  final Map<String, double> _studentProgress = {}; // studentName -> progress percentage
-
-  // Metrics for Overview page (now dynamic getter)
-
-
-  Timer? _refreshTimer;
-
-
-  List<Map<String, dynamic>> get _metrics {
-    final config = _LoginScreenState._featureConfig;
-    final List<Map<String, dynamic>> allMetrics = [
-      {'title': 'Students', 'value': '${_students.length}', 'icon': Icons.people_rounded, 'color': const Color(0xFF6366F1), 'targetIndex': 0, 'feature': 'Students'},
-      {'title': 'Activities', 'value': '${_activities.length}', 'icon': Icons.play_circle_fill, 'color': const Color(0xFF10B981), 'targetIndex': 1, 'feature': 'Activities'},
-      {'title': 'F.transactions', 'value': '${_fairList.length}', 'icon': Icons.grade_rounded, 'color': const Color(0xFFEC4899), 'targetIndex': 2, 'feature': 'F.transactions'},
-      {'title': 'Schedule', 'value': '${_exams.length}', 'icon': Icons.event_note_rounded, 'color': const Color(0xFFF59E0B), 'targetIndex': 3, 'feature': 'Schedule'},
-      {'title': 'Results', 'value': '${_results.length}', 'icon': Icons.analytics_rounded, 'color': const Color(0xFF8B5CF6), 'targetIndex': 4, 'feature': 'Results'},
-      {'title': 'Attendance', 'value': 'LOG', 'icon': Icons.fact_check_rounded, 'color': const Color(0xFF06B6D4), 'targetIndex': 7, 'feature': 'Attendance'},
-      {'title': 'Messages', 'value': '${_messages.length}', 'icon': Icons.question_answer_rounded, 'color': const Color(0xFFF43F5E), 'targetIndex': 5, 'feature': 'Messages'},
-      {'title': 'Announce', 'value': '${_teachers.length + _allStudents.length}', 'icon': Icons.campaign_rounded, 'color': const Color(0xFF6366F1), 'targetIndex': 6, 'feature': 'Groups'},
-    ];
-    return allMetrics.where((m) => config[m['feature']] ?? true).toList();
-  }
+  // Data is loaded from static lists via getters. 
+  List<Map<String, String>> get _students => _allStudents.where((s) => s['std'] == (_teacherSelectedClass ?? widget.assignedClass) && (s['academicYear'] == _LoginScreenState._selectedAcademicYear || s['academicYear'] == null)).toList();
+  List<Map<String, dynamic>> get _activities => _allActivities.where((a) => a['std'] == (_teacherSelectedClass ?? widget.assignedClass) && (a['academicYear'] == _LoginScreenState._selectedAcademicYear || a['academicYear'] == null)).toList();
 
   void _loadDataForAssignedClass() {
     // Data is loaded from static lists via getters. 
@@ -5998,19 +6290,19 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     TextEditingController? passCtrl,
   }) {
     final s = index != null ? _allStudents[index] : null;
-    final _name = nameCtrl ?? TextEditingController(text: s?['name'] ?? '');
-    final _address = addressCtrl ?? TextEditingController(text: s?['address'] ?? '');
-    final _parents = parentsCtrl ?? TextEditingController(text: s?['parents'] ?? '');
-    final _place = placeCtrl ?? TextEditingController(text: s?['place'] ?? '');
-    final _phone = phoneCtrl ?? TextEditingController(text: s?['phone'] ?? '');
-    final _blood = bloodCtrl ?? TextEditingController(text: s?['blood'] ?? '');
-    final _user = userCtrl ?? TextEditingController(text: s?['username'] ?? '');
-    final _pass = passCtrl ?? TextEditingController(text: s?['password'] ?? (1000 + Random().nextInt(8999)).toString());
+    final name = nameCtrl ?? TextEditingController(text: s?['name'] ?? '');
+    final address = addressCtrl ?? TextEditingController(text: s?['address'] ?? '');
+    final parents = parentsCtrl ?? TextEditingController(text: s?['parents'] ?? '');
+    final place = placeCtrl ?? TextEditingController(text: s?['place'] ?? '');
+    final phone = phoneCtrl ?? TextEditingController(text: s?['phone'] ?? '');
+    final blood = bloodCtrl ?? TextEditingController(text: s?['blood'] ?? '');
+    final user = userCtrl ?? TextEditingController(text: s?['username'] ?? '');
+    final pass = passCtrl ?? TextEditingController(text: s?['password'] ?? (1000 + Random().nextInt(8999)).toString());
 
     if (index == null && userCtrl == null) {
-      _name.addListener(() {
-        if (_user.text.isEmpty || _user.text == _name.text.toLowerCase().replaceAll(' ', '.')) {
-          _user.text = _name.text.toLowerCase().replaceAll(' ', '.');
+      name.addListener(() {
+        if (user.text.isEmpty || user.text == name.text.toLowerCase().replaceAll(' ', '.')) {
+          user.text = name.text.toLowerCase().replaceAll(' ', '.');
         }
       });
     }
@@ -6024,17 +6316,17 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: _name, decoration: const InputDecoration(labelText: 'Student Name *', prefixIcon: Icon(Icons.person))),
-                TextField(controller: _address, decoration: const InputDecoration(labelText: 'Address *', prefixIcon: Icon(Icons.location_on))),
-                TextField(controller: _parents, decoration: const InputDecoration(labelText: "Parent's Name *", prefixIcon: Icon(Icons.family_restroom))),
-                TextField(controller: _place, decoration: const InputDecoration(labelText: 'Place *', prefixIcon: Icon(Icons.map))),
-                TextField(controller: _phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone *', prefixIcon: Icon(Icons.phone))),
-                TextField(controller: _blood, decoration: const InputDecoration(labelText: 'Blood Group', prefixIcon: Icon(Icons.bloodtype))),
+                TextField(controller: name, decoration: const InputDecoration(labelText: 'Student Name *', prefixIcon: Icon(Icons.person))),
+                TextField(controller: address, decoration: const InputDecoration(labelText: 'Address *', prefixIcon: Icon(Icons.location_on))),
+                TextField(controller: parents, decoration: const InputDecoration(labelText: "Parent's Name *", prefixIcon: Icon(Icons.family_restroom))),
+                TextField(controller: place, decoration: const InputDecoration(labelText: 'Place *', prefixIcon: Icon(Icons.map))),
+                TextField(controller: phone, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'Phone *', prefixIcon: Icon(Icons.phone))),
+                TextField(controller: blood, decoration: const InputDecoration(labelText: 'Blood Group', prefixIcon: Icon(Icons.bloodtype))),
                 const Divider(height: 32),
                 const Text('Login Credentials', style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 8),
-                TextField(controller: _user, decoration: const InputDecoration(labelText: 'Username *', prefixIcon: Icon(Icons.account_circle))),
-                TextField(controller: _pass, decoration: const InputDecoration(labelText: 'Password *', prefixIcon: Icon(Icons.lock))),
+                TextField(controller: user, decoration: const InputDecoration(labelText: 'Username *', prefixIcon: Icon(Icons.account_circle))),
+                TextField(controller: pass, decoration: const InputDecoration(labelText: 'Password *', prefixIcon: Icon(Icons.lock))),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _teacherSelectedClass,
@@ -6052,7 +6344,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
-              if (_name.text.isEmpty || _address.text.isEmpty || _user.text.isEmpty || _pass.text.isEmpty) {
+              if (name.text.isEmpty || address.text.isEmpty || user.text.isEmpty || pass.text.isEmpty) {
                 ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all required fields (*)')));
                 return;
               }
@@ -6062,15 +6354,15 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
               
               setState(() {
                 final studentData = {
-                  'name': _name.text,
-                  'address': _address.text,
-                  'parents': _parents.text,
-                  'place': _place.text,
-                  'phone': _phone.text,
-                  'blood': _blood.text,
+                  'name': name.text,
+                  'address': address.text,
+                  'parents': parents.text,
+                  'place': place.text,
+                  'phone': phone.text,
+                  'blood': blood.text,
                   'std': _teacherSelectedClass ?? widget.assignedClass,
-                  'username': _user.text.trim(),
-                  'password': _pass.text.trim(),
+                  'username': user.text.trim(),
+                  'password': pass.text.trim(),
                 };
                 
                 if (index != null) {
@@ -6118,23 +6410,22 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   void _showAddItemDialog() {
     switch (_currentIndex) {
       case 0:
-        // Add Student logic
-        final nameCtrl = TextEditingController();
-        final addressCtrl = TextEditingController();
-        final parentsCtrl = TextEditingController();
-        final placeCtrl = TextEditingController();
-        final phoneCtrl = TextEditingController();
-        final bloodCtrl = TextEditingController();
-        final userCtrl = TextEditingController();
-        final passCtrl = TextEditingController(text: (1000 + Random().nextInt(8999)).toString());
+        final name = TextEditingController();
+        final address = TextEditingController();
+        final parents = TextEditingController();
+        final place = TextEditingController();
+        final phone = TextEditingController();
+        final blood = TextEditingController();
+        final user = TextEditingController();
+        final pass = TextEditingController(text: (1000 + Random().nextInt(8999)).toString());
 
-        nameCtrl.addListener(() {
-          if (userCtrl.text.isEmpty || userCtrl.text == nameCtrl.text.toLowerCase().replaceAll(' ', '.')) {
-             userCtrl.text = nameCtrl.text.toLowerCase().replaceAll(' ', '.');
+        name.addListener(() {
+          if (user.text.isEmpty || user.text == name.text.toLowerCase().replaceAll(' ', '.')) {
+             user.text = name.text.toLowerCase().replaceAll(' ', '.');
           }
         });
 
-        _showStudentFormDialog(nameCtrl: nameCtrl, addressCtrl: addressCtrl, parentsCtrl: parentsCtrl, placeCtrl: placeCtrl, phoneCtrl: phoneCtrl, bloodCtrl: bloodCtrl, userCtrl: userCtrl, passCtrl: passCtrl);
+        _showStudentFormDialog(nameCtrl: name, addressCtrl: address, parentsCtrl: parents, placeCtrl: place, phoneCtrl: phone, bloodCtrl: blood, userCtrl: user, passCtrl: pass);
         break;
       case 1:
         _showAddActivityDialog();
@@ -6223,6 +6514,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildImportantBulletins(colorScheme),
           Stack(
             children: [
               Container(
@@ -6590,20 +6882,20 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   }
 
   void _showAddNewClassDialog() {
-    final classCtrl = TextEditingController();
+    final nameCtrl = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Add New Class'),
-        content: TextField(controller: classCtrl, decoration: const InputDecoration(labelText: 'Class Name (e.g. 06)')),
+        content: TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Class Name (e.g. 06)')),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(onPressed: () {
-            if (classCtrl.text.isNotEmpty) {
+            if (nameCtrl.text.isNotEmpty) {
               setState(() {
-                _LoginScreenState._allClasses.add(classCtrl.text);
-                _teacherSelectedClass = classCtrl.text;
+                _LoginScreenState._allClasses.add(nameCtrl.text);
+                _teacherSelectedClass = nameCtrl.text;
                 _LoginScreenState.saveAllData();
               });
             }
@@ -6963,19 +7255,17 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
       return _LoginScreenState._allActivitySubmissions.any((s) => 
         s['studentUsername'] == student['username'] && 
         s['activityId'] == a['id'] && 
-        s['isCompleted'] == true
+        s['isCompleted']
       );
     }).length;
-    final activityProgress = studentActivities.isEmpty ? 0.0 : completedActivitiesCount / studentActivities.length;
 
     final paidFairsCount = studentFairs.where((f) {
       return _LoginScreenState._allFairPayments.any((p) => 
         p['studentUsername'] == student['username'] && 
         p['fairId'] == f['id'] && 
-        p['isPaid'] == true
+        p['isPaid']
       );
     }).length;
-    final fairProgress = studentFairs.isEmpty ? 0.0 : paidFairsCount / studentFairs.length;
 
     showModalBottomSheet(
       context: context,
@@ -6997,7 +7287,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                         final bool isDone = _LoginScreenState._allActivitySubmissions.any((s) => 
                           s['studentUsername'] == student['username'] && 
                           s['activityId'] == a['id'] && 
-                          s['isCompleted'] == true
+                          s['isCompleted']
                         );
                         return Card(
                           margin: const EdgeInsets.only(bottom: 12),
@@ -7546,7 +7836,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     if (studentActs.isNotEmpty) {
       final completedCount = _LoginScreenState._allActivitySubmissions.where((s) => 
         s['studentUsername'] == studentUser && 
-        s['isCompleted'] == true &&
+        s['isCompleted'] &&
         studentActs.any((a) => a['id'] == s['activityId'])
       ).length;
       _studentProgress[studentName] = completedCount / studentActs.length;
@@ -7579,7 +7869,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     bool isPaid = _LoginScreenState._allFairPayments.any((p) => 
       p['studentUsername'] == studentUser && 
       p['fairId'] == fair['id'] && 
-      p['isPaid'] == true
+      p['isPaid']
     );
 
     showDialog(
@@ -7956,15 +8246,9 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                                                       final double scored = double.tryParse(s['scoredMark']?.toString() ?? '0') ?? 0;
                                                       final double total = double.tryParse(s['totalMarks']?.toString() ?? '100') ?? 100;
                                                       final double pct = (scored / total) * 100;
-                                                      String grade = 'D'; String status = 'Failed'; Color statusColor = Colors.red;
-                                                      if (pct >= 40) { status = 'Pass'; statusColor = Colors.green; }
-                                                      if (pct >= 90) grade = 'A+';
-                                                      else if (pct >= 80) grade = 'A';
-                                                      else if (pct >= 70) grade = 'B+';
-                                                      else if (pct >= 60) grade = 'B';
-                                                      else if (pct >= 50) grade = 'C+';
-                                                      else if (pct >= 40) grade = 'C';
-                                                      else grade = 'D';
+                                                      String grade = pct >= 90 ? 'A+' : pct >= 80 ? 'A' : pct >= 70 ? 'B+' : pct >= 60 ? 'B' : pct >= 50 ? 'C+' : pct >= 40 ? 'C' : 'D';
+                                                      final bool isPass = pct >= 40;
+                                                      final Color statusColor = isPass ? Colors.green : Colors.red;
                                                       
                                                       return TableRow(
                                                         children: [
@@ -8078,6 +8362,75 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
         .where((m) => m['convKey'] == roomId)
         .toList()
       ..sort((a, b) => (a['timestamp'] ?? '').compareTo(b['timestamp'] ?? ''));
+  }
+
+  Widget _buildImportantBulletins(ColorScheme colorScheme) {
+    final bulletins = _exams.where((e) => e['type'] == 'Announcement').toList();
+    if (bulletins.isEmpty) return const SizedBox.shrink();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Text('Important Announcements', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+        ),
+        SizedBox(
+          height: 180,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: bulletins.length,
+            itemBuilder: (context, index) {
+              final b = bulletins[index];
+              final colors = [const Color(0xFF6366F1), const Color(0xFFEC4899), const Color(0xFF06B6D4), const Color(0xFF8B5CF6)];
+              final cardColor = colors[index % colors.length];
+
+              return Container(
+                width: 300,
+                margin: const EdgeInsets.only(right: 16),
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text(b['title'] ?? 'Announcement', style: TextStyle(color: cardColor, fontSize: 18, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis)),
+                        Icon(Icons.campaign, color: cardColor),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(child: Text(b['description'] ?? '', style: TextStyle(color: Colors.grey.shade700, fontSize: 13), maxLines: 3, overflow: TextOverflow.ellipsis)),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        if (b['date']?.toString().isNotEmpty == true) ...[
+                          Icon(Icons.calendar_today, size: 12, color: Colors.grey.shade500),
+                          const SizedBox(width: 4),
+                          Text(b['date'], style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.bold)),
+                          const SizedBox(width: 12),
+                        ],
+                        if (b['day']?.toString().isNotEmpty == true) ...[
+                          Icon(Icons.wb_sunny, size: 12, color: Colors.grey.shade500),
+                          const SizedBox(width: 4),
+                          Text(b['day'], style: TextStyle(color: Colors.grey.shade600, fontSize: 11, fontWeight: FontWeight.bold)),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
   }
 
   Widget _buildMessagesTab(ColorScheme colorScheme) {
@@ -9469,8 +9822,7 @@ class _DirectChatScreenState extends State<DirectChatScreen> {
     // Refresh for incoming messages
     _refreshTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
       if (mounted) {
-        _updateNoticeCount();
-        _LoginScreenState.checkForNewAndNotify(widget.username);
+        // _LoginScreenState.checkForNewAndNotify(widget.myId);
         setState(() {});
       }
     });
