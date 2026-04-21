@@ -45,10 +45,6 @@ app.*.map.json
 # Web dependencies
 node_modules/
 .firebase/
-.firebaserc
-firebase.json
-package.json
-package-lock.json
 /test/
 *.py
 /analysis.txt
