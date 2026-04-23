@@ -1,0 +1,373 @@
+
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
+import 'dart:math';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'notification_service.dart';
+
+class DataStore {
+  static SharedPreferences? _prefs;
+  static bool isFirebaseReady = false;
+  static Map<String, dynamic>? mockUser;
+  static final _mockAuthStreamController = StreamController<Map<String, dynamic>?>.broadcast();
+  static Stream<Map<String, dynamic>?> get mockAuthStream => _mockAuthStreamController.stream;
+
+  static void updateMockUser(Map<String, dynamic>? user) {
+    mockUser = user;
+    _mockAuthStreamController.add(user);
+  }
+
+  // Static list to store all teachers, schools, and students (shared across app)
+  static List<Map<String, String>> allTeachers = [
+    {
+      'name': 'Sample Teacher',
+      'username': 'teacher',
+      'password': '123',
+      'class': '01',
+      'subjects': 'Math, Science'
+    }
+  ];
+  static List<Map<String, String>> allSchools = [
+    {'school': 'حركات الحياة', 'username': 'academic_director', 'password': '123'}
+  ];
+  static List<Map<String, String>> allStudents = [
+    {
+      'name': 'Sample Student',
+      'username': 'student',
+      'password': '123',
+      'std': '01',
+      'address': 'Sample Address',
+      'parents': 'Sample Parents',
+      'place': 'Sample Place',
+      'phone': '1234567890',
+      'blood': 'O+'
+    }
+  ];
+  static List<Map<String, dynamic>> allExams = [];
+  static List<Map<String, dynamic>> allMessages = [];
+  static List<Map<String, dynamic>> allGroups = [];
+  static List<Map<String, dynamic>> allGroupMembers = [];
+  static List<Map<String, dynamic>> allActivities = [];
+  static List<Map<String, dynamic>> allFairItems = [];
+  static List<Map<String, dynamic>> allResults = [];
+  static List<Map<String, dynamic>> allActivitySubmissions = [];
+  static List<Map<String, dynamic>> allFairPayments = [];
+  static List<Map<String, dynamic>> allAttendance = [];
+  static List<Map<String, dynamic>> allHifzProgress = [];
+  static Map<String, dynamic> allTimetables = {};
+  static List<String> holidayDates = [];
+  static List<Map<String, dynamic>> allMetrics = [];
+  static List<Map<String, dynamic>> allBulletinCards = [];
+  static List<String> allClasses = ['01', '02', '03', '04', '05'];
+  static List<String> academicYears = ['2024-2025'];
+  static String selectedAcademicYear = '2024-2025';
+  static Map<String, bool> featureConfig = {
+    'Students': true,
+    'Activities': true,
+    'F.transactions': true,
+    'Schedule': true,
+    'Results': true,
+    'Messages': true,
+    'Groups': true,
+    'Attendance': true,
+  };
+  static Map<String, String> classDepts = {};
+
+  static Future<void> saveInt(String key, int val) async => await _prefs?.setInt(key, val);
+  static int loadInt(String key, int def) => _prefs?.getInt(key) ?? def;
+  static Future<void> saveString(String key, String val) async => await _prefs?.setString(key, val);
+  static String? loadString(String key) => _prefs?.getString(key);
+  
+  static int getUnreadMessageCount(String username) {
+    if (allMessages.isEmpty) return 0;
+    int totalForMe = allMessages.where((m) {
+      final recipients = m['recipients'] as List?;
+      return (m['receiverId'] == username || recipients?.contains(username) == true) && m['senderId'] != username;
+    }).length;
+    int lastSeen = loadInt('last_seen_msg_count_$username', 0);
+    return max(0, totalForMe - lastSeen);
+  }
+  
+  static void markMessagesAsRead(String username) async {
+    int totalForMe = allMessages.where((m) {
+       final recipients = m['recipients'] as List?;
+       return (m['receiverId'] == username || recipients?.contains(username) == true) && m['senderId'] != username;
+    }).length;
+    await saveInt('last_seen_msg_count_$username', totalForMe);
+  }
+
+  static Map<String, int> _lastNotifiedMsgCount = {};
+
+  static void checkForNewAndNotify(String username) {
+     int currentCount = getUnreadMessageCount(username);
+     int lastNotified = _lastNotifiedMsgCount[username] ?? 0;
+     if (currentCount > lastNotified) {
+        NotificationService.showNotification(
+          title: 'New Message',
+          body: 'You have $currentCount unread message(s)',
+        );
+     }
+     _lastNotifiedMsgCount[username] = currentCount;
+  }
+
+  static Map<String, int> getAttendanceStats(String username, int? month, int? year) {
+    int total = 0;
+    int present = 0;
+    for (var a in allAttendance) {
+      if (a['studentUsername'] != username) continue;
+      if (a['academicYear'] != selectedAcademicYear && year == null) continue; 
+      
+      final date = DateTime.tryParse(a['date'] ?? '');
+      if (date == null) continue;
+      if (month != null && date.month != month) continue;
+      if (year != null && date.year != year) continue;
+      final periods = Map<String, String>.from(a['periods'] ?? {});
+      if (periods.isNotEmpty) {
+        total++;
+        if (periods.values.contains('P')) present++;
+      }
+    }
+    return {'total': total, 'present': present};
+  }
+
+  static Map<String, int> getAcademicYearStats(String username, String academicYear) {
+    int total = 0;
+    int present = 0;
+    for (var a in allAttendance) {
+      if (a['studentUsername'] == username && a['academicYear'] == academicYear) {
+        final periods = Map<String, String>.from(a['periods'] ?? {});
+        if (periods.isNotEmpty) {
+          total++;
+          if (periods.values.contains('P')) present++;
+        }
+      }
+    }
+    return {'total': total, 'present': present};
+  }
+
+  static IconData getIconDataFromCodePoint(int codePoint) {
+    const icons = {
+       0xe54d: Icons.school,
+       0xe0e1: Icons.badge,
+       0xe23a: Icons.event,
+       0xe211: Icons.emoji_events,
+       0xe0a1: Icons.assignment,
+       0xe491: Icons.people,
+       0xe0ef: Icons.book,
+       0xe5f9: Icons.star,
+       0xe440: Icons.notifications,
+       0xe060: Icons.analytics,
+       0xe163: Icons.class_,
+       0xe0bb: Icons.calendar_month,
+    };
+    return icons[codePoint] ?? Icons.help_outline;
+  }
+
+  static MaterialColor getColorFromValueActual(int value) {
+    const colors = [Colors.teal, Colors.green, Colors.orange, Colors.purple, Colors.red, Colors.pink, Colors.teal, Colors.green];
+    for (var c in colors) {
+       if (c.value == value) return c;
+    }
+    return Colors.teal;
+  }
+
+  static Future<void> initPrefs() async {
+    _prefs = await SharedPreferences.getInstance();
+    _loadAllData();
+  }
+
+  static void _loadAllData() {
+    if (_prefs == null) return;
+    
+    final schoolsStr = _prefs!.getString('all_schools');
+    if (schoolsStr != null) {
+      final List decoded = jsonDecode(schoolsStr);
+      if (decoded.isNotEmpty) {
+        allSchools = decoded.map((s) => Map<String, String>.from(s)).toList();
+      }
+    }
+    
+    final teachersStr = _prefs!.getString('all_teachers');
+    if (teachersStr != null) {
+      final List decoded = jsonDecode(teachersStr);
+      if (decoded.isNotEmpty) {
+        allTeachers = decoded.map((t) => Map<String, String>.from(t)).toList();
+      }
+    }
+    
+    final studentsStr = _prefs!.getString('all_students');
+    if (studentsStr != null) {
+      final List decoded = jsonDecode(studentsStr);
+      if (decoded.isNotEmpty) {
+        allStudents = decoded.map((s) => Map<String, String>.from(s)).toList();
+      }
+    }
+
+    final examsStr = _prefs!.getString('all_exams');
+    if (examsStr != null) {
+      final List decoded = jsonDecode(examsStr);
+      allExams = decoded.map((e) => Map<String, dynamic>.from(e)).toList();
+    }
+
+    // Inject System Update Notification if not present
+    bool exists = allExams.any((e) => e['title'] == 'System Enhancement Summary');
+    if (!exists) {
+      allExams.add({
+        'type': 'Announcement',
+        'title': 'System Enhancement Summary',
+        'description': 'Director Board updated with Broadcast system, quick-action shortcuts, and colorful announcement cards for all users. Check the sidebar for new commands.',
+        'date': '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}',
+        'day': 'Product Update',
+        'time': 'NEW',
+        'class': null,
+        'academicYear': selectedAcademicYear,
+      });
+    }
+
+    final messagesStr = _prefs!.getString('all_messages');
+    if (messagesStr != null) {
+      final List decoded = jsonDecode(messagesStr);
+      allMessages = decoded.map((m) => Map<String, dynamic>.from(m)).toList();
+    }
+
+    final groupsStr = _prefs!.getString('all_groups');
+    if (groupsStr != null) {
+      final List decoded = jsonDecode(groupsStr);
+      allGroups = decoded.map((g) => Map<String, dynamic>.from(g)).toList();
+    }
+
+    final gmStr = _prefs!.getString('all_group_members');
+    if (gmStr != null) {
+      final List decoded = jsonDecode(gmStr);
+      allGroupMembers = decoded.map((g) => Map<String, dynamic>.from(g)).toList();
+    }
+
+    final activitiesStr = _prefs!.getString('all_activities');
+    if (activitiesStr != null) {
+      final List decoded = jsonDecode(activitiesStr);
+      allActivities = decoded.map((a) => Map<String, dynamic>.from(a)).toList();
+    }
+
+    final fairStr = _prefs!.getString('all_fair_items');
+    if (fairStr != null) {
+      final List decoded = jsonDecode(fairStr);
+      allFairItems = decoded.map((f) => Map<String, dynamic>.from(f)).toList();
+    }
+
+    final resStr = _prefs!.getString('all_results');
+    if (resStr != null) {
+      final List decoded = jsonDecode(resStr);
+      allResults = decoded.map((r) => Map<String, dynamic>.from(r)).toList();
+    }
+
+    final subStr = _prefs!.getString('all_activity_submissions');
+    if (subStr != null) {
+      final List decoded = jsonDecode(subStr);
+      allActivitySubmissions = decoded.map((s) => Map<String, dynamic>.from(s)).toList();
+    }
+
+    final payStr = _prefs!.getString('all_fair_payments');
+    if (payStr != null) {
+      final List decoded = jsonDecode(payStr);
+      allFairPayments = decoded.map((p) => Map<String, dynamic>.from(p)).toList();
+    }
+
+    final attStr = _prefs!.getString('all_attendance');
+    if (attStr != null) {
+      final List decoded = jsonDecode(attStr);
+      allAttendance = decoded.map((p) => Map<String, dynamic>.from(p)).toList();
+    }
+
+    final hifzStr = _prefs!.getString('all_hifz_progress');
+    if (hifzStr != null) {
+      final List decoded = jsonDecode(hifzStr);
+      allHifzProgress = decoded.map((h) => Map<String, dynamic>.from(h)).toList();
+    }
+
+    final ttStr = _prefs!.getString('all_timetables');
+    if (ttStr != null) {
+      allTimetables = Map<String, dynamic>.from(jsonDecode(ttStr));
+    }
+
+    final holStr = _prefs!.getString('holiday_dates');
+    if (holStr != null) {
+      final List decoded = jsonDecode(holStr);
+      holidayDates = decoded.map((h) => h.toString()).toList();
+    }
+
+    final ayStr = _prefs!.getString('academic_years');
+    if (ayStr != null) {
+      final List decoded = jsonDecode(ayStr);
+      academicYears = decoded.map((a) => a.toString()).toList();
+    }
+
+    final curAyStr = _prefs!.getString('selected_academic_year');
+    if (curAyStr != null) {
+      selectedAcademicYear = curAyStr;
+    }
+
+    final classesStr = _prefs!.getString('all_classes');
+    if (classesStr != null) {
+      final List decoded = jsonDecode(classesStr);
+      if (decoded.isNotEmpty) {
+        allClasses = decoded.map((c) => c.toString()).toList();
+      }
+    }
+
+    final deptsStr = _prefs!.getString('all_class_depts');
+    if (deptsStr != null) {
+      classDepts = Map<String, String>.from(jsonDecode(deptsStr));
+    }
+    // Migration: Ensure all classes have a department
+    bool deptsChanged = false;
+    for (var c in allClasses) {
+      if (classDepts[c] == null) {
+        classDepts[c] = 'DA\'WA'; // Default
+        deptsChanged = true;
+      }
+    }
+    if (deptsChanged) saveAllData();
+
+    final metricsStr = _prefs!.getString('all_metrics');
+    if (metricsStr != null) {
+      final List decodedList = jsonDecode(metricsStr);
+      allMetrics = decodedList.map((m) {
+        final Map<String, dynamic> data = Map<String, dynamic>.from(m);
+        return data;
+      }).toList();
+    }
+
+    final configStr = _prefs!.getString('feature_config');
+    if (configStr != null) {
+      final Map<String, dynamic> decoded = jsonDecode(configStr);
+      featureConfig = Map<String, bool>.from(decoded);
+    }
+  }
+
+  static void saveAllData() {
+    if (_prefs == null) return;
+    _prefs!.setString('all_schools', jsonEncode(allSchools));
+    _prefs!.setString('all_teachers', jsonEncode(allTeachers));
+    _prefs!.setString('all_students', jsonEncode(allStudents));
+    _prefs!.setString('all_exams', jsonEncode(allExams));
+    _prefs!.setString('all_messages', jsonEncode(allMessages));
+    _prefs!.setString('all_groups', jsonEncode(allGroups));
+    _prefs!.setString('all_group_members', jsonEncode(allGroupMembers));
+    _prefs!.setString('all_activities', jsonEncode(allActivities));
+    _prefs!.setString('all_fair_items', jsonEncode(allFairItems));
+    _prefs!.setString('all_results', jsonEncode(allResults));
+    _prefs!.setString('all_activity_submissions', jsonEncode(allActivitySubmissions));
+    _prefs!.setString('all_fair_payments', jsonEncode(allFairPayments));
+    _prefs!.setString('all_attendance', jsonEncode(allAttendance));
+    _prefs!.setString('all_hifz_progress', jsonEncode(allHifzProgress));
+    _prefs!.setString('all_timetables', jsonEncode(allTimetables));
+    _prefs!.setString('holiday_dates', jsonEncode(holidayDates));
+    _prefs!.setString('academic_years', jsonEncode(academicYears));
+    _prefs!.setString('selected_academic_year', selectedAcademicYear);
+    _prefs!.setString('all_classes', jsonEncode(allClasses));
+    _prefs!.setString('all_metrics', jsonEncode(allMetrics));
+    _prefs!.setString('feature_config', jsonEncode(featureConfig));
+    _prefs!.setString('all_class_depts', jsonEncode(classDepts));
+  }
+}

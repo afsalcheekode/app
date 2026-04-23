@@ -1,0 +1,224 @@
+﻿Analyzing app...                                                
+
+   info - The private field _academicYears could be 'final' - lib\main.dart:137:23 - prefer_final_fields
+   info - The private field _lastNotifiedMsgCount could be 'final' - lib\main.dart:176:27 - prefer_final_fields
+  error - Undefined name 'metricsStr' - lib\main.dart:364:9 - undefined_identifier
+  error - Undefined name 'metricsStr' - lib\main.dart:365:43 - undefined_identifier
+   info - Don't use 'BuildContext's across async gaps - lib\main.dart:1106:7 - use_build_context_synchronously
+   info - The declaration '_messages' isn't referenced - lib\main.dart:1298:34 - unused_element
+   info - The declaration '_showAddTeacherDialog' isn't referenced - lib\main.dart:1566:8 - unused_element
+   info - Statements in an if should be enclosed in a block - lib\main.dart:1613:38 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:1614:34 - curly_braces_in_flow_control_structures
+  error - Undefined name 'selectedClass' - lib\main.dart:1715:40 - undefined_identifier
+warning - The value of the local variable 'isMobile' isn't used - lib\main.dart:2122:16 - unused_local_variable
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:2280:96 - prefer_const_constructors
+   info - The declaration '_syncScrolls' isn't referenced - lib\main.dart:2471:8 - unused_element
+   info - Unnecessary use of 'toList' in a spread - lib\main.dart:2629:12 - unnecessary_to_list_in_spreads
+   info - The declaration '_showAddBulletinDialog' isn't referenced - lib\main.dart:2670:8 - unused_element
+   info - Statements in an if should be enclosed in a block - lib\main.dart:2697:34 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:2698:20 - curly_braces_in_flow_control_structures
+  error - The method '_showAddActivityDialog' isn't defined for the type '_SchoolDashboardScreenState' - lib\main.dart:3028:36 - undefined_method
+  error - The method '_showAddActivityDialog' isn't defined for the type '_SchoolDashboardScreenState' - lib\main.dart:3052:32 - undefined_method
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3070:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3070:29 - prefer_const_constructors
+  error - The method '_showAddFairDialog' isn't defined for the type '_SchoolDashboardScreenState' - lib\main.dart:3081:36 - undefined_method
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3082:32 - prefer_const_constructors
+  error - The method '_showAddFairDialog' isn't defined for the type '_SchoolDashboardScreenState' - lib\main.dart:3099:32 - undefined_method
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3117:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3117:29 - prefer_const_constructors
+  error - The method '_showAddResultDialog' isn't defined for the type '_SchoolDashboardScreenState' - lib\main.dart:3128:36 - undefined_method
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3129:32 - prefer_const_constructors
+  error - The method '_showAddResultDialog' isn't defined for the type '_SchoolDashboardScreenState' - lib\main.dart:3146:32 - undefined_method
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3164:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3164:29 - prefer_const_constructors
+  error - The method '_showAddClassAnnouncementDialog' isn't defined for the type '_SchoolDashboardScreenState' - lib\main.dart:3175:36 - undefined_method
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3176:32 - prefer_const_constructors
+  error - The method '_showAddClassAnnouncementDialog' isn't defined for the type '_SchoolDashboardScreenState' - lib\main.dart:3193:32 - undefined_method
+  error - Undefined name '_classes' - lib\main.dart:3206:25 - undefined_identifier
+  error - Undefined name 'context' - lib\main.dart:3249:45 - undefined_identifier
+  error - Undefined name 'context' - lib\main.dart:3249:93 - undefined_identifier
+  error - Undefined name '_students' - lib\main.dart:3257:29 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\main.dart:3261:32 - undefined_function
+  error - Undefined name '_selectedClassInTab' - lib\main.dart:3261:47 - undefined_identifier
+  error - Undefined name 'context' - lib\main.dart:3307:16 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\main.dart:3326:17 - undefined_function
+  error - Undefined name 'context' - lib\main.dart:3344:16 - undefined_identifier
+  error - The function 'setState' isn't defined - lib\main.dart:3353:15 - undefined_function
+  error - Undefined name '_teachers' - lib\main.dart:3374:18 - undefined_identifier
+  error - Undefined name '_teachers' - lib\main.dart:3384:28 - undefined_identifier
+  error - Undefined name '_teachers' - lib\main.dart:3386:29 - undefined_identifier
+  error - The function '_showAddTeacherDialog' isn't defined - lib\main.dart:3390:36 - undefined_function
+  error - The function 'setState' isn't defined - lib\main.dart:3396:42 - undefined_function
+  error - Undefined name '_teachers' - lib\main.dart:3396:57 - undefined_identifier
+  error - The function '_showAddTeacherDialog' isn't defined - lib\main.dart:3409:32 - undefined_function
+  error - Undefined name '_exams' - lib\main.dart:3428:18 - undefined_identifier
+  error - Undefined name '_exams' - lib\main.dart:3441:30 - undefined_identifier
+  error - Undefined name '_exams' - lib\main.dart:3443:34 - undefined_identifier
+   info - Unnecessary use of 'toList' in a spread - lib\main.dart:3505:38 - unnecessary_to_list_in_spreads
+  error - The function '_showAddExamDialog' isn't defined - lib\main.dart:3511:58 - undefined_function
+  error - The function 'setState' isn't defined - lib\main.dart:3527:53 - undefined_function
+  error - The function '_showAddExamDialog' isn't defined - lib\main.dart:3560:34 - undefined_function
+  error - Undefined name '_exams' - lib\main.dart:3576:23 - undefined_identifier
+  error - Undefined name '_classes' - lib\main.dart:3645:21 - undefined_identifier
+  error - Undefined name '_students' - lib\main.dart:3646:25 - undefined_identifier
+  error - Undefined name '_teachers' - lib\main.dart:3647:25 - undefined_identifier
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3660:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3661:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3662:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3663:24 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:3665:26 - prefer_const_constructors
+  error - Undefined name '_showAddMessageDialog' - lib\main.dart:3670:28 - undefined_identifier
+  error - Undefined name 'context' - lib\main.dart:3687:28 - undefined_identifier
+  error - Undefined name 'context' - lib\main.dart:3693:47 - undefined_identifier
+  error - Undefined name 'context' - lib\main.dart:3701:51 - undefined_identifier
+  error - Undefined name 'context' - lib\main.dart:3719:32 - undefined_identifier
+  error - Undefined name 'context' - lib\main.dart:3725:51 - undefined_identifier
+  error - Undefined name 'context' - lib\main.dart:3733:55 - undefined_identifier
+  error - Expected a method, getter, setter or operator declaration - lib\main.dart:3806:1 - expected_executable
+   info - The private field _chatEmojiOpen could be 'final' - lib\main.dart:3852:8 - prefer_final_fields
+warning - The value of the field '_chatEmojiOpen' isn't used - lib\main.dart:3852:8 - unused_field
+   info - The declaration '_metrics' isn't referenced - lib\main.dart:3897:34 - unused_element
+   info - Statements in an if should be enclosed in a block - lib\main.dart:4113:26 - curly_braces_in_flow_control_structures
+   info - The declaration '_attendanceBadge' isn't referenced - lib\main.dart:4363:10 - unused_element
+   info - The declaration '_buildMetricCard' isn't referenced - lib\main.dart:4487:10 - unused_element
+   info - Unnecessary use of 'toList' in a spread - lib\main.dart:4825:38 - unnecessary_to_list_in_spreads
+   info - Unnecessary use of 'toList' in a spread - lib\main.dart:4931:36 - unnecessary_to_list_in_spreads
+   info - Function literals shouldn't be passed to 'forEach' - lib\main.dart:5141:22 - avoid_function_literals_in_foreach_calls
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:5188:18 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\main.dart:5189:23 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:5192:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:5193:24 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\main.dart:5195:29 - prefer_const_literals_to_create_immutables
+   info - The declaration '_sendGlobalReply' isn't referenced - lib\main.dart:5295:8 - unused_element
+   info - The declaration '_buildClassGroupTab' isn't referenced - lib\main.dart:5313:10 - unused_element
+   info - The declaration '_teachers' isn't referenced - lib\main.dart:5662:33 - unused_element
+warning - The value of the local variable 'isMobile' isn't used - lib\main.dart:5694:16 - unused_local_variable
+warning - The value of the local variable 'classCtrl' isn't used - lib\main.dart:6232:11 - unused_local_variable
+   info - The declaration '_buildAddButton' isn't referenced - lib\main.dart:6812:10 - unused_element
+   info - The declaration '_buildMetricCard' isn't referenced - lib\main.dart:6979:10 - unused_element
+warning - The value of the local variable 'completedActivitiesCount' isn't used - lib\main.dart:7599:11 - unused_local_variable
+warning - The value of the local variable 'paidFairsCount' isn't used - lib\main.dart:7607:11 - unused_local_variable
+   info - Statements in an if should be enclosed in a block - lib\main.dart:7927:56 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:7928:61 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:7929:61 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:7930:61 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:7931:61 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:7932:61 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:7933:46 - curly_braces_in_flow_control_structures
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:8226:20 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\main.dart:8227:25 - prefer_const_literals_to_create_immutables
+   info - Unnecessary use of 'toList' in a spread - lib\main.dart:8425:46 - unnecessary_to_list_in_spreads
+   info - The declaration '_buildScheduleDetail' isn't referenced - lib\main.dart:8444:10 - unused_element
+   info - Unnecessary use of 'toList' in a spread - lib\main.dart:8619:56 - unnecessary_to_list_in_spreads
+   info - Unnecessary use of 'toList' in a spread - lib\main.dart:8627:40 - unnecessary_to_list_in_spreads
+   info - Function literals shouldn't be passed to 'forEach' - lib\main.dart:9404:22 - avoid_function_literals_in_foreach_calls
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:9441:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\main.dart:9442:24 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\main.dart:9444:29 - prefer_const_literals_to_create_immutables
+   info - Statements in an if should be enclosed in a block - lib\main.dart:9687:32 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:9687:67 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:9688:32 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:9688:67 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:10008:28 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\main.dart:10009:12 - curly_braces_in_flow_control_structures
+   info - The imported package 'firebase_functions' isn't a dependency of the importing package - node_modules\firebase-tools\templates\init\functions\dart\server.dart:1:8 - depend_on_referenced_packages
+  error - Target of URI doesn't exist: 'package:firebase_functions/firebase_functions.dart' - node_modules\firebase-tools\templates\init\functions\dart\server.dart:1:8 - uri_does_not_exist
+  error - The function 'fireUp' isn't defined - node_modules\firebase-tools\templates\init\functions\dart\server.dart:4:3 - undefined_function
+  error - The name 'HttpsOptions' isn't a class - node_modules\firebase-tools\templates\init\functions\dart\server.dart:8:22 - creation_with_non_type
+  error - The function 'Cors' isn't defined - node_modules\firebase-tools\templates\init\functions\dart\server.dart:9:15 - undefined_function
+  error - The function 'Instances' isn't defined - node_modules\firebase-tools\templates\init\functions\dart\server.dart:12:23 - undefined_function
+  error - The function 'Response' isn't defined - node_modules\firebase-tools\templates\init\functions\dart\server.dart:14:26 - undefined_function
+  error - Classes can only extend other classes - scratch\focused_attendance_row.dart:1:37 - extends_non_class
+  error - Undefined class 'State' - scratch\focused_attendance_row.dart:15:3 - undefined_class
+warning - The method doesn't override an inherited method - scratch\focused_attendance_row.dart:15:32 - override_on_non_overriding_member
+  error - Classes can only extend other classes - scratch\focused_attendance_row.dart:18:42 - extends_non_class
+warning - The method doesn't override an inherited method - scratch\focused_attendance_row.dart:22:8 - override_on_non_overriding_member
+  error - The method 'initState' isn't defined in a superclass of '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:23:11 - undefined_super_member
+warning - The method doesn't override an inherited method - scratch\focused_attendance_row.dart:28:8 - override_on_non_overriding_member
+  error - The method 'didUpdateWidget' isn't defined in a superclass of '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:29:11 - undefined_super_member
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:30:27 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:30:65 - undefined_identifier
+  error - Undefined name '_LoginScreenState' - scratch\focused_attendance_row.dart:36:20 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:37:38 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:37:81 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:42:23 - undefined_identifier
+  error - The method 'setState' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:46:5 - undefined_method
+  error - The method 'setState' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:50:5 - undefined_method
+  error - Undefined name '_LoginScreenState' - scratch\focused_attendance_row.dart:52:19 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:53:38 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:53:81 - undefined_identifier
+  error - Undefined name '_LoginScreenState' - scratch\focused_attendance_row.dart:57:35 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:59:30 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:60:19 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:67:11 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:72:33 - undefined_identifier
+  error - Undefined name '_LoginScreenState' - scratch\focused_attendance_row.dart:75:10 - undefined_identifier
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:75:43 - undefined_identifier
+  error - Undefined name '_LoginScreenState' - scratch\focused_attendance_row.dart:80:7 - undefined_identifier
+  error - Undefined name '_LoginScreenState' - scratch\focused_attendance_row.dart:82:7 - undefined_identifier
+  error - Undefined name '_LoginScreenState' - scratch\focused_attendance_row.dart:84:5 - undefined_identifier
+  error - Undefined class 'Widget' - scratch\focused_attendance_row.dart:88:3 - undefined_class
+warning - The method doesn't override an inherited method - scratch\focused_attendance_row.dart:88:10 - override_on_non_overriding_member
+  error - Undefined class 'BuildContext' - scratch\focused_attendance_row.dart:88:16 - undefined_class
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:89:20 - undefined_identifier
+  error - The method 'Container' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:91:12 - undefined_method
+  error - The name 'only' isn't a class - scratch\focused_attendance_row.dart:92:21 - creation_with_non_type
+  error - The method 'BoxDecoration' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:93:19 - undefined_method
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:94:16 - undefined_identifier
+  error - Undefined name 'BorderRadius' - scratch\focused_attendance_row.dart:95:23 - undefined_identifier
+  error - The method 'BoxShadow' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:96:21 - undefined_method
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:96:38 - undefined_identifier
+  error - The name 'Offset' isn't a class - scratch\focused_attendance_row.dart:96:99 - creation_with_non_type
+  error - The method 'Padding' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:98:14 - undefined_method
+  error - The name 'symmetric' isn't a class - scratch\focused_attendance_row.dart:99:24 - creation_with_non_type
+  error - The method 'Row' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:100:16 - undefined_method
+  error - The method 'CircleAvatar' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:102:13 - undefined_method
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:104:41 - undefined_identifier
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:104:64 - undefined_identifier
+  error - The method 'Text' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:105:22 - undefined_method
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:105:27 - undefined_identifier
+  error - The method 'TextStyle' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:105:69 - undefined_method
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:105:95 - undefined_identifier
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:105:109 - undefined_identifier
+  error - Undefined name 'FontWeight' - scratch\focused_attendance_row.dart:105:134 - undefined_identifier
+  error - The name 'SizedBox' isn't a class - scratch\focused_attendance_row.dart:107:19 - creation_with_non_type
+  error - The method 'Expanded' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:108:13 - undefined_method
+  error - The method 'Column' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:109:22 - undefined_method
+  error - Undefined name 'CrossAxisAlignment' - scratch\focused_attendance_row.dart:110:37 - undefined_identifier
+  error - The method 'Text' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:112:19 - undefined_method
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:112:24 - undefined_identifier
+  error - The name 'TextStyle' isn't a class - scratch\focused_attendance_row.dart:112:67 - creation_with_non_type
+  error - Undefined name 'FontWeight' - scratch\focused_attendance_row.dart:112:89 - undefined_identifier
+  error - The method 'Text' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:113:19 - undefined_method
+  error - Undefined name 'widget' - scratch\focused_attendance_row.dart:113:31 - undefined_identifier
+  error - The name 'TextStyle' isn't a class - scratch\focused_attendance_row.dart:113:74 - creation_with_non_type
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:113:104 - undefined_identifier
+  error - The method 'Container' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:118:15 - undefined_method
+  error - The name 'symmetric' isn't a class - scratch\focused_attendance_row.dart:119:32 - creation_with_non_type
+  error - The method 'BoxDecoration' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:120:29 - undefined_method
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:120:50 - undefined_identifier
+  error - Undefined name 'BorderRadius' - scratch\focused_attendance_row.dart:120:86 - undefined_identifier
+  error - The name 'Text' isn't a class - scratch\focused_attendance_row.dart:121:30 - creation_with_non_type
+  error - The method 'TextStyle' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:121:57 - undefined_method
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:121:74 - undefined_identifier
+  error - Undefined name 'FontWeight' - scratch\focused_attendance_row.dart:121:113 - undefined_identifier
+  error - The method 'Row' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:124:15 - undefined_method
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:126:35 - undefined_identifier
+  error - The name 'SizedBox' isn't a class - scratch\focused_attendance_row.dart:127:25 - creation_with_non_type
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:128:35 - undefined_identifier
+  error - Undefined class 'Widget' - scratch\focused_attendance_row.dart:137:3 - undefined_class
+  error - Undefined class 'Color' - scratch\focused_attendance_row.dart:137:35 - undefined_class
+  error - The method 'GestureDetector' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:139:12 - undefined_method
+  error - The method 'AnimatedContainer' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:141:14 - undefined_method
+  error - The name 'symmetric' isn't a class - scratch\focused_attendance_row.dart:143:24 - creation_with_non_type
+  error - The method 'BoxDecoration' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:144:21 - undefined_method
+  error - Undefined name 'BorderRadius' - scratch\focused_attendance_row.dart:146:25 - undefined_identifier
+  error - Undefined name 'Border' - scratch\focused_attendance_row.dart:147:19 - undefined_identifier
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:147:50 - undefined_identifier
+  error - The method 'Text' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:149:16 - undefined_method
+  error - The method 'TextStyle' isn't defined for the type '_FocusedAttendanceRowState' - scratch\focused_attendance_row.dart:149:35 - undefined_method
+  error - Undefined name 'Colors' - scratch\focused_attendance_row.dart:149:65 - undefined_identifier
+  error - Undefined name 'FontWeight' - scratch\focused_attendance_row.dart:149:99 - undefined_identifier
+   info - Don't invoke 'print' in production code - scratch\test_date.dart:2:3 - avoid_print
+   info - Don't invoke 'print' in production code - scratch\test_date.dart:3:3 - avoid_print
+

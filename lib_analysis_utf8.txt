@@ -1,0 +1,112 @@
+﻿Analyzing lib...                                                
+
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\admin_board.dart:2:8 - unnecessary_import
+   info - The import of 'package:flutter/gestures.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\admin_board.dart:3:8 - unnecessary_import
+warning - Unused import: 'package:shared_preferences/shared_preferences.dart' - lib\admin_board.dart:4:8 - unused_import
+warning - Unused import: 'dart:convert' - lib\admin_board.dart:5:8 - unused_import
+warning - Unused import: 'dart:math' - lib\admin_board.dart:6:8 - unused_import
+warning - Unused import: 'dart:async' - lib\admin_board.dart:7:8 - unused_import
+warning - Unused import: 'notification_service.dart' - lib\admin_board.dart:10:8 - unused_import
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\chat_screen.dart:2:8 - unnecessary_import
+   info - The import of 'package:flutter/gestures.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\chat_screen.dart:3:8 - unnecessary_import
+warning - Unused import: 'package:shared_preferences/shared_preferences.dart' - lib\chat_screen.dart:4:8 - unused_import
+warning - Unused import: 'dart:convert' - lib\chat_screen.dart:5:8 - unused_import
+warning - Unused import: 'dart:math' - lib\chat_screen.dart:6:8 - unused_import
+warning - Unused import: 'common.dart' - lib\chat_screen.dart:8:8 - unused_import
+warning - Unused import: 'notification_service.dart' - lib\chat_screen.dart:10:8 - unused_import
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\common.dart:3:8 - unnecessary_import
+warning - Unused import: 'dart:convert' - lib\common.dart:4:8 - unused_import
+   info - Don't use 'BuildContext's across async gaps - lib\common.dart:31:7 - use_build_context_synchronously
+   info - The private field _lastNotifiedMsgCount could be 'final' - lib\data_store.dart:90:27 - prefer_final_fields
+warning - Unused import: 'dart:convert' - lib\director_board.dart:3:8 - unused_import
+warning - Unused import: 'common.dart' - lib\director_board.dart:6:8 - unused_import
+warning - Unused import: 'notification_service.dart' - lib\director_board.dart:8:8 - unused_import
+warning - The value of the field '_tabIndex' isn't used - lib\director_board.dart:26:7 - unused_field
+warning - The value of the field '_selectedClassFilter' isn't used - lib\director_board.dart:28:11 - unused_field
+warning - The value of the local variable 'cs' isn't used - lib\director_board.dart:124:11 - unused_local_variable
+   info - Statements in an if should be enclosed in a block - lib\director_board.dart:619:34 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\director_board.dart:620:32 - curly_braces_in_flow_control_structures
+   info - The declaration '_sentBroadcasts' isn't referenced - lib\director_board.dart:1092:34 - unused_element
+   info - Use 'const' with the constructor to improve performance - lib\director_board.dart:1147:20 - prefer_const_constructors
+warning - Unused import: 'dart:convert' - lib\login_screen.dart:2:8 - unused_import
+warning - Unused import: 'dart:math' - lib\login_screen.dart:3:8 - unused_import
+warning - Unused import: 'data_store.dart' - lib\login_screen.dart:5:8 - unused_import
+warning - Unused import: 'notification_service.dart' - lib\login_screen.dart:6:8 - unused_import
+warning - Unused import: 'student_board.dart' - lib\login_screen.dart:7:8 - unused_import
+warning - Unused import: 'teacher_board.dart' - lib\login_screen.dart:8:8 - unused_import
+warning - Unused import: 'director_board.dart' - lib\login_screen.dart:9:8 - unused_import
+warning - Unused import: 'dart:typed_data' - lib\pdf_service.dart:1:8 - unused_import
+   info - Use 'const' with the constructor to improve performance - lib\pdf_service.dart:64:29 - prefer_const_constructors
+   info - 'Table.fromTextArray' is deprecated and shouldn't be used. Use TableHelper.fromTextArray() instead - lib\pdf_service.dart:83:15 - deprecated_member_use
+   info - Statements in an if should be enclosed in a block - lib\pdf_service.dart:106:36 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pdf_service.dart:107:41 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pdf_service.dart:108:41 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pdf_service.dart:109:41 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\pdf_service.dart:110:41 - curly_braces_in_flow_control_structures
+   info - The import of 'package:flutter/services.dart' is unnecessary because all of the used elements are also provided by the import of 'package:flutter/material.dart' - lib\student_board.dart:2:8 - unnecessary_import
+warning - Unused import: 'package:shared_preferences/shared_preferences.dart' - lib\student_board.dart:4:8 - unused_import
+warning - Unused import: 'dart:convert' - lib\student_board.dart:5:8 - unused_import
+warning - Unused import: 'dart:math' - lib\student_board.dart:6:8 - unused_import
+warning - Unused import: 'notification_service.dart' - lib\student_board.dart:10:8 - unused_import
+   info - The private field _chatEmojiOpen could be 'final' - lib\student_board.dart:55:8 - prefer_final_fields
+warning - The value of the field '_chatEmojiOpen' isn't used - lib\student_board.dart:55:8 - unused_field
+   info - The declaration '_metrics' isn't referenced - lib\student_board.dart:101:34 - unused_element
+warning - Dead code - lib\student_board.dart:114:60 - dead_code
+   info - Statements in an if should be enclosed in a block - lib\student_board.dart:321:26 - curly_braces_in_flow_control_structures
+   info - The declaration '_attendanceBadge' isn't referenced - lib\student_board.dart:602:10 - unused_element
+   info - The declaration '_buildMetricCard' isn't referenced - lib\student_board.dart:724:10 - unused_element
+warning - The value of the local variable 'today' isn't used - lib\student_board.dart:752:11 - unused_local_variable
+   info - Unnecessary use of 'toList' in a spread - lib\student_board.dart:1237:38 - unnecessary_to_list_in_spreads
+   info - Unnecessary use of 'toList' in a spread - lib\student_board.dart:1343:36 - unnecessary_to_list_in_spreads
+   info - The variable name '_buildImportantBulletins_removed' isn't a lowerCamelCase identifier - lib\student_board.dart:1359:10 - non_constant_identifier_names
+   info - Function literals shouldn't be passed to 'forEach' - lib\student_board.dart:1555:22 - avoid_function_literals_in_foreach_calls
+   info - Use 'const' with the constructor to improve performance - lib\student_board.dart:1602:18 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\student_board.dart:1603:23 - prefer_const_literals_to_create_immutables
+   info - Use 'const' with the constructor to improve performance - lib\student_board.dart:1606:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\student_board.dart:1607:24 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\student_board.dart:1609:29 - prefer_const_literals_to_create_immutables
+   info - The declaration '_sendGlobalReply' isn't referenced - lib\student_board.dart:1709:8 - unused_element
+   info - The declaration '_buildClassGroupTab' isn't referenced - lib\student_board.dart:1727:10 - unused_element
+warning - Unused import: 'package:shared_preferences/shared_preferences.dart' - lib\teacher_board.dart:4:8 - unused_import
+warning - Unused import: 'dart:convert' - lib\teacher_board.dart:5:8 - unused_import
+warning - Unused import: 'notification_service.dart' - lib\teacher_board.dart:10:8 - unused_import
+warning - Unused import: 'chat_screen.dart' - lib\teacher_board.dart:12:8 - unused_import
+   info - The declaration '_teachers' isn't referenced - lib\teacher_board.dart:163:33 - unused_element
+warning - The value of the local variable 'isMobile' isn't used - lib\teacher_board.dart:195:16 - unused_local_variable
+warning - The value of the local variable 'classCtrl' isn't used - lib\teacher_board.dart:730:11 - unused_local_variable
+   info - The declaration '_buildAddButton' isn't referenced - lib\teacher_board.dart:1324:10 - unused_element
+warning - The value of the local variable 'completedActivitiesCount' isn't used - lib\teacher_board.dart:2419:11 - unused_local_variable
+warning - The value of the local variable 'paidFairsCount' isn't used - lib\teacher_board.dart:2427:11 - unused_local_variable
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:2758:56 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:2759:61 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:2760:61 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:2761:61 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:2762:61 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:2763:61 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:2764:46 - curly_braces_in_flow_control_structures
+   info - Use 'const' with the constructor to improve performance - lib\teacher_board.dart:3057:20 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\teacher_board.dart:3058:25 - prefer_const_literals_to_create_immutables
+   info - Unnecessary use of 'toList' in a spread - lib\teacher_board.dart:3299:46 - unnecessary_to_list_in_spreads
+   info - The declaration '_buildScheduleDetail' isn't referenced - lib\teacher_board.dart:3322:10 - unused_element
+   info - Unnecessary use of 'toList' in a spread - lib\teacher_board.dart:3497:56 - unnecessary_to_list_in_spreads
+   info - Unnecessary use of 'toList' in a spread - lib\teacher_board.dart:3505:40 - unnecessary_to_list_in_spreads
+   info - The declaration '_buildImportantBulletins' isn't referenced - lib\teacher_board.dart:3591:10 - unused_element
+   info - Function literals shouldn't be passed to 'forEach' - lib\teacher_board.dart:4282:22 - avoid_function_literals_in_foreach_calls
+   info - The declaration '_buildGlobalGroupTab' isn't referenced - lib\teacher_board.dart:4302:10 - unused_element
+   info - Use 'const' with the constructor to improve performance - lib\teacher_board.dart:4319:15 - prefer_const_constructors
+   info - Use 'const' with the constructor to improve performance - lib\teacher_board.dart:4320:24 - prefer_const_constructors
+   info - Use 'const' literals as arguments to constructors of '@immutable' classes - lib\teacher_board.dart:4322:29 - prefer_const_literals_to_create_immutables
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:4565:32 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:4565:67 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:4566:32 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:4566:67 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:4938:28 - curly_braces_in_flow_control_structures
+   info - Statements in an if should be enclosed in a block - lib\teacher_board.dart:4939:12 - curly_braces_in_flow_control_structures
+
+flutter : 102 issues found. (ran in 15.9s)
+At line:1 char:1
++ flutter analyze lib/ --no-pub > lib_analysis.txt 2>&1
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (102 issues found. (ran in 15.9s):String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

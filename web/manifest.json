@@ -1,6 +1,6 @@
-{
-    "name": "Bridge",
-    "short_name": "Bridge",
+﻿{
+    "name": "حركات الحياة",
+    "short_name": "حركات الحياة",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#6366F1",

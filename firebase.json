@@ -8,11 +8,11 @@
     ],
     "headers": [
       {
-        "source": "**/*.@(js|css|png|jpg|jpeg|gif|svg|ico|webmanifest|json)",
+        "source": "**/*",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "max-age=31536000"
+            "value": "max-age=0, no-cache, no-store, must-revalidate"
           }
         ]
       },
