@@ -79,7 +79,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
               TextField(
                 controller: userCtrl,
                 decoration: InputDecoration(
-                  labelText: 'Username',
+                  labelText: 'Login Username (for logging in)',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   prefixIcon: const Icon(Icons.account_circle, color: Colors.grey),
                 ),
@@ -87,9 +87,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
               const SizedBox(height: 16),
               TextField(
                 controller: passCtrl,
-                obscureText: true,
                 decoration: InputDecoration(
-                  labelText: 'Password',
+                  labelText: 'Login Password',
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   prefixIcon: const Icon(Icons.lock, color: Colors.grey),
                 ),
@@ -293,11 +292,21 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                                   child: Icon(Icons.school_rounded, color: colorScheme.primary),
                                 ),
                                 title: Text(s['school'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                                subtitle: Text(
-                                  'Director: ${s['academic_director'] ?? 'Not Assigned'} | User: ${s['username']}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(fontSize: 11),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Director: ${s['academic_director'] ?? 'Not Assigned'}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.teal)),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Text('User: ', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                                        SelectableText(s['username'] ?? '', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                        const SizedBox(width: 8),
+                                        Text('Pass: ', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                                        SelectableText(s['password'] ?? '', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                                 trailing: Row(
                                   mainAxisSize: MainAxisSize.min,
