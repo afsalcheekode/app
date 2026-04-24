@@ -138,20 +138,20 @@ class AuthWrapper extends StatelessWidget {
             
             if (role == 'director' || role == 'academic_director' || role == 'school') {
               return director.SchoolDashboardScreen(
-                schoolName: data!['schoolName'] ?? data['school'] ?? 'Academic Director',
+                schoolName: data['schoolName'] ?? data['school'] ?? 'Academic Director',
                 directorName: data['academic_director'] ?? data['manager'] ?? 'Director',
                 username: username,
               );
             } else if (role == 'teacher') {
               return teacher.TeacherBoardScreen(
-                teacherName: data!['name'] ?? 'Teacher',
+                teacherName: data['name'] ?? 'Teacher',
                 assignedClass: data['class'] ?? '',
                 subjects: data['subjects'] ?? '',
                 teacherUsername: username,
               );
             } else if (role == 'student') {
               return student.StudentBoardScreen(
-                studentName: data!['name'] ?? 'Student',
+                studentName: data['name'] ?? 'Student',
                 studentClass: data['std'] ?? '',
                 studentUsername: username,
                 studentData: Map<String, String>.from(data.map((k, v) => MapEntry(k, v.toString()))),

@@ -9,6 +9,7 @@ import 'common.dart';
 import 'data_store.dart';
 import 'notification_service.dart';
 import 'login_screen.dart';
+import 'auth_service.dart';
 
 class AdminBoardScreen extends StatefulWidget {
   const AdminBoardScreen({super.key});
