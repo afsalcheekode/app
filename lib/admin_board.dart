@@ -263,9 +263,23 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                               final auth = AuthService();
                               final school = _schools[index];
                               try {
+                                showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
                                 await auth.signIn(school['username']!, school['password']!);
-                                // The AuthWrapper in main.dart will automatically switch to the SchoolDashboard
+                                if (mounted) {
+                                  Navigator.pop(context); // Close loading
+                                  // Navigate to the dashboard
+                                  Navigator.pushAndRemoveUntil(
+                                    context, 
+                                    MaterialPageRoute(builder: (_) => SchoolDashboardScreen(
+                                      schoolName: school['school'] ?? 'School', 
+                                      directorName: school['academic_director'] ?? 'Director',
+                                      username: school['username']!,
+                                    )),
+                                    (route) => false
+                                  );
+                                }
                               } catch (e) {
+                                if (mounted) Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Login failed: $e')),
                                 );
@@ -293,8 +307,22 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                                       onPressed: () async {
                                         final auth = AuthService();
                                         try {
+                                          showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
                                           await auth.signIn(s['username']!, s['password']!);
+                                          if (mounted) {
+                                            Navigator.pop(context); // Close loading
+                                            Navigator.pushAndRemoveUntil(
+                                              context, 
+                                              MaterialPageRoute(builder: (_) => SchoolDashboardScreen(
+                                                schoolName: s['school'] ?? 'School', 
+                                                directorName: s['academic_director'] ?? 'Director',
+                                                username: s['username']!,
+                                              )),
+                                              (route) => false
+                                            );
+                                          }
                                         } catch (e) {
+                                          if (mounted) Navigator.pop(context);
                                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: $e')));
                                         }
                                       },
