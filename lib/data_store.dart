@@ -5,6 +5,7 @@ import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'notification_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DataStore {
   static SharedPreferences? _prefs;
@@ -173,8 +174,59 @@ class DataStore {
   }
 
   static Future<void> initPrefs() async {
-    _prefs = await SharedPreferences.getInstance();
-    _loadAllData();
+    try {
+      _prefs = await SharedPreferences.getInstance();
+      _loadAllData();
+      debugPrint("Local Data Loaded");
+      if (isFirebaseReady) {
+        // Start sync but don't await it to avoid blocking app launch
+        syncWithFirestore().catchError((e) {
+          debugPrint("Initial sync error: $e");
+        });
+      }
+    } catch (e) {
+      debugPrint("Error in initPrefs: $e");
+    }
+  }
+
+  static Future<void> syncWithFirestore() async {
+    try {
+      final db = FirebaseFirestore.instance;
+      
+      // Fetch Schools
+      final schoolsSnap = await db.collection('schools').get();
+      if (schoolsSnap.docs.isNotEmpty) {
+        allSchools = schoolsSnap.docs.map((d) => Map<String, String>.from(d.data())).toList();
+      }
+
+      // Fetch Teachers
+      final teachersSnap = await db.collection('teachers').get();
+      if (teachersSnap.docs.isNotEmpty) {
+        allTeachers = teachersSnap.docs.map((d) => Map<String, String>.from(d.data())).toList();
+      }
+
+      // Fetch Students
+      final studentsSnap = await db.collection('students').get();
+      if (studentsSnap.docs.isNotEmpty) {
+        allStudents = studentsSnap.docs.map((d) => Map<String, String>.from(d.data())).toList();
+      }
+      
+      // Fetch Messages
+      final msgsSnap = await db.collection('messages').get();
+      if (msgsSnap.docs.isNotEmpty) {
+        allMessages = msgsSnap.docs.map((d) => d.data()).toList();
+      }
+
+      // Fetch Bulletin Cards (Announcements)
+      final bulletinSnap = await db.collection('bulletin').get();
+      if (bulletinSnap.docs.isNotEmpty) {
+        allBulletinCards = bulletinSnap.docs.map((d) => d.data()).toList();
+      }
+
+      debugPrint("Firestore Data Synced Successfully");
+    } catch (e) {
+      debugPrint("Firestore Sync Failed: $e");
+    }
   }
 
   static void _loadAllData() {

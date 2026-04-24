@@ -13,8 +13,9 @@ import 'login_screen.dart';
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 class SchoolDashboardScreen extends StatefulWidget {
   final String schoolName;
+  final String directorName;
   final String username;
-  const SchoolDashboardScreen({super.key, required this.schoolName, required this.username});
+  const SchoolDashboardScreen({super.key, required this.schoolName, required this.directorName, required this.username});
 
   @override
   State<SchoolDashboardScreen> createState() => _SchoolDashboardScreenState();
@@ -133,7 +134,9 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
             Text(widget.schoolName.toUpperCase(),
                 style: const TextStyle(fontSize: 13, color: Colors.white70, letterSpacing: 1.2)),
             const Text('Academic Director',
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Colors.white)),
+                style: TextStyle(fontSize: 12, color: Colors.white70, letterSpacing: 1.2)),
+            Text(widget.directorName,
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)),
           ],
         ),
         actions: [

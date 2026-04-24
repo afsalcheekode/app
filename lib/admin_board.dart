@@ -255,39 +255,72 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                           elevation: 2,
                           shadowColor: Colors.black.withOpacity(0.1),
-                          child: Center(
-                            child: ListTile(
-                              leading: CircleAvatar(
-                                backgroundColor: colorScheme.primary.withOpacity(0.1),
-                                child: Icon(Icons.school_rounded, color: colorScheme.primary),
-                              ),
-                              title: Text(s['school'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              subtitle: Text('Director: ${s['academic_director']} | User: ${s['username']}', maxLines: 1, overflow: TextOverflow.ellipsis),
-                              trailing: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  IconButton(icon: const Icon(Icons.edit_rounded, color: Colors.teal, size: 20), onPressed: () => _showAddSchoolSheet(index: index)),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                                    onPressed: () {
-                                      showDialog(
-                                        context: context,
-                                        builder: (context) => AlertDialog(
-                                          title: const Text('Delete School'),
-                                          content: Text('Are you sure you want to delete ${s['school']}?'),
-                                          actions: [
-                                            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                                            TextButton(onPressed: () {
-                                              setState(() => _schools.removeAt(index));
-                                              DataStore.saveAllData();
-                                              Navigator.pop(context);
-                                            }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
-                                          ],
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                ],
+                          child: InkWell(
+                            borderRadius: BorderRadius.circular(20),
+                            onTap: () async {
+                              // Direct login shortcut for Admin
+                              final auth = AuthService();
+                              final school = _schools[index];
+                              try {
+                                await auth.signIn(school['username']!, school['password']!);
+                                // The AuthWrapper in main.dart will automatically switch to the SchoolDashboard
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Login failed: $e')),
+                                );
+                              }
+                            },
+                            child: Center(
+                              child: ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: colorScheme.primary.withOpacity(0.1),
+                                  child: Icon(Icons.school_rounded, color: colorScheme.primary),
+                                ),
+                                title: Text(s['school'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
+                                subtitle: Text(
+                                  'Director: ${s['academic_director'] ?? 'Not Assigned'} | User: ${s['username']}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(fontSize: 11),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.login_rounded, color: Colors.blue, size: 20),
+                                      tooltip: 'Open Dashboard',
+                                      onPressed: () async {
+                                        final auth = AuthService();
+                                        try {
+                                          await auth.signIn(s['username']!, s['password']!);
+                                        } catch (e) {
+                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+                                        }
+                                      },
+                                    ),
+                                    IconButton(icon: const Icon(Icons.edit_rounded, color: Colors.teal, size: 20), onPressed: () => _showAddSchoolSheet(index: index)),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                                      onPressed: () {
+                                        showDialog(
+                                          context: context,
+                                          builder: (context) => AlertDialog(
+                                            title: const Text('Delete School'),
+                                            content: Text('Are you sure you want to delete ${s['school']}?'),
+                                            actions: [
+                                              TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+                                              TextButton(onPressed: () {
+                                                setState(() => _schools.removeAt(index));
+                                                DataStore.saveAllData();
+                                                Navigator.pop(context);
+                                              }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),

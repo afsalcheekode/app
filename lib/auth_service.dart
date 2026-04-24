@@ -1,29 +1,74 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'data_store.dart';
 import 'dart:async';
+import 'package:flutter/material.dart';
 
 class AuthService {
-  // Stream of auth state changes (supports only Mock in Free Mode)
-  Stream<dynamic> get userStream {
-    return DataStore.mockAuthStream;
+  // Singleton pattern
+  static final AuthService _instance = AuthService._internal();
+  factory AuthService() => _instance;
+  AuthService._internal() {
+    _initStream();
   }
 
-  // Sign in with email & password (Mock Only)
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  
+  final StreamController<dynamic> _userController = StreamController<dynamic>.broadcast();
+  StreamSubscription? _fbSubscription;
+  StreamSubscription? _mockSubscription;
+
+  void _initStream() {
+    _fbSubscription?.cancel();
+    _mockSubscription?.cancel();
+
+    if (DataStore.isFirebaseReady) {
+      _fbSubscription = _auth.authStateChanges().listen((user) {
+        if (user != null) {
+          _userController.add(user);
+        } else {
+          _userController.add(DataStore.mockUser);
+        }
+      });
+    } else {
+      _userController.add(DataStore.mockUser);
+    }
+
+    _mockSubscription = DataStore.mockAuthStream.listen((user) {
+      _userController.add(user);
+    });
+  }
+
+  // Stream of auth state changes
+  Stream<dynamic> get userStream => _userController.stream;
+
+  // Sign in with email & password
   Future<dynamic> signIn(String email, String password) async {
     final cleanEmail = email.trim().toLowerCase();
     
-    // Mock Login Logic
+    if (DataStore.isFirebaseReady) {
+      try {
+        final credential = await _auth.signInWithEmailAndPassword(
+          email: cleanEmail.contains('@') ? cleanEmail : '$cleanEmail@harakat.com',
+          password: password,
+        );
+        debugPrint("Firebase Login Successful");
+        return credential.user;
+      } catch (e) {
+        debugPrint("Firebase Login Failed: $e. Trying Mock Fallback...");
+      }
+    }
+
+    // Mock Login Logic (Fallback)
     Map<String, dynamic>? found;
-    
-    // Check Teachers
     for (var t in DataStore.allTeachers) {
       if ((t['username'] == cleanEmail || t['username'] == email.split('@')[0]) && t['password'] == password) {
         found = {...t, 'role': 'teacher', 'uid': 'mock_teacher_${t['username']}'};
         break;
       }
     }
-    
     if (found == null) {
-      // Check Students
       for (var s in DataStore.allStudents) {
         if ((s['username'] == cleanEmail || s['username'] == email.split('@')[0]) && s['password'] == password) {
           found = {...s, 'role': 'student', 'uid': 'mock_student_${s['username']}'};
@@ -31,9 +76,7 @@ class AuthService {
         }
       }
     }
-    
     if (found == null) {
-      // Check Directors
       for (var d in DataStore.allSchools) {
         if ((d['username'] == cleanEmail || d['username'] == email.split('@')[0]) && d['password'] == password) {
           found = {...d, 'role': 'director', 'uid': 'mock_director_${d['username']}', 'schoolName': d['school'] ?? 'Unknown School'};
@@ -43,20 +86,27 @@ class AuthService {
     }
 
     if (found != null) {
+      debugPrint("Mock Login Successful for ${found['username']}");
       DataStore.updateMockUser(found);
       return found;
     } else {
-      throw Exception("Invalid credentials (Mock Mode)");
+      throw Exception("Invalid credentials");
     }
   }
 
   // Sign out
   Future<void> signOut() async {
+    if (DataStore.isFirebaseReady) {
+      await _auth.signOut();
+    }
     DataStore.updateMockUser(null);
   }
 
   // Get user data (role, name, etc.)
   Future<dynamic> getUserData(String uid) async {
+    if (DataStore.isFirebaseReady && !uid.startsWith('mock_')) {
+      return await _db.collection('users').doc(uid).get();
+    }
     // Return mock data from the stored user
     return MockDocumentSnapshot(DataStore.mockUser ?? {});
   }
