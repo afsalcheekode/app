@@ -7,6 +7,7 @@ import 'dart:math';
 import 'dart:async';
 import 'common.dart';
 import 'data_store.dart';
+import 'auth_service.dart';
 import 'notification_service.dart';
 import 'login_screen.dart';
 import 'chat_screen.dart';
@@ -173,10 +174,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () => Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(builder: (_) => const LoginScreen()),
-            ),
+            onPressed: () => AuthService().signOut(),
           ),
         ],
       ),
@@ -236,7 +234,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('حركات الحياة', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF075E54))),
+                Image.asset('assets/images/app_name_arabic.png', height: 45),
                 const SizedBox(height: 8),
                 Text('STUDENT PORTAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colorScheme.primary, letterSpacing: 2)),
               ],
@@ -263,7 +261,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
             leading: CircleAvatar(backgroundColor: colorScheme.primary.withOpacity(0.1), child: Text(widget.studentName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))),
             title: Text(widget.studentName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             subtitle: Text('Class ${widget.studentClass}', style: const TextStyle(fontSize: 10)),
-            trailing: IconButton(icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.grey), onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()))),
+            trailing: IconButton(icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.grey), onPressed: () => AuthService().signOut()),
           ),
         ],
       ),
@@ -305,7 +303,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
           children: [
             IconButton(
               icon: const Icon(Icons.logout_rounded, color: Colors.grey),
-              onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
+              onPressed: () => AuthService().signOut(),
             ),
             const SizedBox(height: 16),
           ],

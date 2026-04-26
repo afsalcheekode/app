@@ -134,15 +134,20 @@
           serviceWorkerStrategy: 'none',
         },
         onEntrypointLoaded: function(engineInitializer) {
-          var isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
           engineInitializer.initializeEngine({
-            renderer: isMobile ? "html" : "auto",
+            // Force HTML renderer for all platforms to significantly speed up initial load
+            // and avoid downloading the ~3MB CanvasKit engine.
+            renderer: "html",
           }).then(function(appRunner) {
             appRunner.runApp().then(function() {
               // Hide the loading screen when the app is ready
               var loading = document.getElementById('loading');
               if (loading) {
-                loading.style.display = 'none';
+                loading.style.transition = 'opacity 0.5s ease';
+                loading.style.opacity = '0';
+                setTimeout(function() {
+                  loading.style.display = 'none';
+                }, 500);
               }
             });
           });

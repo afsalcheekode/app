@@ -7,6 +7,7 @@ import 'common.dart';
 import 'data_store.dart';
 import 'notification_service.dart';
 import 'login_screen.dart';
+import 'auth_service.dart';
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  SCHOOL DASHBOARD SCREEN  (Academic Director)
@@ -29,8 +30,8 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
   String? _selectedClassFilter;
 
   // helper getters
-  List<Map<String, String>> get _teachers => DataStore.allTeachers;
-  List<Map<String, String>> get _students => DataStore.allStudents;
+  List<Map<String, String>> get _teachers => DataStore.allTeachers.where((t) => t['schoolName'] == widget.schoolName || t['schoolName'] == null).toList();
+  List<Map<String, String>> get _students => DataStore.allStudents.where((s) => s['schoolName'] == widget.schoolName || s['schoolName'] == null).toList();
   List<String>              get _classes  => DataStore.allClasses;
   Map<String, String>       get _classDepts => DataStore.classDepts;
 
@@ -143,8 +144,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
           IconButton(
             icon: const Icon(Icons.logout_rounded, color: Colors.white70),
             tooltip: 'Logout',
-            onPressed: () => Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => const LoginScreen())),
+            onPressed: () => AuthService().signOut(),
           ),
         ],
         bottom: TabBar(
@@ -173,6 +173,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
             generatePassword: _generatePassword,
             showCredentials: _showCredentials,
             onRefresh: () => setState(() {}),
+            schoolName: widget.schoolName,
           ),
           _StudentsManagementTab(
             students: _students,
@@ -181,6 +182,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
             generatePassword: _generatePassword,
             showCredentials: _showCredentials,
             onRefresh: () => setState(() {}),
+            schoolName: widget.schoolName,
           ),
           _DepartmentsTab(
             classes: _classes,
@@ -569,7 +571,10 @@ class _TeachersTab extends StatefulWidget {
     required this.generatePassword,
     required this.showCredentials,
     required this.onRefresh,
+    required this.schoolName,
   });
+
+  final String schoolName;
 
   @override
   State<_TeachersTab> createState() => _TeachersTabState();
@@ -642,35 +647,66 @@ class _TeachersTabState extends State<_TeachersTab> {
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
-              onPressed: () {
-                if (nameCtrl.text.trim().isEmpty) return;
+              onPressed: () async {
+                final name = nameCtrl.text.trim();
+                final subjects = subjectCtrl.text.trim();
+                if (name.isEmpty) return;
+
                 final username = index != null
-                    ? (usernameCtrl.text.trim().isNotEmpty ? usernameCtrl.text.trim().toLowerCase() : (t?['username'] ?? widget.generateUsername(nameCtrl.text).toLowerCase()))
-                    : widget.generateUsername(nameCtrl.text).toLowerCase();
+                    ? (usernameCtrl.text.trim().isNotEmpty ? usernameCtrl.text.trim().toLowerCase() : (t?['username'] ?? widget.generateUsername(name).toLowerCase()))
+                    : (usernameCtrl.text.trim().isNotEmpty ? usernameCtrl.text.trim().toLowerCase() : widget.generateUsername(name).toLowerCase());
                 final password = index != null
                     ? (passwordCtrl.text.trim().isNotEmpty ? passwordCtrl.text.trim() : (t?['password'] ?? widget.generatePassword()))
-                    : widget.generatePassword();
+                    : (passwordCtrl.text.trim().isNotEmpty ? passwordCtrl.text.trim() : widget.generatePassword());
 
-                final newData = {
-                  'name': nameCtrl.text.trim(),
+                final Map<String, String> newData = Map<String, String>.from({
+                  'name': name,
                   'class': selectedClasses.join(', '),
-                  'subjects': subjectCtrl.text.trim(),
+                  'subjects': subjects,
                   'username': username,
                   'password': password,
-                };
+                  'schoolName': widget.schoolName,
+                });
+
                 setState(() {
                   if (index != null) {
+                    // Find original in DataStore to update
+                    final oldData = widget.teachers[index];
+                    final globalIndex = DataStore.allTeachers.indexWhere((t) => t['username'] == oldData['username']);
+                    if (globalIndex != -1) {
+                      DataStore.allTeachers[globalIndex] = newData;
+                    }
                     widget.teachers[index] = newData;
                   } else {
+                    DataStore.allTeachers.add(newData);
                     widget.teachers.add(newData);
-                    Future.delayed(const Duration(milliseconds: 150), () {
-                      widget.showCredentials('Teacher', username, password);
-                    });
                   }
                   DataStore.saveAllData();
                 });
+                
                 widget.onRefresh();
-                Navigator.pop(context);
+
+                // Verify login immediately
+                try {
+                  final auth = AuthService();
+                  await auth.signIn(username, password);
+                  if (mounted) {
+                    Navigator.pop(context);
+                    if (index == null) {
+                       widget.showCredentials('Teacher', username, password);
+                    } else {
+                       ScaffoldMessenger.of(context).showSnackBar(
+                         SnackBar(content: Text('Teacher "$name" updated and verified!'), backgroundColor: Colors.green)
+                       );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Verification failed: ${e.toString().replaceAll('Exception: ', '')}'), backgroundColor: Colors.orange)
+                    );
+                  }
+                }
               },
               child: Text(index != null ? 'Update' : 'Add Teacher'),
             ),
@@ -1407,6 +1443,7 @@ class _StudentsManagementTab extends StatefulWidget {
   final String Function() generatePassword;
   final void Function(String, String, String) showCredentials;
   final VoidCallback onRefresh;
+  final String schoolName;
 
   const _StudentsManagementTab({
     required this.students,
@@ -1415,6 +1452,7 @@ class _StudentsManagementTab extends StatefulWidget {
     required this.generatePassword,
     required this.showCredentials,
     required this.onRefresh,
+    required this.schoolName,
   });
 
   @override
@@ -1468,15 +1506,17 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
             TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
-              onPressed: () {
-                if (nameCtrl.text.trim().isEmpty) return;
+              onPressed: () async {
+                final name = nameCtrl.text.trim();
+                if (name.isEmpty) return;
                 
-                final username = index != null 
-                  ? userCtrl.text.trim().toLowerCase() 
-                  : widget.generateUsername(nameCtrl.text).toLowerCase();
-                final password = index != null 
-                  ? passCtrl.text.trim() 
-                  : widget.generatePassword();
+                final username = userCtrl.text.trim().isNotEmpty 
+                  ? userCtrl.text.trim().toLowerCase()
+                  : (index != null ? (s?['username'] ?? widget.generateUsername(name).toLowerCase()) : widget.generateUsername(name).toLowerCase());
+                
+                final password = passCtrl.text.trim().isNotEmpty
+                  ? passCtrl.text.trim()
+                  : (index != null ? (s?['password'] ?? widget.generatePassword()) : widget.generatePassword());
 
                 // Check collisions (for new students)
                 if (index == null && DataStore.allStudents.any((s) => (s['username'] ?? '').toLowerCase() == username)) {
@@ -1484,27 +1524,54 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
                    return;
                 }
 
-                final newData = {
-                  'name': nameCtrl.text.trim(),
-                  'std': selectedClass,
-                  'username': username,
-                  'password': password,
-                  'academicYear': DataStore.selectedAcademicYear,
-                };
+                final Map<String, String> newData = Map<String, String>.from({
+                    'name': name,
+                    'std': selectedClass,
+                    'username': username,
+                    'password': password,
+                    'schoolName': widget.schoolName,
+                    'academicYear': DataStore.selectedAcademicYear,
+                });
 
                 setState(() {
                   if (index != null) {
+                    // Find original in DataStore to update
+                    final oldData = widget.students[index];
+                    final globalIndex = DataStore.allStudents.indexWhere((s) => s['username'] == oldData['username']);
+                    if (globalIndex != -1) {
+                      DataStore.allStudents[globalIndex] = newData;
+                    }
                     widget.students[index] = newData;
                   } else {
+                    DataStore.allStudents.add(newData);
                     widget.students.add(newData);
-                    Future.delayed(const Duration(milliseconds: 150), () {
-                      widget.showCredentials('Student', username, password);
-                    });
                   }
                   DataStore.saveAllData();
                 });
+                
                 widget.onRefresh();
-                Navigator.pop(context);
+
+                // Verify login immediately
+                try {
+                  final auth = AuthService();
+                  await auth.signIn(username, password);
+                  if (mounted) {
+                    Navigator.pop(context);
+                    if (index == null) {
+                      widget.showCredentials('Student', username, password);
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Student "$name" updated and verified!'), backgroundColor: Colors.green)
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Verification failed: ${e.toString().replaceAll('Exception: ', '')}'), backgroundColor: Colors.orange)
+                    );
+                  }
+                }
               },
               child: Text(index != null ? 'Update' : 'Add Student'),
             ),

@@ -7,6 +7,7 @@ import 'dart:math';
 import 'dart:async';
 import 'common.dart';
 import 'data_store.dart';
+import 'auth_service.dart';
 import 'notification_service.dart';
 import 'login_screen.dart';
 import 'chat_screen.dart';
@@ -17,6 +18,7 @@ class TeacherBoardScreen extends StatefulWidget {
   final String assignedClass;
   final String subjects;
   final String teacherUsername;
+  final String schoolName;
 
   const TeacherBoardScreen({
     super.key,
@@ -24,6 +26,7 @@ class TeacherBoardScreen extends StatefulWidget {
     required this.assignedClass,
     required this.subjects,
     required this.teacherUsername,
+    required this.schoolName,
   });
 
   @override
@@ -162,7 +165,11 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   List<Map<String, dynamic>> get _groupMembers => DataStore.allGroupMembers;
   List<Map<String, String>> get _teachers => DataStore.allTeachers;
 
-  List<Map<String, String>> get _students => _allStudents.where((s) => s['std'] == (_teacherSelectedClass ?? widget.assignedClass) && (s['academicYear'] == DataStore.selectedAcademicYear || s['academicYear'] == null)).toList();
+  List<Map<String, String>> get _students => _allStudents.where((s) => 
+    s['std'] == (_teacherSelectedClass ?? widget.assignedClass) && 
+    (s['academicYear'] == DataStore.selectedAcademicYear || s['academicYear'] == null) &&
+    (s['schoolName'] == widget.schoolName || s['schoolName'] == null)
+  ).toList();
   
   final Map<String, List<Map<String, dynamic>>> _studentFairs = {}; // studentName -> list of fairs with status
   final Map<String, double> _studentProgress = {}; // studentName -> progress percentage
@@ -262,10 +269,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
+              AuthService().signOut();
             },
           )
         ],
@@ -346,7 +350,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
             const SizedBox(height: 20),
             IconButton(
               icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-              onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
+              onPressed: () => AuthService().signOut(),
             ),
             const SizedBox(height: 16),
           ],
@@ -366,7 +370,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('حركات الحياة', style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: Color(0xFF075E54))),
+                Image.asset('assets/images/app_name_arabic.png', height: 45),
                 const SizedBox(height: 8),
                 Text('TEACHER PORTAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colorScheme.primary, letterSpacing: 2)),
               ],
@@ -407,7 +411,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
             leading: CircleAvatar(backgroundColor: colorScheme.primary.withOpacity(0.1), child: Text(widget.teacherName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))),
             title: Text(widget.teacherName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             subtitle: Text('ID: ${widget.teacherUsername}', style: const TextStyle(fontSize: 10)),
-            trailing: IconButton(icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.grey), onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen()))),
+            trailing: IconButton(icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.grey), onPressed: () => AuthService().signOut()),
           ),
         ],
       ),
@@ -1212,9 +1216,10 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   'phone': phone.text,
                   'blood': blood.text,
                   'std': _teacherSelectedClass ?? widget.assignedClass,
-                  'username': rawUser,
+                   'username': rawUser,
                   'password': pass.text.trim(),
                   'academicYear': DataStore.selectedAcademicYear,
+                  'schoolName': widget.schoolName,
                 };
                 
                 if (index != null) {

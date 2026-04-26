@@ -7,6 +7,7 @@ import 'dart:math';
 import 'dart:async';
 import 'common.dart';
 import 'data_store.dart';
+import 'auth_service.dart';
 import 'notification_service.dart';
 import 'login_screen.dart';
 import 'auth_service.dart';
@@ -103,29 +104,58 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                     foregroundColor: Colors.white,
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
+                    final username = userCtrl.text.trim().toLowerCase();
+                    final password = passCtrl.text.trim();
+                    final schoolName = nameCtrl.text.trim();
+                    final directorName = academicDirectorCtrl.text.trim();
+
+                    if (username.isEmpty || password.isEmpty || schoolName.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Please fill all required fields.')),
+                      );
+                      return;
+                    }
+
                     setState(() {
+                      final schoolData = {
+                        'school': schoolName,
+                        'academic_director': directorName,
+                        'username': username,
+                        'password': password,
+                      };
+
                       if (index != null) {
-                        _schools[index] = {
-                          'school': nameCtrl.text.trim(),
-                          'academic_director': academicDirectorCtrl.text.trim(),
-                          'username': userCtrl.text.trim().toLowerCase(),
-                          'password': passCtrl.text.trim(),
-                        };
+                        DataStore.allSchools[index] = schoolData;
                       } else {
-                        _schools.add({
-                          'school': nameCtrl.text.trim(),
-                          'academic_director': academicDirectorCtrl.text.trim(),
-                          'username': userCtrl.text.trim().toLowerCase(),
-                          'password': passCtrl.text.trim(),
-                        });
+                        DataStore.allSchools.add(schoolData);
                       }
                       DataStore.saveAllData();
                     });
-                    Navigator.pop(context);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(index != null ? 'School updated successfully!' : 'School added successfully!')),
-                    );
+
+                    // Verify if it will work for login
+                    try {
+                      final auth = AuthService();
+                      await auth.signIn(username, password);
+                      if (mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('School "$schoolName" added and verified! Use "$username" / "$password" to login.'),
+                            backgroundColor: Colors.green,
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Verification failed: ${e.toString()}'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
+                    }
                   },
                   child: Text(
                     index != null ? 'Update School' : 'Add School',
@@ -161,10 +191,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
             onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
+              AuthService().signOut();
             },
           ),
           const SizedBox(width: 8),
@@ -265,19 +292,9 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                               try {
                                 showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
                                 await auth.signIn(school['username']!, school['password']!);
-                                if (mounted) {
-                                  Navigator.pop(context); // Close loading
-                                  // Navigate to the dashboard
-                                  Navigator.pushAndRemoveUntil(
-                                    context, 
-                                    MaterialPageRoute(builder: (_) => SchoolDashboardScreen(
-                                      schoolName: school['school'] ?? 'School', 
-                                      directorName: school['academic_director'] ?? 'Director',
-                                      username: school['username']!,
-                                    )),
-                                    (route) => false
-                                  );
-                                }
+                                  if (mounted) {
+                                    Navigator.pop(context); // Close loading
+                                  }
                               } catch (e) {
                                 if (mounted) Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -319,18 +336,9 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                                         try {
                                           showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
                                           await auth.signIn(s['username']!, s['password']!);
-                                          if (mounted) {
-                                            Navigator.pop(context); // Close loading
-                                            Navigator.pushAndRemoveUntil(
-                                              context, 
-                                              MaterialPageRoute(builder: (_) => SchoolDashboardScreen(
-                                                schoolName: s['school'] ?? 'School', 
-                                                directorName: s['academic_director'] ?? 'Director',
-                                                username: s['username']!,
-                                              )),
-                                              (route) => false
-                                            );
-                                          }
+                                            if (mounted) {
+                                              Navigator.pop(context); // Close loading
+                                            }
                                         } catch (e) {
                                           if (mounted) Navigator.pop(context);
                                           ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: $e')));

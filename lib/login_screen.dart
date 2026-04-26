@@ -9,6 +9,8 @@ import 'teacher_board.dart';
 import 'director_board.dart';
 import 'admin_board.dart';
 import 'auth_service.dart';
+import 'web_helper.dart' if (dart.library.html) 'web_helper_web.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,16 +39,14 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    // Local Super Admin Override (kept for convenience)
-    if (userInput == 'minad' && pass == '321') {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const AdminBoardScreen()),
-      );
-      return;
-    }
+
 
     try {
+      // Ensure data is loaded before attempting login
+      if (!DataStore.isInitialized) {
+        await DataStore.initPrefs();
+      }
+
       showDialog(
         context: context,
         barrierDismissible: false,
@@ -57,15 +57,17 @@ class _LoginScreenState extends State<LoginScreen> {
       final email = userInput.contains('@') ? userInput.toLowerCase() : '$userInput@harakat.com'.toLowerCase();
       
       await AuthService().signIn(email, pass);
+      if (mounted) Navigator.pop(context); // Close loading dialog on success
 
-      if (mounted) Navigator.pop(context); // Close loading
+      // Login handled by AuthWrapper stream
       // AuthWrapper will handle the rest
     } catch (e) {
       if (mounted) {
         Navigator.pop(context); // Close loading
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Login failed: ${e.toString()}'),
+            content: Text('Login failed: $errorMsg'),
             backgroundColor: Colors.red.shade700,
             behavior: SnackBarBehavior.floating,
           ),
@@ -125,17 +127,25 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 32),
-                        const Text(
-                          'حركات الحياة',
-                          style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Color(0xFF075E54)),
+                        Image.asset(
+                          'assets/images/app_name_arabic.png',
+                          height: 110,
+                          fit: BoxFit.contain,
+                          errorBuilder: (_, __, ___) => const Text(
+                            'حركات الحياة',
+                            style: TextStyle(fontSize: 36, fontWeight: FontWeight.w900, color: Color(0xFF075E54)),
+                          ),
                         ),
+                        const SizedBox(height: 12),
                         Text(
-                          'HARAKAT AL-HAYAT',
+                          'Rooted in Values, Winged for the Future.',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey[600],
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 3,
+                            fontSize: 13,
+                            color: const Color(0xFF075E54).withOpacity(0.8),
+                            fontWeight: FontWeight.w500,
+                            fontStyle: FontStyle.italic,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ],
@@ -198,6 +208,25 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  TextButton.icon(
+                    onPressed: () {
+                      if (kIsWeb) {
+                        reloadApp();
+                      } else {
+                        // For non-web, we can't reload the window, but we can restart the app logic if needed.
+                        // For now, just show a message.
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Refresh is only available on Web.')),
+                        );
+                      }
+                    },
+                    icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.grey),
+                    label: const Text(
+                      'Refresh App',
+                      style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],

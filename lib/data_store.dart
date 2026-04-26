@@ -1,21 +1,21 @@
-
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'notification_service.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class DataStore {
   static SharedPreferences? _prefs;
-  static bool isFirebaseReady = false;
+  static bool isInitialized = false;
   static Map<String, dynamic>? mockUser;
   static final _mockAuthStreamController = StreamController<Map<String, dynamic>?>.broadcast();
   static Stream<Map<String, dynamic>?> get mockAuthStream => _mockAuthStreamController.stream;
 
   static void updateMockUser(Map<String, dynamic>? user) {
+    debugPrint("DataStore: Updating Mock User to -> ${user == null ? 'null' : user['username']}");
     mockUser = user;
+    saveAllData(); // Persist login state
     _mockAuthStreamController.add(user);
   }
 
@@ -30,7 +30,12 @@ class DataStore {
     }
   ];
   static List<Map<String, String>> allSchools = [
-    {'school': 'حركات الحياة', 'username': 'academic_director', 'password': '123'}
+    {
+      'school': 'حركات الحياة', 
+      'username': 'academic_director', 
+      'password': '123',
+      'academic_director': 'Harakat Director'
+    }
   ];
   static List<Map<String, String>> allStudents = [
     {
@@ -173,59 +178,26 @@ class DataStore {
     return Colors.teal;
   }
 
+  static Future<void>? _initFuture;
+
   static Future<void> initPrefs() async {
+    if (isInitialized) return;
+    if (_initFuture != null) return _initFuture;
+
+    _initFuture = _doInit();
+    return _initFuture;
+  }
+
+  static Future<void> _doInit() async {
     try {
       _prefs = await SharedPreferences.getInstance();
       _loadAllData();
-      debugPrint("Local Data Loaded");
-      if (isFirebaseReady) {
-        // Start sync but don't await it to avoid blocking app launch
-        syncWithFirestore().catchError((e) {
-          debugPrint("Initial sync error: $e");
-        });
-      }
+      isInitialized = true;
+      debugPrint("Local Data Loaded (Offline Mode)");
     } catch (e) {
       debugPrint("Error in initPrefs: $e");
-    }
-  }
-
-  static Future<void> syncWithFirestore() async {
-    try {
-      final db = FirebaseFirestore.instance;
-      
-      // Fetch Schools
-      final schoolsSnap = await db.collection('schools').get();
-      if (schoolsSnap.docs.isNotEmpty) {
-        allSchools = schoolsSnap.docs.map((d) => Map<String, String>.from(d.data())).toList();
-      }
-
-      // Fetch Teachers
-      final teachersSnap = await db.collection('teachers').get();
-      if (teachersSnap.docs.isNotEmpty) {
-        allTeachers = teachersSnap.docs.map((d) => Map<String, String>.from(d.data())).toList();
-      }
-
-      // Fetch Students
-      final studentsSnap = await db.collection('students').get();
-      if (studentsSnap.docs.isNotEmpty) {
-        allStudents = studentsSnap.docs.map((d) => Map<String, String>.from(d.data())).toList();
-      }
-      
-      // Fetch Messages
-      final msgsSnap = await db.collection('messages').get();
-      if (msgsSnap.docs.isNotEmpty) {
-        allMessages = msgsSnap.docs.map((d) => d.data()).toList();
-      }
-
-      // Fetch Bulletin Cards (Announcements)
-      final bulletinSnap = await db.collection('bulletin').get();
-      if (bulletinSnap.docs.isNotEmpty) {
-        allBulletinCards = bulletinSnap.docs.map((d) => d.data()).toList();
-      }
-
-      debugPrint("Firestore Data Synced Successfully");
-    } catch (e) {
-      debugPrint("Firestore Sync Failed: $e");
+    } finally {
+      _initFuture = null;
     }
   }
 
@@ -234,9 +206,12 @@ class DataStore {
     
     final schoolsStr = _prefs!.getString('all_schools');
     if (schoolsStr != null) {
-      final List decoded = jsonDecode(schoolsStr);
-      if (decoded.isNotEmpty) {
+      try {
+        final List decoded = jsonDecode(schoolsStr);
+        // Even if empty, we should update it to reflect the saved state
         allSchools = decoded.map((s) => Map<String, String>.from(s)).toList();
+      } catch (e) {
+        debugPrint("Error decoding schools: $e");
       }
     }
     
@@ -395,6 +370,12 @@ class DataStore {
       final Map<String, dynamic> decoded = jsonDecode(configStr);
       featureConfig = Map<String, bool>.from(decoded);
     }
+
+    final userStr = _prefs!.getString('mock_user');
+    if (userStr != null) {
+      mockUser = jsonDecode(userStr);
+      _mockAuthStreamController.add(mockUser);
+    }
   }
 
   static void saveAllData() {
@@ -421,5 +402,10 @@ class DataStore {
     _prefs!.setString('all_metrics', jsonEncode(allMetrics));
     _prefs!.setString('feature_config', jsonEncode(featureConfig));
     _prefs!.setString('all_class_depts', jsonEncode(classDepts));
+    if (mockUser != null) {
+      _prefs!.setString('mock_user', jsonEncode(mockUser));
+    } else {
+      _prefs!.remove('mock_user');
+    }
   }
 }
