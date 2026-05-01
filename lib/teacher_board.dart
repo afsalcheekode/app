@@ -8,6 +8,7 @@ import 'dart:async';
 import 'common.dart';
 import 'data_store.dart';
 import 'auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'notification_service.dart';
 import 'login_screen.dart';
 import 'chat_screen.dart';
@@ -1223,38 +1224,62 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                 };
                 
                 if (index != null) {
+                  final oldData = _allStudents[index];
                   _allStudents[index] = studentData;
-                } else {
-                  _allStudents.add(studentData);
                   
-                  // Auto-enroll student in class group
-                  final className = widget.assignedClass;
-                  var classGroup = _groups.firstWhere((g) => g['name'] == className && g['type'] == 'class', orElse: () => {});
-                  if (classGroup.isEmpty) {
-                    classGroup = {
-                      'id': 'class_${className.replaceAll(' ', '_')}',
-                      'name': className,
-                      'type': 'class',
-                      'studentCount': 1
-                    };
-                    _groups.add(classGroup);
-                  } else {
-                    classGroup['studentCount'] = (classGroup['studentCount'] ?? 0) + 1;
-                  }
-                  _groupMembers.add({
-                    'group_id': classGroup['id'],
-                    'username': studentData['username'],
-                    'name': studentData['name'],
-                    'role': 'Student'
+                  // Update in Firestore
+                  FirebaseFirestore.instance.collection('users')
+                      .where('username', isEqualTo: oldData['username'])
+                      .get().then((query) {
+                    if (query.docs.isNotEmpty) {
+                      query.docs.first.reference.update(studentData);
+                    }
                   });
+                } else {
+                  // Register in Firebase Auth
+                  showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                  AuthService().registerUser({...studentData, 'role': 'student'}, pass.text.trim()).then((_) {
+                    Navigator.of(context, rootNavigator: true).pop(); // pop loading
+                    setState(() {
+                      _allStudents.add(studentData);
+                      
+                      // Auto-enroll student in class group
+                      final className = widget.assignedClass;
+                      var classGroup = _groups.firstWhere((g) => g['name'] == className && g['type'] == 'class', orElse: () => {});
+                      if (classGroup.isEmpty) {
+                        classGroup = {
+                          'id': 'class_${className.replaceAll(' ', '_')}',
+                          'name': className,
+                          'type': 'class',
+                          'studentCount': 1
+                        };
+                        _groups.add(classGroup);
+                      } else {
+                        classGroup['studentCount'] = (classGroup['studentCount'] ?? 0) + 1;
+                      }
+                      _groupMembers.add({
+                        'group_id': classGroup['id'],
+                        'username': studentData['username'],
+                        'name': studentData['name'],
+                        'role': 'Student'
+                      });
 
-                  _studentProgress[studentData['name']!] = 0.0;
-                  _studentFairs[studentData['name']!] = _fairs.map((f) => {'title': f, 'done': false}).toList();
+                      _studentProgress[studentData['name']!] = 0.0;
+                      _studentFairs[studentData['name']!] = _fairs.map((f) => {'title': f, 'done': false}).toList();
 
-                  // SHOW CREDENTIALS
-                  Future.delayed(const Duration(milliseconds: 300), () {
-                    _showCredentialsDialog('Student', rawUser, pass.text.trim());
+                      // SHOW CREDENTIALS
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        _showCredentialsDialog('Student', rawUser, pass.text.trim());
+                      });
+                      DataStore.saveAllData();
+                    });
+                  }).catchError((e) {
+                    Navigator.of(context, rootNavigator: true).pop(); // pop loading
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Registration failed: $e')));
+                    }
                   });
+                  return; // Exit here because async registerUser will handle saving and popping dialog
                 }
                 setState(() {});
                 DataStore.saveAllData();
@@ -1788,6 +1813,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     final oATo = TextEditingController(text: existing['oldToAya'] ?? '');
     
     int selectedJuzh = int.tryParse(existing['juzh']?.toString() ?? '1') ?? 1;
+    int oldPortionJuzh = int.tryParse(existing['oldPortionJuzh']?.toString() ?? '1') ?? 1;
 
     showDialog(
       context: context,
@@ -1805,6 +1831,21 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                 const SizedBox(height: 20),
                 _hifzSectionTitle('OLD PORTION', Icons.history_rounded, Colors.orange),
                 _hifzAyaRangeRow(oSFrom, oAFrom, oSTo, oATo),
+                const SizedBox(height: 12),
+                const Text('OLD PORTION MEMORIZED (JUZH)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange)),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(color: Colors.orange.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.withOpacity(0.1))),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton<int>(
+                      isExpanded: true,
+                      value: oldPortionJuzh,
+                      items: List.generate(30, (i) => DropdownMenuItem(value: i + 1, child: Text('Juzh ${i + 1}'))).toList(),
+                      onChanged: (v) => setDialogState(() => oldPortionJuzh = v ?? 1),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 20),
                 _hifzSectionTitle('PROGRESS (JUZH)', Icons.menu_book_rounded, Colors.green),
                 Container(
@@ -1840,6 +1881,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                     'oldToSura': oSTo.text,
                     'oldToAya': oATo.text,
                     'juzh': selectedJuzh.toString(),
+                    'oldPortionJuzh': oldPortionJuzh.toString(),
                   };
                   if (existing.isNotEmpty) {
                     final idx = DataStore.allHifzProgress.indexOf(existing);
@@ -2046,8 +2088,17 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(onPressed: () {
             setState(() {
-              _allStudents.remove(s);
+              _allStudents.removeWhere((x) => x['username'] == s['username']);
               DataStore.saveAllData();
+              
+              // Delete from Firestore
+              FirebaseFirestore.instance.collection('users')
+                  .where('username', isEqualTo: s['username'])
+                  .get().then((query) {
+                if (query.docs.isNotEmpty) {
+                  query.docs.first.reference.delete();
+                }
+              });
             });
             Navigator.pop(context);
           }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
@@ -3172,8 +3223,6 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   Widget _buildScheduleTab(ColorScheme colorScheme) {
     final List<Map<String, dynamic>> combinedSchedule = [
       ..._exams.map((e) => {...e, 'origin': 'exam'}),
-      ..._activities.map((a) => {...a, 'origin': 'activity'}),
-      ..._fairList.map((f) => {...f, 'origin': 'fair'}),
     ];
 
     // Sort by dates if possible (simple string sort for now as data format varies)

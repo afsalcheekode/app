@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:convert';
 import 'dart:math';
 import 'common.dart';
@@ -28,9 +29,23 @@ class _LoginScreenState extends State<LoginScreen> {
     super.initState();
   }
 
+  String _normalizeNumbers(String input) {
+    const arabicNumbers = '٠١٢٣٤٥٦٧٨٩';
+    const persianNumbers = '۰۱۲۳۴۵۶۷۸۹';
+    const englishNumbers = '0123456789';
+    
+    String result = input;
+    for (int i = 0; i < englishNumbers.length; i++) {
+      result = result.replaceAll(arabicNumbers[i], englishNumbers[i])
+                     .replaceAll(persianNumbers[i], englishNumbers[i]);
+    }
+    return result;
+  }
+
   void _login() async {
-    final userInput = _userController.text.trim();
-    final pass = _passController.text.trim();
+    // Normalize Arabic/Persian numerals to English numerals and remove spaces from username
+    final userInput = _normalizeNumbers(_userController.text).trim().replaceAll(RegExp(r'\s+'), '');
+    final pass = _normalizeNumbers(_passController.text).trim();
 
     if (userInput.isEmpty || pass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -53,17 +68,19 @@ class _LoginScreenState extends State<LoginScreen> {
         builder: (_) => const Center(child: CircularProgressIndicator()),
       );
 
+      final navigator = Navigator.of(context, rootNavigator: true);
+
       // Data Normalization as requested: .trim() and .toLowerCase()
       final email = userInput.contains('@') ? userInput.toLowerCase() : '$userInput@harakat.com'.toLowerCase();
       
       await AuthService().signIn(email, pass);
-      if (mounted) Navigator.pop(context); // Close loading dialog on success
+      navigator.pop(); // Close loading dialog on success
 
       // Login handled by AuthWrapper stream
       // AuthWrapper will handle the rest
     } catch (e) {
+      Navigator.of(context, rootNavigator: true).pop(); // Close loading
       if (mounted) {
-        Navigator.pop(context); // Close loading
         final errorMsg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -168,6 +185,14 @@ class _LoginScreenState extends State<LoginScreen> {
                           TextField(
                             controller: _userController,
                             style: const TextStyle(fontWeight: FontWeight.w600),
+                            keyboardType: TextInputType.emailAddress,
+                            autocorrect: false,
+                            enableSuggestions: false,
+                            textInputAction: TextInputAction.next,
+                            textDirection: TextDirection.ltr,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[\x20-\x7E]')),
+                            ],
                             onSubmitted: (_) => _login(),
                             decoration: InputDecoration(
                               labelText: 'Username',
@@ -182,6 +207,11 @@ class _LoginScreenState extends State<LoginScreen> {
                             controller: _passController,
                             obscureText: true,
                             style: const TextStyle(fontWeight: FontWeight.w600),
+                            textInputAction: TextInputAction.done,
+                            textDirection: TextDirection.ltr,
+                            inputFormatters: [
+                              FilteringTextInputFormatter.allow(RegExp(r'[\x20-\x7E]')),
+                            ],
                             onSubmitted: (_) => _login(),
                             decoration: InputDecoration(
                               labelText: 'Password',

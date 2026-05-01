@@ -1,4 +1,4 @@
-﻿
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:convert';
@@ -57,6 +57,8 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
                           children: [
                             Text(b['title'] ?? 'Notice', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                             Text(b['desc'] ?? '', style: const TextStyle(fontSize: 11, color: Colors.grey), maxLines: 1, overflow: TextOverflow.ellipsis),
+                            const SizedBox(height: 4),
+                            Text(_formatFullDateTime(b['date']), style: TextStyle(fontSize: 9, color: Colors.indigo.withOpacity(0.6), fontWeight: FontWeight.bold)),
                           ],
                         )),
                       ],
@@ -155,7 +157,7 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
                         ),
                       ),
                       const Spacer(),
-                      Text(b['date'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11, fontWeight: FontWeight.w600)),
+                      Text(_formatFullDateTime(b['date']), style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.bold)),
                     ],
                   ),
                 ],
@@ -165,6 +167,31 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
         ),
       ),
     );
+  }
+
+  String _formatFullDateTime(dynamic date) {
+    if (date == null || date.toString().isEmpty) return '';
+    try {
+      final dt = DateTime.parse(date.toString());
+      final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      
+      final dayName = days[dt.weekday - 1];
+      final monthName = months[dt.month - 1];
+      final day = dt.day.toString().padLeft(2, '0');
+      final year = dt.year;
+      
+      int hour = dt.hour;
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final period = hour >= 12 ? 'PM' : 'AM';
+      
+      if (hour == 0) hour = 12;
+      else if (hour > 12) hour -= 12;
+      
+      return '$dayName, $day $monthName $year - $hour:$minute $period';
+    } catch (e) {
+      return date.toString();
+    }
   }
 }
 

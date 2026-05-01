@@ -133,24 +133,37 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                       DataStore.saveAllData();
                     });
 
-                    // Verify if it will work for login
+                    // Create account in Firebase if new school
                     try {
                       final auth = AuthService();
-                      await auth.signIn(username, password);
+                      showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                      
+                      if (index == null) {
+                        await auth.registerUser({
+                          'role': 'director',
+                          'schoolName': schoolName,
+                          'academic_director': directorName,
+                          'username': username,
+                        }, password);
+                      }
+                      
+                      Navigator.of(context, rootNavigator: true).pop(); // Pop loading
+                      Navigator.of(context, rootNavigator: true).pop(); // Pop Add School dialog
+                      
                       if (mounted) {
-                        Navigator.pop(context);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('School "$schoolName" added and verified! Use "$username" / "$password" to login.'),
+                            content: Text(index == null ? 'School "$schoolName" added successfully!' : 'School "$schoolName" updated locally!'),
                             backgroundColor: Colors.green,
                           ),
                         );
                       }
                     } catch (e) {
+                      Navigator.of(context, rootNavigator: true).pop(); // Pop loading
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Verification failed: ${e.toString()}'),
+                            content: Text('Verification failed: ${e.toString().replaceAll('Exception: ', '')}'),
                             backgroundColor: Colors.orange,
                           ),
                         );
@@ -292,14 +305,14 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                               try {
                                 showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
                                 await auth.signIn(school['username']!, school['password']!);
-                                  if (mounted) {
-                                    Navigator.pop(context); // Close loading
-                                  }
+                                Navigator.of(context, rootNavigator: true).pop(); // Close loading
                               } catch (e) {
-                                if (mounted) Navigator.pop(context);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  SnackBar(content: Text('Login failed: $e')),
-                                );
+                                Navigator.of(context, rootNavigator: true).pop(); // Close loading
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(content: Text('Login failed: $e')),
+                                  );
+                                }
                               }
                             },
                             child: Center(
@@ -336,12 +349,12 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                                         try {
                                           showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
                                           await auth.signIn(s['username']!, s['password']!);
-                                            if (mounted) {
-                                              Navigator.pop(context); // Close loading
-                                            }
+                                          Navigator.of(context, rootNavigator: true).pop(); // Close loading
                                         } catch (e) {
-                                          if (mounted) Navigator.pop(context);
-                                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+                                          Navigator.of(context, rootNavigator: true).pop(); // Close loading
+                                          if (mounted) {
+                                            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Login failed: $e')));
+                                          }
                                         }
                                       },
                                     ),

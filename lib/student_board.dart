@@ -784,9 +784,13 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               child: Column(
                 children: [
-                  _hifzProgressRow('New Lesson', '${latest['todayFromSura']} ${latest['todayFromAya']} â†’ ${latest['todayToSura']} ${latest['todayToAya']}', Colors.blue),
+                  _hifzProgressRow('New Lesson', '${latest['todayFromSura']} ${latest['todayFromAya']} | ${latest['todayToSura']} ${latest['todayToAya']}', Colors.blue),
                   const SizedBox(height: 12),
-                  _hifzProgressRow('Old Review', '${latest['oldFromSura']} ${latest['oldFromAya']} â†’ ${latest['oldToSura']} ${latest['oldToAya']}', Colors.orange),
+                  _hifzProgressRow('Old Review', '${latest['oldFromSura']} ${latest['oldFromAya']} | ${latest['oldToSura']} ${latest['oldToAya']}', Colors.orange),
+                  if (latest['oldPortionJuzh'] != null) ...[
+                    const SizedBox(height: 12),
+                    _hifzProgressRow('Old Portion Memorized', 'Juzh ${latest['oldPortionJuzh']}', Colors.deepOrange),
+                  ],
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.all(16),
@@ -896,9 +900,13 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                             ],
                           ),
                           const Divider(height: 32),
-                          _hifzProgressRow('New Lesson', '${p['todayFromSura']} ${p['todayFromAya']} â†’ ${p['todayToSura']} ${p['todayToAya']}', Colors.blue),
+                          _hifzProgressRow('New Lesson', '${p['todayFromSura']} ${p['todayFromAya']} | ${p['todayToSura']} ${p['todayToAya']}', Colors.blue),
                           const SizedBox(height: 12),
-                          _hifzProgressRow('Old Review', '${p['oldFromSura']} ${p['oldFromAya']} â†’ ${p['oldToSura']} ${p['oldToAya']}', Colors.orange),
+                          _hifzProgressRow('Old Review', '${p['oldFromSura']} ${p['oldFromAya']} | ${p['oldToSura']} ${p['oldToAya']}', Colors.orange),
+                          if (p['oldPortionJuzh'] != null) ...[
+                            const SizedBox(height: 12),
+                            _hifzProgressRow('Old Portion Memorized', 'Juzh ${p['oldPortionJuzh']}', Colors.deepOrange),
+                          ],
                         ],
                       ),
                     );
@@ -1009,7 +1017,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('${a['type']} â€¢ Due: ${a['date'] ?? 'N/A'}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                                Text('${a['type']} | Due: ${a['date'] ?? 'N/A'}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                                 if (isDone) 
                                   Padding(
                                     padding: const EdgeInsets.only(top: 4.0),
@@ -1205,7 +1213,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                             child: Icon(isExam ? Icons.assignment : Icons.event, color: isExam ? Colors.orange.shade700 : Colors.teal.shade700),
                           ),
                           title: Text(item['title'] ?? item['examName'] ?? 'Untitled', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18, color: Color(0xFF0F172A))),
-                          subtitle: Text(isExam ? '${subs.length} Subjects' : '${item['dates']} â€¢ ${item['time']}', style: TextStyle(color: isExam ? Colors.orange.shade800 : Colors.teal.shade800, fontSize: 13, fontWeight: FontWeight.w700)),
+                          subtitle: Text(isExam ? '${subs.length} Subjects' : '${item['date'] ?? item['dates'] ?? ''} | ${item['time'] ?? ''}', style: TextStyle(color: isExam ? Colors.orange.shade800 : Colors.teal.shade800, fontSize: 13, fontWeight: FontWeight.w700)),
                           children: [
                             Padding(
                               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -1482,7 +1490,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                   child: Text(c['name']![0].toUpperCase(), style: const TextStyle(color: Colors.white)),
                 ),
                 title: Text(c['name']!, style: const TextStyle(fontWeight: FontWeight.bold)),
-                subtitle: Text('${c['role']} â€¢ ${c['dept']}'),
+                subtitle: Text('${c['role']} | ${c['dept']}'),
                 trailing: const Icon(Icons.chevron_right),
                 onTap: () => setState(() => _activeChatPeerId = c['id']),
               );

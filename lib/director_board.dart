@@ -8,6 +8,7 @@ import 'data_store.dart';
 import 'notification_service.dart';
 import 'login_screen.dart';
 import 'auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  SCHOOL DASHBOARD SCREEN  (Academic Director)
@@ -631,7 +632,7 @@ class _TeachersTabState extends State<_TeachersTab> {
                     }).toList(),
                   ),
                 ] else
-                  const Text('âš ï¸ Add classes in Departments first', style: TextStyle(color: Colors.red, fontSize: 12)),
+                  const Text('âš ï¸  Add classes in Departments first', style: TextStyle(color: Colors.red, fontSize: 12)),
                 const Divider(height: 28),
                 const Text('Credentials (Optional)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Colors.grey)),
                 const SizedBox(height: 8),
@@ -668,45 +669,45 @@ class _TeachersTabState extends State<_TeachersTab> {
                   'schoolName': widget.schoolName,
                 });
 
-                setState(() {
-                  if (index != null) {
-                    // Find original in DataStore to update
+                if (index == null) {
+                  try {
+                    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                    await AuthService().registerUser({...newData, 'role': 'teacher'}, password);
+                    Navigator.of(context, rootNavigator: true).pop(); // pop loading
+                    Navigator.of(context, rootNavigator: true).pop(); // pop add dialog
+                    setState(() {
+                      DataStore.allTeachers.add(newData);
+                      widget.teachers.add(newData);
+                      DataStore.saveAllData();
+                    });
+                    widget.showCredentials('Teacher', username, password);
+                  } catch (e) {
+                    Navigator.of(context, rootNavigator: true).pop(); // pop loading
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Registration failed: $e'), backgroundColor: Colors.red));
+                    }
+                    return;
+                  }
+                } else {
+                  setState(() {
                     final oldData = widget.teachers[index];
                     final globalIndex = DataStore.allTeachers.indexWhere((t) => t['username'] == oldData['username']);
-                    if (globalIndex != -1) {
-                      DataStore.allTeachers[globalIndex] = newData;
-                    }
+                    if (globalIndex != -1) DataStore.allTeachers[globalIndex] = newData;
                     widget.teachers[index] = newData;
-                  } else {
-                    DataStore.allTeachers.add(newData);
-                    widget.teachers.add(newData);
-                  }
-                  DataStore.saveAllData();
-                });
-                
-                widget.onRefresh();
-
-                // Verify login immediately
-                try {
-                  final auth = AuthService();
-                  await auth.signIn(username, password);
-                  if (mounted) {
-                    Navigator.pop(context);
-                    if (index == null) {
-                       widget.showCredentials('Teacher', username, password);
-                    } else {
-                       ScaffoldMessenger.of(context).showSnackBar(
-                         SnackBar(content: Text('Teacher "$name" updated and verified!'), backgroundColor: Colors.green)
-                       );
-                    }
-                  }
-                } catch (e) {
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Verification failed: ${e.toString().replaceAll('Exception: ', '')}'), backgroundColor: Colors.orange)
-                    );
-                  }
+                    DataStore.saveAllData();
+                    
+                    // Update in Firestore
+                    FirebaseFirestore.instance.collection('users')
+                        .where('username', isEqualTo: oldData['username'])
+                        .get().then((query) {
+                      if (query.docs.isNotEmpty) {
+                        query.docs.first.reference.update(newData);
+                      }
+                    });
+                  });
+                  Navigator.pop(context);
                 }
+                widget.onRefresh();
               },
               child: Text(index != null ? 'Update' : 'Add Teacher'),
             ),
@@ -740,7 +741,20 @@ class _TeachersTabState extends State<_TeachersTab> {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              setState(() => widget.teachers.removeAt(index));
+              setState(() {
+                final t = widget.teachers[index];
+                DataStore.allTeachers.removeWhere((x) => x['username'] == t['username']);
+                widget.teachers.removeAt(index);
+                
+                // Delete from Firestore
+                FirebaseFirestore.instance.collection('users')
+                    .where('username', isEqualTo: t['username'])
+                    .get().then((query) {
+                  if (query.docs.isNotEmpty) {
+                    query.docs.first.reference.delete();
+                  }
+                });
+              });
               DataStore.saveAllData();
               widget.onRefresh();
               Navigator.pop(context);
@@ -817,9 +831,9 @@ class _TeachersTabState extends State<_TeachersTab> {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
 //  DEPARTMENTS TAB
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
 class _DepartmentsTab extends StatefulWidget {
   final List<String> classes;
   final List<Map<String, String>> students;
@@ -1100,9 +1114,9 @@ class _DepartmentsTabState extends State<_DepartmentsTab> {
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
 //  BROADCAST / MESSAGES TAB
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
 class _BroadcastTab extends StatefulWidget {
   final List<Map<String, String>> teachers;
   final List<Map<String, String>> students;
@@ -1348,39 +1362,60 @@ class _BroadcastTabState extends State<_BroadcastTab> {
                           itemCount: DataStore.allBulletinCards.length,
                           itemBuilder: (context, idx) {
                             final card = DataStore.allBulletinCards[idx];
+                            final List<Color> colors = [Colors.blue, Colors.indigo, Colors.purple, Colors.teal, Colors.orange];
+                            final Color cardColor = colors[idx % colors.length];
+                            
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12),
-                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFF8FAFC),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFE2E8F0)),
+                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                                border: Border.all(color: cardColor.withOpacity(0.1)),
                               ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(color: Colors.blue.withOpacity(0.1), shape: BoxShape.circle),
-                                    child: const Icon(Icons.view_carousel_rounded, color: Colors.blue, size: 20),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(16),
+                                child: IntrinsicHeight(
+                                  child: Row(
+                                    children: [
+                                      Container(width: 5, color: cardColor),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Padding(
+                                          padding: const EdgeInsets.symmetric(vertical: 12),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(card['title'] ?? 'No Title', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 15, color: Color(0xFF1E293B))),
+                                              const SizedBox(height: 2),
+                                              Text(card['text'] ?? '', maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, height: 1.3)),
+                                              const SizedBox(height: 8),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.event_note_rounded, size: 12, color: cardColor),
+                                                  const SizedBox(width: 4),
+                                                  Text(_formatDateTime(card['date']), style: TextStyle(fontSize: 10, color: cardColor, fontWeight: FontWeight.bold)),
+                                                ],
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ),
+                                      IconButton(
+                                        icon: Container(
+                                          padding: const EdgeInsets.all(6),
+                                          decoration: BoxDecoration(color: Colors.red.shade50, shape: BoxShape.circle),
+                                          child: const Icon(Icons.delete_rounded, color: Colors.red, size: 18),
+                                        ),
+                                        onPressed: () {
+                                          setState(() => DataStore.allBulletinCards.removeAt(idx));
+                                          DataStore.saveAllData();
+                                        },
+                                      ),
+                                      const SizedBox(width: 8),
+                                    ],
                                   ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(card['title'] ?? 'No Title', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                        Text(card['text'] ?? '', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11, color: Colors.grey)),
-                                      ],
-                                    ),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
-                                    onPressed: () {
-                                      setState(() => DataStore.allBulletinCards.removeAt(idx));
-                                      DataStore.saveAllData();
-                                    },
-                                  ),
-                                ],
+                                ),
                               ),
                             );
                           },
@@ -1397,45 +1432,168 @@ class _BroadcastTabState extends State<_BroadcastTab> {
   void _showAddCardDialog() {
     final titleCtrl = TextEditingController();
     final textCtrl = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+    TimeOfDay selectedTime = TimeOfDay.now();
+
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Add Notice Board Card', style: TextStyle(fontWeight: FontWeight.w900)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Card Title')),
-            const SizedBox(height: 12),
-            TextField(controller: textCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Card Content')),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CANCEL')),
-          FilledButton(
-            onPressed: () {
-              if (titleCtrl.text.isNotEmpty) {
-                setState(() {
-                  DataStore.allBulletinCards.add({
-                    'title': titleCtrl.text,
-                    'text': textCtrl.text,
-                    'date': DateTime.now().toIso8601String(),
-                  });
-                });
-                DataStore.saveAllData();
-                Navigator.pop(ctx);
-              }
-            },
-            child: const Text('ADD CARD'),
-          ),
-        ],
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+            title: const Row(
+              children: [
+                Icon(Icons.add_card_rounded, color: Color(0xFF6366F1)),
+                SizedBox(width: 12),
+                Text('Add Notice Board Card', style: TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+              ],
+            ),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Card Information', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: titleCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Card Title',
+                      prefixIcon: const Icon(Icons.title_rounded, size: 20),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: textCtrl,
+                    maxLines: 3,
+                    decoration: InputDecoration(
+                      labelText: 'Card Content',
+                      prefixIcon: const Icon(Icons.description_rounded, size: 20),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+                      filled: true,
+                      fillColor: Colors.grey.shade50,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text('Schedule Notice', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final picked = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime.now().subtract(const Duration(days: 365)),
+                              lastDate: DateTime.now().add(const Duration(days: 365)),
+                            );
+                            if (picked != null) {
+                              setDialogState(() => selectedDate = picked);
+                            }
+                          },
+                          icon: const Icon(Icons.calendar_today_rounded, size: 16),
+                          label: Text('${selectedDate.day}/${selectedDate.month}/${selectedDate.year}'),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final picked = await showTimePicker(
+                              context: context,
+                              initialTime: selectedTime,
+                            );
+                            if (picked != null) {
+                              setDialogState(() => selectedTime = picked);
+                            }
+                          },
+                          icon: const Icon(Icons.access_time_rounded, size: 16),
+                          label: Text(selectedTime.format(context)),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('CANCEL', style: TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF6366F1),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                ),
+                onPressed: () {
+                  if (titleCtrl.text.isNotEmpty) {
+                    final finalDate = DateTime(
+                      selectedDate.year,
+                      selectedDate.month,
+                      selectedDate.day,
+                      selectedTime.hour,
+                      selectedTime.minute,
+                    );
+                    setState(() {
+                      DataStore.allBulletinCards.add({
+                        'title': titleCtrl.text,
+                        'text': textCtrl.text,
+                        'date': finalDate.toIso8601String(),
+                      });
+                    });
+                    DataStore.saveAllData();
+                    Navigator.pop(ctx);
+                  }
+                },
+                child: const Text('ADD CARD', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          );
+        }
       ),
     );
   }
+
+  String _formatDateTime(dynamic date) {
+    if (date == null || date.toString().isEmpty) return '';
+    try {
+      final dt = DateTime.parse(date.toString());
+      final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      final dayName = days[dt.weekday - 1];
+      final monthName = months[dt.month - 1];
+      final day = dt.day.toString().padLeft(2, '0');
+      
+      int hour = dt.hour;
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final period = hour >= 12 ? 'PM' : 'AM';
+      if (hour == 0) hour = 12;
+      else if (hour > 12) hour -= 12;
+      
+      return '$dayName, $day $monthName ${dt.year} - $hour:$minute $period';
+    } catch (e) {
+      return date.toString();
+    }
+  }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
 //  STUDENTS MANAGEMENT TAB
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
 class _StudentsManagementTab extends StatefulWidget {
   final List<Map<String, String>> students;
   final List<String> classes;
@@ -1542,6 +1700,15 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
                       DataStore.allStudents[globalIndex] = newData;
                     }
                     widget.students[index] = newData;
+                    
+                    // Update in Firestore
+                    FirebaseFirestore.instance.collection('users')
+                        .where('username', isEqualTo: oldData['username'])
+                        .get().then((query) {
+                      if (query.docs.isNotEmpty) {
+                        query.docs.first.reference.update(newData);
+                      }
+                    });
                   } else {
                     DataStore.allStudents.add(newData);
                     widget.students.add(newData);
@@ -1553,22 +1720,29 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
 
                 // Verify login immediately
                 try {
-                  final auth = AuthService();
-                  await auth.signIn(username, password);
-                  if (mounted) {
-                    Navigator.pop(context);
-                    if (index == null) {
-                      widget.showCredentials('Student', username, password);
-                    } else {
+                  showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                  if (index == null) {
+                    await AuthService().registerUser({...newData, 'role': 'student'}, password);
+                  }
+                  // We removed signIn for existing students to prevent logging the director out
+                  // Updates to existing users are handled by Firestore rules or admin SDK, but locally we already updated DataStore
+                  Navigator.of(context, rootNavigator: true).pop(); // pop loading
+                  Navigator.of(context, rootNavigator: true).pop(); // pop dialog
+                  
+                  if (index == null) {
+                    widget.showCredentials('Student', username, password);
+                  } else {
+                    if (mounted) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Student "$name" updated and verified!'), backgroundColor: Colors.green)
+                        SnackBar(content: Text('Student "$name" updated locally!'), backgroundColor: Colors.green)
                       );
                     }
                   }
                 } catch (e) {
+                  Navigator.of(context, rootNavigator: true).pop(); // pop loading
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Verification failed: ${e.toString().replaceAll('Exception: ', '')}'), backgroundColor: Colors.orange)
+                      SnackBar(content: Text('Action failed: ${e.toString().replaceAll('Exception: ', '')}'), backgroundColor: Colors.orange)
                     );
                   }
                 }
@@ -1668,8 +1842,18 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
                                   TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                                   FilledButton(style: FilledButton.styleFrom(backgroundColor: Colors.red), onPressed: () {
                                      setState(() {
+                                       DataStore.allStudents.removeWhere((x) => x['username'] == s['username']);
                                        widget.students.remove(s);
                                        DataStore.saveAllData();
+                                       
+                                       // Delete from Firestore
+                                       FirebaseFirestore.instance.collection('users')
+                                           .where('username', isEqualTo: s['username'])
+                                           .get().then((query) {
+                                         if (query.docs.isNotEmpty) {
+                                           query.docs.first.reference.delete();
+                                         }
+                                       });
                                      });
                                      widget.onRefresh();
                                      Navigator.pop(context);

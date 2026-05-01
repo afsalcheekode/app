@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:math';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'notification_service.dart';
 
 class DataStore {
@@ -192,8 +193,9 @@ class DataStore {
     try {
       _prefs = await SharedPreferences.getInstance();
       _loadAllData();
+      await syncWithFirestore(); // Sync after loading local
       isInitialized = true;
-      debugPrint("Local Data Loaded (Offline Mode)");
+      debugPrint("Data Synced with Firestore");
     } catch (e) {
       debugPrint("Error in initPrefs: $e");
     } finally {
@@ -407,5 +409,86 @@ class DataStore {
     } else {
       _prefs!.remove('mock_user');
     }
+    
+    // Background push to Firestore
+    syncWithFirestore(isPushOnly: true);
+  }
+
+  static bool _isSyncing = false;
+  static Future<void> syncWithFirestore({bool isPushOnly = false}) async {
+    if (_isSyncing) return;
+    _isSyncing = true;
+    try {
+      final db = FirebaseFirestore.instance;
+      
+      if (!isPushOnly) {
+         // Pull Data with timeout to prevent hang
+         final doc = await db.collection('app_data').doc('central_store').get().timeout(const Duration(seconds: 5));
+         if (doc.exists) {
+           final data = doc.data()!;
+           if (data['allTeachers'] != null) allTeachers = List<Map<String, String>>.from((data['allTeachers'] as List).map((i) => Map<String, String>.from(i)));
+           if (data['allStudents'] != null) allStudents = List<Map<String, String>>.from((data['allStudents'] as List).map((i) => Map<String, String>.from(i)));
+           if (data['allSchools'] != null) allSchools = List<Map<String, String>>.from((data['allSchools'] as List).map((i) => Map<String, String>.from(i)));
+           if (data['allExams'] != null) allExams = List<Map<String, dynamic>>.from(data['allExams']);
+           if (data['allMessages'] != null) allMessages = List<Map<String, dynamic>>.from(data['allMessages']);
+           if (data['allActivities'] != null) allActivities = List<Map<String, dynamic>>.from(data['allActivities']);
+           if (data['allAttendance'] != null) allAttendance = List<Map<String, dynamic>>.from(data['allAttendance']);
+           if (data['allHifzProgress'] != null) allHifzProgress = List<Map<String, dynamic>>.from(data['allHifzProgress']);
+           if (data['allClasses'] != null) allClasses = List<String>.from(data['allClasses']);
+           if (data['classDepts'] != null) classDepts = Map<String, String>.from(data['classDepts']);
+           if (data['allTimetables'] != null) allTimetables = Map<String, dynamic>.from(data['allTimetables']);
+           if (data['academicYears'] != null) academicYears = List<String>.from(data['academicYears']);
+           if (data['selectedAcademicYear'] != null) selectedAcademicYear = data['selectedAcademicYear'];
+           if (data['holidayDates'] != null) holidayDates = List<String>.from(data['holidayDates']);
+           if (data['allMetrics'] != null) allMetrics = List<Map<String, dynamic>>.from(data['allMetrics']);
+           if (data['allBulletinCards'] != null) allBulletinCards = List<Map<String, dynamic>>.from(data['allBulletinCards']);
+           if (data['featureConfig'] != null) featureConfig = Map<String, bool>.from(data['featureConfig']);
+           
+           // Re-save locally after pull
+           _saveLocallyOnly();
+         }
+      }
+
+      // Push Data (always push current state to ensure sync)
+      await db.collection('app_data').doc('central_store').set({
+        'allTeachers': allTeachers,
+        'allStudents': allStudents,
+        'allSchools': allSchools,
+        'allExams': allExams,
+        'allMessages': allMessages,
+        'allActivities': allActivities,
+        'allAttendance': allAttendance,
+        'allHifzProgress': allHifzProgress,
+        'allClasses': allClasses,
+        'classDepts': classDepts,
+        'allTimetables': allTimetables,
+        'academicYears': academicYears,
+        'selectedAcademicYear': selectedAcademicYear,
+        'holidayDates': holidayDates,
+        'allMetrics': allMetrics,
+        'allBulletinCards': allBulletinCards,
+        'featureConfig': featureConfig,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+    } catch (e) {
+      debugPrint("Firestore Sync Error: $e");
+    } finally {
+      _isSyncing = false;
+    }
+  }
+
+  static void _saveLocallyOnly() {
+    if (_prefs == null) return;
+    _prefs!.setString('all_schools', jsonEncode(allSchools));
+    _prefs!.setString('all_teachers', jsonEncode(allTeachers));
+    _prefs!.setString('all_students', jsonEncode(allStudents));
+    _prefs!.setString('all_exams', jsonEncode(allExams));
+    _prefs!.setString('all_messages', jsonEncode(allMessages));
+    _prefs!.setString('all_activities', jsonEncode(allActivities));
+    _prefs!.setString('all_attendance', jsonEncode(allAttendance));
+    _prefs!.setString('all_hifz_progress', jsonEncode(allHifzProgress));
+    _prefs!.setString('all_classes', jsonEncode(allClasses));
+    _prefs!.setString('all_class_depts', jsonEncode(classDepts));
   }
 }

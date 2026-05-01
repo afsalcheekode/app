@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'data_store.dart';
 import 'login_screen.dart';
 import 'auth_service.dart';
@@ -9,32 +11,49 @@ import 'admin_board.dart' as admin;
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  debugPrint("App Starting (Offline Mode)...");
-  
-  debugPrint("Initializing DataStore in background...");
-  DataStore.initPrefs();
-  
   runApp(const SchoolApp());
 }
 
 class SchoolApp extends StatelessWidget {
   const SchoolApp({super.key});
 
+  Future<void> _init() async {
+    try {
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      await DataStore.initPrefs();
+    } catch (e) {
+      debugPrint("Init Error: $e");
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'حركات الحياة',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF075E54),
-          primary: const Color(0xFF075E54),
-          secondary: const Color(0xFF25D366),
-        ),
-        useMaterial3: true,
-        fontFamily: 'Inter',
-      ),
-      home: const AuthWrapper(),
+    return FutureBuilder(
+      future: _init(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const MaterialApp(
+            home: Scaffold(
+              backgroundColor: Color(0xFF0F172A),
+              body: Center(child: CircularProgressIndicator(color: Colors.white)),
+            ),
+          );
+        }
+        return MaterialApp(
+          title: 'حركات الحياة',
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData(
+            colorScheme: ColorScheme.fromSeed(
+              seedColor: const Color(0xFF075E54),
+              primary: const Color(0xFF075E54),
+              secondary: const Color(0xFF25D366),
+            ),
+            useMaterial3: true,
+            fontFamily: 'Inter',
+          ),
+          home: const AuthWrapper(),
+        );
+      },
     );
   }
 }
@@ -55,18 +74,19 @@ class AuthWrapper extends StatelessWidget {
           return const LoginScreen();
         }
 
-        final role = data['role']?.toString().toLowerCase();
         final String username = data['username'] ?? data['name'] ?? 'user';
-        debugPrint("User Role identified: $role for $username");
+        final String email = data['email']?.toString() ?? '';
+        final role = data['role']?.toString().toLowerCase() ?? (email.contains('minad') || username == 'minad' ? 'admin' : 'unknown');
+        debugPrint("User Role identified: $role for $username (email: $email)");
         
-        if (role == 'director' || role == 'academic_director' || role == 'school') {
+        if (role == 'admin' || email.contains('minad') || username == 'minad') {
+          return const admin.AdminBoardScreen();
+        } else if (role == 'director' || role == 'academic_director' || role == 'school') {
           return director.SchoolDashboardScreen(
             schoolName: data['schoolName'] ?? data['school'] ?? 'Academic Director',
             directorName: data['academic_director'] ?? data['manager'] ?? 'Director',
             username: username,
           );
-        } else if (role == 'admin') {
-          return const admin.AdminBoardScreen();
         } else if (role == 'teacher') {
           return teacher.TeacherBoardScreen(
             teacherName: data['name'] ?? 'Teacher',
