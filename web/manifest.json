@@ -1,10 +1,10 @@
-﻿{
+{
     "name": "حركات الحياة",
     "short_name": "حركات الحياة",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#6366F1",
-    "theme_color": "#6366F1",
+    "background_color": "#FFFFFF",
+    "theme_color": "#FFFFFF",
     "description": "Connecting Teachers, Students and Parents.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,

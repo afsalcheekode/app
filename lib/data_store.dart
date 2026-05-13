@@ -32,10 +32,10 @@ class DataStore {
   ];
   static List<Map<String, String>> allSchools = [
     {
-      'school': 'حركات الحياة', 
-      'username': 'academic_director', 
-      'password': '123',
-      'academic_director': 'Harakat Director'
+      'school': 'Hayathul Islam', 
+      'username': 'hsh.director', 
+      'password': '24395262',
+      'academic_director': 'Hafiz Shafeeq Hashimi'
     }
   ];
   static List<Map<String, String>> allStudents = [
@@ -193,9 +193,10 @@ class DataStore {
     try {
       _prefs = await SharedPreferences.getInstance();
       _loadAllData();
-      await syncWithFirestore(); // Sync after loading local
       isInitialized = true;
-      debugPrint("Data Synced with Firestore");
+      // Start Firestore sync in background immediately after local load
+      syncWithFirestore();
+      debugPrint("DataStore: Local data loaded, background sync started");
     } catch (e) {
       debugPrint("Error in initPrefs: $e");
     } finally {
@@ -220,17 +221,13 @@ class DataStore {
     final teachersStr = _prefs!.getString('all_teachers');
     if (teachersStr != null) {
       final List decoded = jsonDecode(teachersStr);
-      if (decoded.isNotEmpty) {
-        allTeachers = decoded.map((t) => Map<String, String>.from(t)).toList();
-      }
+      allTeachers = decoded.map((t) => Map<String, String>.from(t)).toList();
     }
     
     final studentsStr = _prefs!.getString('all_students');
     if (studentsStr != null) {
       final List decoded = jsonDecode(studentsStr);
-      if (decoded.isNotEmpty) {
-        allStudents = decoded.map((s) => Map<String, String>.from(s)).toList();
-      }
+      allStudents = decoded.map((s) => Map<String, String>.from(s)).toList();
     }
 
     final examsStr = _prefs!.getString('all_exams');
@@ -339,9 +336,7 @@ class DataStore {
     final classesStr = _prefs!.getString('all_classes');
     if (classesStr != null) {
       final List decoded = jsonDecode(classesStr);
-      if (decoded.isNotEmpty) {
-        allClasses = decoded.map((c) => c.toString()).toList();
-      }
+      allClasses = decoded.map((c) => c.toString()).toList();
     }
 
     final deptsStr = _prefs!.getString('all_class_depts');
@@ -380,34 +375,34 @@ class DataStore {
     }
   }
 
-  static void saveAllData() {
+  static Future<void> saveAllData() async {
     if (_prefs == null) return;
-    _prefs!.setString('all_schools', jsonEncode(allSchools));
-    _prefs!.setString('all_teachers', jsonEncode(allTeachers));
-    _prefs!.setString('all_students', jsonEncode(allStudents));
-    _prefs!.setString('all_exams', jsonEncode(allExams));
-    _prefs!.setString('all_messages', jsonEncode(allMessages));
-    _prefs!.setString('all_groups', jsonEncode(allGroups));
-    _prefs!.setString('all_group_members', jsonEncode(allGroupMembers));
-    _prefs!.setString('all_activities', jsonEncode(allActivities));
-    _prefs!.setString('all_fair_items', jsonEncode(allFairItems));
-    _prefs!.setString('all_results', jsonEncode(allResults));
-    _prefs!.setString('all_activity_submissions', jsonEncode(allActivitySubmissions));
-    _prefs!.setString('all_fair_payments', jsonEncode(allFairPayments));
-    _prefs!.setString('all_attendance', jsonEncode(allAttendance));
-    _prefs!.setString('all_hifz_progress', jsonEncode(allHifzProgress));
-    _prefs!.setString('all_timetables', jsonEncode(allTimetables));
-    _prefs!.setString('holiday_dates', jsonEncode(holidayDates));
-    _prefs!.setString('academic_years', jsonEncode(academicYears));
-    _prefs!.setString('selected_academic_year', selectedAcademicYear);
-    _prefs!.setString('all_classes', jsonEncode(allClasses));
-    _prefs!.setString('all_metrics', jsonEncode(allMetrics));
-    _prefs!.setString('feature_config', jsonEncode(featureConfig));
-    _prefs!.setString('all_class_depts', jsonEncode(classDepts));
+    await _prefs!.setString('all_schools', jsonEncode(allSchools));
+    await _prefs!.setString('all_teachers', jsonEncode(allTeachers));
+    await _prefs!.setString('all_students', jsonEncode(allStudents));
+    await _prefs!.setString('all_exams', jsonEncode(allExams));
+    await _prefs!.setString('all_messages', jsonEncode(allMessages));
+    await _prefs!.setString('all_groups', jsonEncode(allGroups));
+    await _prefs!.setString('all_group_members', jsonEncode(allGroupMembers));
+    await _prefs!.setString('all_activities', jsonEncode(allActivities));
+    await _prefs!.setString('all_fair_items', jsonEncode(allFairItems));
+    await _prefs!.setString('all_results', jsonEncode(allResults));
+    await _prefs!.setString('all_activity_submissions', jsonEncode(allActivitySubmissions));
+    await _prefs!.setString('all_fair_payments', jsonEncode(allFairPayments));
+    await _prefs!.setString('all_attendance', jsonEncode(allAttendance));
+    await _prefs!.setString('all_hifz_progress', jsonEncode(allHifzProgress));
+    await _prefs!.setString('all_timetables', jsonEncode(allTimetables));
+    await _prefs!.setString('holiday_dates', jsonEncode(holidayDates));
+    await _prefs!.setString('academic_years', jsonEncode(academicYears));
+    await _prefs!.setString('selected_academic_year', selectedAcademicYear);
+    await _prefs!.setString('all_classes', jsonEncode(allClasses));
+    await _prefs!.setString('all_metrics', jsonEncode(allMetrics));
+    await _prefs!.setString('feature_config', jsonEncode(featureConfig));
+    await _prefs!.setString('all_class_depts', jsonEncode(classDepts));
     if (mockUser != null) {
-      _prefs!.setString('mock_user', jsonEncode(mockUser));
+      await _prefs!.setString('mock_user', jsonEncode(mockUser));
     } else {
-      _prefs!.remove('mock_user');
+      await _prefs!.remove('mock_user');
     }
     
     // Background push to Firestore

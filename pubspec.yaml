@@ -95,7 +95,14 @@ flutter:
   # see https://flutter.dev/custom-fonts/#from-packages
 
 flutter_launcher_icons:
-  android: "launcher_icon"
+  android: true
   ios: true
   image_path: "assets/images/app_logo_v2.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/app_logo_v2.png"
+  web:
+    generate: true
+    image_path: "assets/images/app_logo_v2.png"
+    background_color: "#FFFFFF"
+    theme_color: "#FFFFFF"
   min_sdk_android: 21

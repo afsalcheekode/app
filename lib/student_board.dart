@@ -106,11 +106,11 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         {'title': 'F.transactions', 'value': '${_fairList.length}', 'icon': Icons.star_rounded, 'color': const Color(0xFFEC4899), 'targetIndex': 2, 'feature': 'F.transactions'},
         {'title': 'Schedule', 'value': '${_exams.length}', 'icon': Icons.calendar_today_rounded, 'color': const Color(0xFFF59E0B), 'targetIndex': 3, 'feature': 'Schedule'},
         {'title': 'Results', 'value': '${_results.length}', 'icon': Icons.auto_graph_rounded, 'color': const Color(0xFF8B5CF6), 'targetIndex': 4, 'feature': 'Results'},
-        {'title': 'Attendance', 'value': 'VIEW', 'icon': Icons.fingerprint_rounded, 'color': const Color(0xFF06B6D4), 'targetIndex': 7, 'feature': 'Attendance'},
+        {'title': 'Attendance', 'value': '', 'icon': Icons.fingerprint_rounded, 'color': const Color(0xFF06B6D4), 'targetIndex': 7, 'feature': 'Attendance'},
         {'title': 'Messages', 'value': 'P2P', 'icon': Icons.chat_bubble_rounded, 'color': const Color(0xFF10B981), 'targetIndex': 5, 'feature': 'Messages'},
         {'title': 'Announce', 'value': '${DataStore.allBulletinCards.length}', 'icon': Icons.campaign_rounded, 'color': const Color(0xFF6366F1), 'targetIndex': 0, 'feature': 'Groups'},
         if (_isHifzStudent)
-          {'title': 'Hifz Journal', 'value': 'VIEW', 'icon': Icons.menu_book_rounded, 'color': const Color(0xFF075E54), 'targetIndex': 8, 'feature': 'HifzJournal'},
+          {'title': 'Hifz Journal', 'value': '', 'icon': Icons.menu_book_rounded, 'color': const Color(0xFF075E54), 'targetIndex': 8, 'feature': 'HifzJournal'},
       ];
       return all.where((m) => config[m['feature']] ?? true || m['feature'] == 'HifzJournal').toList();
   }
@@ -234,6 +234,18 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  height: 60,
+                  width: 60,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: colorScheme.primary.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))
+                    ],
+                  ),
+                  child: ClipOval(child: Image.asset('assets/images/app_logo_v2.png', fit: BoxFit.cover)),
+                ),
                 Image.asset('assets/images/app_name_arabic.png', height: 45),
                 const SizedBox(height: 8),
                 Text('STUDENT PORTAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colorScheme.primary, letterSpacing: 2)),
@@ -710,6 +722,24 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
           ),
           const SizedBox(height: 24),
           _buildHifzSectionIfApplicable(colorScheme),
+          
+          const SizedBox(height: 32),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: MediaQuery.of(context).size.width > 800 ? 4 : 2,
+              mainAxisSpacing: 16,
+              crossAxisSpacing: 16,
+              childAspectRatio: MediaQuery.of(context).size.width > 800 ? 1.5 : 2.2,
+            ),
+            itemCount: _metrics.length,
+            itemBuilder: (context, index) {
+              final m = _metrics[index];
+              return _buildMetricCard(m['title'], m['value'], m['icon'], m['color'], index: m['targetIndex']);
+            },
+          ),
+
           const SizedBox(height: 32),
           const Text('Notice Board', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
           const SizedBox(height: 16),
@@ -723,23 +753,47 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
     return GestureDetector(
       onTap: index != null ? () => setState(() => _currentIndex = index) : null,
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
-            CircleAvatar(
-              backgroundColor: color.withOpacity(0.1),
-              radius: 24,
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
               child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 12),
-            Text(value, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
-            Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: Color(0xFF64748B))),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (value.isNotEmpty) ...[
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        value,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+                      ),
+                    ),
+                  ],
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: value.isEmpty ? 13 : 10,
+                      fontWeight: FontWeight.bold,
+                      color: value.isEmpty ? const Color(0xFF1E293B) : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),
@@ -1440,13 +1494,6 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         "role": "Teacher",
         "dept": "Class ${t['class']}",
         "color": "0xFF009688",
-      }),
-      ..._allStudents.where((s) => s['std'] == widget.studentClass && s['username'] != widget.studentUsername).map((s) => {
-        "id": s['username'],
-        "name": s['name'],
-        "role": "Student",
-        "dept": "Peer",
-        "color": "0xFFFF9800",
       }),
     ];
 

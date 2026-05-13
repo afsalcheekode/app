@@ -371,6 +371,18 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                Container(
+                  height: 60,
+                  width: 60,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(color: colorScheme.primary.withOpacity(0.1), blurRadius: 10, offset: const Offset(0, 5))
+                    ],
+                  ),
+                  child: ClipOval(child: Image.asset('assets/images/app_logo_v2.png', fit: BoxFit.cover)),
+                ),
                 Image.asset('assets/images/app_name_arabic.png', height: 45),
                 const SizedBox(height: 8),
                 Text('TEACHER PORTAL', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w800, color: colorScheme.primary, letterSpacing: 2)),
@@ -1471,10 +1483,10 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
             crossAxisCount: MediaQuery.of(context).size.width > 800 ? 4 : 2,
             mainAxisSpacing: 16,
             crossAxisSpacing: 16,
-            childAspectRatio: MediaQuery.of(context).size.width > 800 ? 1.1 : 1.3,
+            childAspectRatio: MediaQuery.of(context).size.width > 800 ? 1.5 : 2.2,
             children: [
               _buildMetricCard('Results', '${_results.length}', Icons.analytics_rounded, Colors.orange, 4),
-              _buildMetricCard('Today Attendance', 'Review', Icons.how_to_reg_rounded, Colors.green, 7),
+              _buildMetricCard('Today Attendance', '', Icons.how_to_reg_rounded, Colors.green, 7),
               _buildMetricCard('Messages', '${DataStore.getUnreadMessageCount(widget.teacherUsername)}', Icons.message_rounded, Colors.blue, 5),
               _buildMetricCard('Announce', '${DataStore.allBulletinCards.length}', Icons.campaign_rounded, Colors.purple, -1),
             ],
@@ -1536,23 +1548,47 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
         if (targetIndex != -1) setState(() => _currentIndex = targetIndex);
       },
       child: Container(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 15, offset: const Offset(0, 8))],
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+        child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(16)),
-              child: Icon(icon, color: color, size: 28),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+              child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 16),
-            Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
-            Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (value.isNotEmpty) ...[
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        value,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B)),
+                      ),
+                    ),
+                  ],
+                  Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: value.isEmpty ? 13 : 10,
+                      fontWeight: FontWeight.bold,
+                      color: value.isEmpty ? const Color(0xFF1E293B) : const Color(0xFF64748B),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

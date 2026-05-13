@@ -42,8 +42,9 @@ class _LoginScreenState extends State<LoginScreen> {
     return result;
   }
 
+  bool _isLoading = false;
+
   void _login() async {
-    // Normalize Arabic/Persian numerals to English numerals and remove spaces from username
     final userInput = _normalizeNumbers(_userController.text).trim().replaceAll(RegExp(r'\s+'), '');
     final pass = _normalizeNumbers(_passController.text).trim();
 
@@ -54,33 +55,20 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-
+    setState(() => _isLoading = true);
 
     try {
-      // Ensure data is loaded before attempting login
       if (!DataStore.isInitialized) {
         await DataStore.initPrefs();
       }
 
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => const Center(child: CircularProgressIndicator()),
-      );
-
-      final navigator = Navigator.of(context, rootNavigator: true);
-
-      // Data Normalization as requested: .trim() and .toLowerCase()
       final email = userInput.contains('@') ? userInput.toLowerCase() : '$userInput@harakat.com'.toLowerCase();
-      
       await AuthService().signIn(email, pass);
-      navigator.pop(); // Close loading dialog on success
-
-      // Login handled by AuthWrapper stream
-      // AuthWrapper will handle the rest
+      
+      // Success is handled by AuthWrapper stream
     } catch (e) {
-      Navigator.of(context, rootNavigator: true).pop(); // Close loading
       if (mounted) {
+        setState(() => _isLoading = false);
         final errorMsg = e.toString().replaceAll('Exception: ', '');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -232,8 +220,14 @@ class _LoginScreenState extends State<LoginScreen> {
                                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                                 elevation: 0,
                               ),
-                              onPressed: _login,
-                              child: const Text('Sign In', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                              onPressed: _isLoading ? null : _login,
+                              child: _isLoading 
+                                ? const SizedBox(
+                                    height: 24,
+                                    width: 24,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : const Text('Sign In', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
                             ),
                           ),
                         ],

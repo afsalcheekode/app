@@ -12,6 +12,7 @@ import 'notification_service.dart';
 import 'login_screen.dart';
 import 'auth_service.dart';
 import 'director_board.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AdminBoardScreen extends StatefulWidget {
   const AdminBoardScreen({super.key});
@@ -23,6 +24,55 @@ class AdminBoardScreen extends StatefulWidget {
 class _AdminBoardScreenState extends State<AdminBoardScreen> {
   // Use the global schools list
   List<Map<String, String>> get _schools => DataStore.allSchools;
+
+  void _showCredentials(String user, String pass) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Director Account Created âœ…'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Share these credentials with the Director:', style: TextStyle(color: Colors.grey)),
+            const SizedBox(height: 16),
+            _credRow('Username', user),
+            const SizedBox(height: 8),
+            _credRow('Password', pass),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('DONE')),
+        ],
+      ),
+    );
+  }
+
+  Widget _credRow(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF4),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: const Color(0xFF86EFAC)),
+      ),
+      child: Row(
+        children: [
+          Text('$label: ', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.grey)),
+          Expanded(child: SelectableText(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+          IconButton(
+            icon: const Icon(Icons.copy, size: 18),
+            onPressed: () {
+              Clipboard.setData(ClipboardData(text: value));
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('$label copied!'), duration: const Duration(seconds: 1)),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
   void _showAddSchoolSheet({int? index}) {
     final s = index != null ? _schools[index] : null;
@@ -117,34 +167,62 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                       return;
                     }
 
-                    setState(() {
-                      final schoolData = {
-                        'school': schoolName,
-                        'academic_director': directorName,
-                        'username': username,
-                        'password': password,
-                      };
+                    final oldUsername = s?['username'];
+                    final oldPassword = s?['password'];
 
-                      if (index != null) {
-                        DataStore.allSchools[index] = schoolData;
-                      } else {
-                        DataStore.allSchools.add(schoolData);
-                      }
-                      DataStore.saveAllData();
-                    });
-
-                    // Create account in Firebase if new school
                     try {
                       final auth = AuthService();
                       showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
                       
+                      final Map<String, dynamic> userData = {
+                        'role': 'director',
+                        'schoolName': schoolName,
+                        'academic_director': directorName,
+                        'username': username,
+                      };
+
                       if (index == null) {
-                        await auth.registerUser({
-                          'role': 'director',
-                          'schoolName': schoolName,
-                          'academic_director': directorName,
-                          'username': username,
-                        }, password);
+                        // Create NEW director account
+                        await auth.registerUser(userData, password);
+                        
+                        setState(() {
+                          DataStore.allSchools.add({
+                            'school': schoolName,
+                            'academic_director': directorName,
+                            'username': username,
+                            'password': password,
+                            'uid': userData['uid'] ?? '',
+                          });
+                          DataStore.saveAllData();
+                        });
+                      } else {
+                        // Update EXISTING director account
+                        if (oldUsername != null && oldPassword != null) {
+                          // 1. Update password in Firebase Auth if changed
+                          if (password != oldPassword) {
+                            await auth.updateUserPassword(oldUsername, oldPassword, password);
+                          }
+
+                          // 2. Update Firestore metadata
+                          final query = await FirebaseFirestore.instance.collection('users')
+                              .where('username', isEqualTo: oldUsername)
+                              .get();
+                          
+                          if (query.docs.isNotEmpty) {
+                            await query.docs.first.reference.update(userData);
+                          }
+                        }
+
+                        setState(() {
+                          DataStore.allSchools[index] = {
+                            'school': schoolName,
+                            'academic_director': directorName,
+                            'username': username,
+                            'password': password,
+                            'uid': s?['uid'] ?? '',
+                          };
+                          DataStore.saveAllData();
+                        });
                       }
                       
                       Navigator.of(context, rootNavigator: true).pop(); // Pop loading
@@ -153,17 +231,20 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(index == null ? 'School "$schoolName" added successfully!' : 'School "$schoolName" updated locally!'),
+                            content: Text(index == null ? 'Director account created successfully!' : 'Director account updated successfully!'),
                             backgroundColor: Colors.green,
                           ),
                         );
+                        if (index == null) {
+                          _showCredentials(username, password);
+                        }
                       }
                     } catch (e) {
                       Navigator.of(context, rootNavigator: true).pop(); // Pop loading
                       if (mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Verification failed: ${e.toString().replaceAll('Exception: ', '')}'),
+                            content: Text('Operation failed: ${e.toString().replaceAll('Exception: ', '')}'),
                             backgroundColor: Colors.orange,
                           ),
                         );
@@ -194,12 +275,22 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
     return FadeInEntrance(
       child: Scaffold(
         backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: colorScheme.primary,
-        centerTitle: true,
-        toolbarHeight: isDesktop ? 120 : 90,
-        elevation: 0,
-        actions: [
+        appBar: AppBar(
+          backgroundColor: colorScheme.primary,
+          centerTitle: true,
+          toolbarHeight: isDesktop ? 120 : 90,
+          elevation: 0,
+          leading: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                color: Colors.white,
+              ),
+              child: ClipOval(child: Image.asset('assets/images/app_logo_v2.png')),
+            ),
+          ),
+          actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             tooltip: 'Logout',
@@ -318,8 +409,8 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                             child: Center(
                               child: ListTile(
                                 leading: CircleAvatar(
-                                  backgroundColor: colorScheme.primary.withOpacity(0.1),
-                                  child: Icon(Icons.school_rounded, color: colorScheme.primary),
+                                  backgroundColor: Colors.white,
+                                  child: ClipOval(child: Image.asset('assets/images/app_logo_v2.png')),
                                 ),
                                 title: Text(s['school'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
                                 subtitle: Column(
@@ -369,10 +460,33 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                                             content: Text('Are you sure you want to delete ${s['school']}?'),
                                             actions: [
                                               TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                                              TextButton(onPressed: () {
-                                                setState(() => _schools.removeAt(index));
-                                                DataStore.saveAllData();
-                                                Navigator.pop(context);
+                                              TextButton(onPressed: () async {
+                                                try {
+                                                  showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                                                  
+                                                  // 1. Delete from Firebase Auth and Firestore
+                                                  await AuthService().deleteUser(s['username']!, s['password']!);
+                                                  
+                                                  // 2. Remove from local list
+                                                  setState(() => _schools.removeAt(index));
+                                                  DataStore.saveAllData();
+                                                  
+                                                  Navigator.of(context, rootNavigator: true).pop(); // Pop loading
+                                                  Navigator.of(context, rootNavigator: true).pop(); // Pop confirmation dialog
+                                                  
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      const SnackBar(content: Text('Director account deleted successfully!'), backgroundColor: Colors.green),
+                                                    );
+                                                  }
+                                                } catch (e) {
+                                                  Navigator.of(context, rootNavigator: true).pop(); // Pop loading
+                                                  if (mounted) {
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(content: Text('Failed to delete: $e'), backgroundColor: Colors.red),
+                                                    );
+                                                  }
+                                                }
                                               }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
                                             ],
                                           ),
@@ -417,7 +531,7 @@ class _AdminBoardScreenState extends State<AdminBoardScreen> {
                   Icon(Icons.domain_add_rounded, color: colorScheme.primary, size: 28),
                   const SizedBox(width: 12),
                   Text(
-                    'ADD NEW SCHOOL',
+                    'DIRECTOR BOARD',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w900,

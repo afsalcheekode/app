@@ -37,21 +37,24 @@ class AuthService {
       UserCredential result;
       final firebasePassword = _getFirebasePassword(password);
       try {
+        debugPrint("AuthService: Attempting sign-in for $formattedEmail");
         result = await _auth.signInWithEmailAndPassword(
           email: formattedEmail,
           password: firebasePassword,
         );
       } on FirebaseAuthException catch (e) {
-        if (e.code == 'user-not-found' || e.code == 'invalid-credential' || e.code == 'wrong-password') {
-          if (formattedEmail.contains('minad') || formattedEmail.contains('director')) {
+        debugPrint("AuthService: Sign-in failed with code: ${e.code}");
+        final lowEmail = formattedEmail.toLowerCase();
+        if (e.code == 'user-not-found' || e.code == 'invalid-credential' || e.code == 'wrong-password' || e.code.toLowerCase().contains('credential')) {
+          if (lowEmail.contains('minad') || lowEmail.contains('director') || lowEmail.contains('hsh')) {
             try {
-              // Auto-create admin if it doesn't exist
+              debugPrint("AuthService: Auto-creating account for $formattedEmail");
               result = await _auth.createUserWithEmailAndPassword(
                 email: formattedEmail,
                 password: firebasePassword,
               );
             } catch (createError) {
-              // If creation fails (e.g. email already exists, meaning it was just a wrong password)
+              debugPrint("AuthService: Auto-create failed: $createError");
               throw Exception("Invalid username or password.");
             }
           } else {
@@ -70,13 +73,15 @@ class AuthService {
       
       if (!doc.exists) {
         // Fallback for Director (if they are the one who set up the project)
-        if (formattedEmail.contains('director') || formattedEmail.contains('minad')) {
-           final adminData = {
-             'role': formattedEmail.contains('minad') ? 'admin' : 'director',
-             'username': formattedEmail.split('@')[0],
-             'uid': user.uid,
-             'name': formattedEmail.contains('minad') ? 'Super Admin' : 'Academic Director',
-           };
+        if (formattedEmail.contains('director') || formattedEmail.contains('minad') || formattedEmail.contains('hsh')) {
+          final isHsh = formattedEmail.contains('hsh');
+          final adminData = {
+            'role': formattedEmail.contains('minad') ? 'admin' : 'director',
+            'username': formattedEmail.split('@')[0],
+            'uid': user.uid,
+            'name': isHsh ? 'Hafiz Shafeeq Hashimi' : (formattedEmail.contains('minad') ? 'Super Admin' : 'Academic Director'),
+            'schoolName': isHsh ? 'Hayathul Islam' : null,
+          };
            await _db.collection('users').doc(user.uid).set(adminData);
            DataStore.updateMockUser(adminData);
            return adminData;
@@ -142,6 +147,71 @@ class AuthService {
       throw Exception("Failed to create secure account: ${e.toString().replaceAll('Exception: ', '')}");
     } finally {
       // 4. Clean up secondary app
+      if (secondaryApp != null) {
+        await secondaryApp.delete();
+      }
+    }
+  }
+
+  // Delete a user account (used by Admin)
+  Future<void> deleteUser(String username, String password) async {
+    FirebaseApp? secondaryApp;
+    try {
+      final email = username.contains('@') ? username : '$username@harakat.com';
+      
+      secondaryApp = await Firebase.initializeApp(
+        name: 'DeleteUser_${DateTime.now().millisecondsSinceEpoch}',
+        options: Firebase.app().options,
+      );
+      
+      FirebaseAuth secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+      
+      final firebasePassword = _getFirebasePassword(password);
+      
+      UserCredential cred = await secondaryAuth.signInWithEmailAndPassword(
+        email: email.trim().toLowerCase(),
+        password: firebasePassword,
+      );
+      
+      final uid = cred.user?.uid;
+      await cred.user?.delete();
+      
+      if (uid != null) {
+        await _db.collection('users').doc(uid).delete();
+      }
+    } catch (e) {
+      debugPrint("Delete Error: $e");
+      throw Exception("Failed to delete account: ${e.toString().replaceAll('Exception: ', '')}");
+    } finally {
+      if (secondaryApp != null) {
+        await secondaryApp.delete();
+      }
+    }
+  }
+
+  // Update user password (used by Admin)
+  Future<void> updateUserPassword(String username, String oldPassword, String newPassword) async {
+    FirebaseApp? secondaryApp;
+    try {
+      final email = username.contains('@') ? username : '$username@harakat.com';
+      
+      secondaryApp = await Firebase.initializeApp(
+        name: 'UpdatePass_${DateTime.now().millisecondsSinceEpoch}',
+        options: Firebase.app().options,
+      );
+      
+      FirebaseAuth secondaryAuth = FirebaseAuth.instanceFor(app: secondaryApp);
+      
+      UserCredential cred = await secondaryAuth.signInWithEmailAndPassword(
+        email: email.trim().toLowerCase(),
+        password: _getFirebasePassword(oldPassword),
+      );
+      
+      await cred.user?.updatePassword(_getFirebasePassword(newPassword));
+    } catch (e) {
+      debugPrint("Update Password Error: $e");
+      throw Exception("Failed to update password: ${e.toString().replaceAll('Exception: ', '')}");
+    } finally {
       if (secondaryApp != null) {
         await secondaryApp.delete();
       }

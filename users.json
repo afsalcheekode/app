@@ -1,0 +1,81 @@
+{"users": [
+{
+  "localId": "0rLrc1OfIxhEHnr7YpsqL1ZkLL63",
+  "email": "minad@harakat.com",
+  "emailVerified": false,
+  "passwordHash": "DIZrFmxH8ridR0fd0tiJAxOuIWLyp6l25LIyJztOC7TDVqcF8SGksJw73LxNFipS4640b1dQSUPtWWImmlvdVw==",
+  "salt": "9fXb6L3i9jRuyw==",
+  "lastSignedInAt": "1777709350211",
+  "createdAt": "1777538721818",
+  "providerUserInfo": []
+},
+{
+  "localId": "EpbJwZROq4T2Erki4pZmqzosxxG3",
+  "email": "system.admin@schoolsync.app",
+  "emailVerified": false,
+  "passwordHash": "k47gS1AjimXeRAeryCBwKyw7q2iR2GPUOndD3YHbqNnTKbPHObKzbecq5WgueCQ8J9YMqOy87Ga0ok48rcEJ2A==",
+  "salt": "sB2izcvNjsxRkw==",
+  "lastSignedInAt": "1775798210229",
+  "createdAt": "1775795367484",
+  "providerUserInfo": []
+},
+{
+  "localId": "QdzepIImskXDK7tFfPiImtWtiS32",
+  "email": "ss@harakat.com",
+  "emailVerified": false,
+  "passwordHash": "5lS8o6qRxCvSulACJpg3AYjYNrqszZOVLDNn1XsLrwBYiBOH0OfqDm7tFRq7B58paILxQMRyYsKjReWy+p7whA==",
+  "salt": "0fR4E2oeCUp5aQ==",
+  "lastSignedInAt": "1777663851640",
+  "createdAt": "1777543987234",
+  "providerUserInfo": []
+},
+{
+  "localId": "T22gCacYFaQ09dGpmLsDmwRVVnz2",
+  "email": "admin@school.sync",
+  "emailVerified": false,
+  "passwordHash": "g83aEVIMzeNSxCrpAjAYHBneTd0DGoJc0EnjiNtyg9ELSh8YbEQggHofcZI31hTdJJQX98b+VTg2QZsPub7Jsw==",
+  "salt": "sfHQHEgPhc8JaA==",
+  "lastSignedInAt": "1775738979580",
+  "createdAt": "1775738979580",
+  "providerUserInfo": []
+},
+{
+  "localId": "WXfaKSr3udOfizAfJukETy7j0Mh2",
+  "email": "mah@harakat.com",
+  "emailVerified": false,
+  "passwordHash": "HNn3zRhKdJyxjEXah/6xpnuujIfec0+muBm5MoTBUgNMVCDGLnC7fEmmtaOm7LrqsA+7JxIasL6KTWOEITEn5A==",
+  "salt": "Qwrr1DH0IvM1MA==",
+  "lastSignedInAt": "1777663614350",
+  "createdAt": "1777543227701",
+  "providerUserInfo": []
+},
+{
+  "localId": "YOcqtqCQRFfltqJUB083Dym0qDN2",
+  "email": "academic_director@harakat.com",
+  "emailVerified": false,
+  "passwordHash": "LV30aqooOw0ptLT9dedFD8sqTvXnMiIfbRib9fXUNGTvHYH26NJX7w6LP1TmeUWI6Q+0gLjH3qg76YpdAN4qrg==",
+  "salt": "c5X2bKDlaCMZ1Q==",
+  "lastSignedInAt": "1777658969917",
+  "createdAt": "1777658969917",
+  "providerUserInfo": []
+},
+{
+  "localId": "qfcm10Q7S6UtJmI0bIYXGKS725v2",
+  "email": "minad123@harakat.com",
+  "emailVerified": false,
+  "passwordHash": "MMMVyMQ1so0RUo7disBNJQkOcOfw1VuUzXNY37MGK6FTRkV4Ii+vkCQR1DJvCqW9rOa5N5JBIxczufSLJL4jHw==",
+  "salt": "bGJKEqB2KQ08fw==",
+  "lastSignedInAt": "1777659137180",
+  "createdAt": "1777658940689",
+  "providerUserInfo": []
+},
+{
+  "localId": "wJiTCh8jnPP2DczL5DNMpOHIVAm1",
+  "email": "hsh@harakat.com",
+  "emailVerified": false,
+  "passwordHash": "DIO9gYsJEQRThiAXV+BAPtIwYG9uW5Iy7HROqhJ3is2dEME+PFQqBXGYQukeK+xe24pnAUpwAAPZ5ygtmJF58Q==",
+  "salt": "qfetwkvcKUITUg==",
+  "lastSignedInAt": "1777709479873",
+  "createdAt": "1777541967558",
+  "providerUserInfo": []
+}]}

@@ -128,22 +128,30 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF1E293B),
-        elevation: 0,
+        backgroundColor: Colors.white,
+        elevation: 0.5,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFF6366F1).withOpacity(0.1),
+            ),
+            child: ClipOval(child: Image.asset('assets/images/app_logo_v2.png')),
+          ),
+        ),
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.schoolName.toUpperCase(),
-                style: const TextStyle(fontSize: 13, color: Colors.white70, letterSpacing: 1.2)),
-            const Text('Academic Director',
-                style: TextStyle(fontSize: 12, color: Colors.white70, letterSpacing: 1.2)),
+                style: const TextStyle(fontSize: 11, color: Color(0xFF64748B), fontWeight: FontWeight.bold, letterSpacing: 1.2)),
             Text(widget.directorName,
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white)),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
           ],
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.logout_rounded, color: Colors.white70),
+            icon: const Icon(Icons.logout_rounded, color: Color(0xFF64748B)),
             tooltip: 'Logout',
             onPressed: () => AuthService().signOut(),
           ),
@@ -151,15 +159,18 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: const Color(0xFF6366F1),
+          indicatorSize: TabBarIndicatorSize.label,
           indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white54,
+          labelColor: const Color(0xFF6366F1),
+          unselectedLabelColor: const Color(0xFF1E293B).withOpacity(0.7),
+          labelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.w900),
+          unselectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
           tabs: const [
-            Tab(icon: Icon(Icons.home_rounded),       text: 'Home'),
-            Tab(icon: Icon(Icons.person_rounded),      text: 'Teachers'),
-            Tab(icon: Icon(Icons.people_rounded),      text: 'Students'),
-            Tab(icon: Icon(Icons.account_tree_rounded),text: 'Departments'),
-            Tab(icon: Icon(Icons.campaign_rounded),    text: 'Announcements'),
+            Tab(icon: Icon(Icons.home_rounded, size: 20), text: 'Home'),
+            Tab(icon: Icon(Icons.school_rounded, size: 20), text: 'Teacher'),
+            Tab(icon: Icon(Icons.people_rounded, size: 20), text: 'Student'),
+            Tab(icon: Icon(Icons.account_tree_rounded, size: 20), text: 'Dept'),
+            Tab(icon: Icon(Icons.campaign_rounded, size: 20), text: 'Announce'),
           ],
         ),
       ),
@@ -237,54 +248,72 @@ class _HomeTab extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // â”€â”€ Welcome banner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
-                begin: Alignment.topLeft, end: Alignment.bottomRight,
+          Stack(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF4F46E5)],
+                    begin: Alignment.topLeft, end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(32),
+                  boxShadow: [
+                    BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Management Hub'.toUpperCase(), 
+                        style: TextStyle(color: Colors.white.withOpacity(0.7), fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.2)),
+                    const SizedBox(height: 6),
+                    Text(schoolName, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w900, letterSpacing: -0.5)),
+                    const SizedBox(height: 20),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.12),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          _miniStat('Students', '${students.length}', Icons.people_outline),
+                          Container(width: 1, height: 20, color: Colors.white.withOpacity(0.2), margin: const EdgeInsets.symmetric(horizontal: 16)),
+                          _miniStat('Teachers', '${teachers.length}', Icons.school_outlined),
+                          Container(width: 1, height: 20, color: Colors.white.withOpacity(0.2), margin: const EdgeInsets.symmetric(horizontal: 16)),
+                          _miniStat('Classes', '${classes.length}', Icons.class_outlined),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(color: const Color(0xFF6366F1).withOpacity(0.35), blurRadius: 20, offset: const Offset(0, 10)),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Welcome Back ðŸ‘‹', style: TextStyle(color: Colors.white70, fontSize: 14)),
-                const SizedBox(height: 4),
-                Text(schoolName, style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900)),
-                const SizedBox(height: 16),
-                Text('${students.length} Students Â· ${teachers.length} Teachers Â· ${classes.length} Classes',
-                    style: const TextStyle(color: Colors.white60, fontSize: 13)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // â”€â”€ Overview stat cards â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-          const Text('Overview', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Color(0xFF1E293B))),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(child: _StatCard(label: 'Total Students', value: '${students.length}', icon: Icons.people_rounded, color: const Color(0xFF6366F1))),
-              const SizedBox(width: 12),
-              Expanded(child: _StatCard(label: 'Teachers', value: '${teachers.length}', icon: Icons.school_rounded, color: const Color(0xFF10B981))),
             ],
           ),
-          const SizedBox(height: 12),
-          Row(
+          const SizedBox(height: 32),
+
+          const Text('Director Insights', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+          const SizedBox(height: 16),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+            childAspectRatio: MediaQuery.of(context).size.width > 800 ? 3.0 : 2.2,
             children: [
-              Expanded(child: _StatCard(label: "DA'WA Students", value: '$dawaStudents', icon: Icons.account_tree_rounded, color: dawaColor)),
-              const SizedBox(width: 12),
-              Expanded(child: _StatCard(label: 'HIFZ Students', value: '$hifzStudents', icon: Icons.menu_book_rounded, color: hifzColor)),
+              _buildMetricCard('Total Students', '${students.length}', Icons.people_rounded, const Color(0xFF6366F1)),
+              _buildMetricCard('Teachers', '${teachers.length}', Icons.school_rounded, const Color(0xFF10B981)),
+              _buildMetricCard("DA'WA Dept", '$dawaStudents', Icons.account_tree_rounded, dawaColor),
+              _buildMetricCard('HIFZ Dept', '$hifzStudents', Icons.menu_book_rounded, hifzColor),
             ],
           ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 32),
 
-          // â”€â”€ DA'WA Department breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+          const Text('Departments', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+          const SizedBox(height: 16),
           _buildDeptSection(
             dept: "DA'WA",
             deptClasses: dawaClasses,
@@ -294,13 +323,60 @@ class _HomeTab extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          // â”€â”€ HIFZ Department breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
           _buildDeptSection(
             dept: 'HIFZ',
             deptClasses: hifzClasses,
             totalStudents: hifzStudents,
             color: hifzColor,
             icon: Icons.menu_book_rounded,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _miniStat(String label, String value, IconData icon) {
+    return Expanded(
+      child: Column(
+        children: [
+          Icon(icon, color: Colors.white.withOpacity(0.7), size: 14),
+          const SizedBox(height: 4),
+          Text(value, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 16)),
+          Text(label, style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 9, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: color.withOpacity(0.1), borderRadius: BorderRadius.circular(14)),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                ),
+                Text(title, maxLines: 1, overflow: TextOverflow.ellipsis, 
+                    style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Color(0xFF64748B))),
+              ],
+            ),
           ),
         ],
       ),
@@ -316,11 +392,9 @@ class _HomeTab extends StatelessWidget {
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 14, offset: const Offset(0, 5)),
-        ],
+        color: color.withOpacity(0.04),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withOpacity(0.12)),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -330,21 +404,18 @@ class _HomeTab extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [color, color.withOpacity(0.7)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
+              color: color.withOpacity(0.08),
+              border: Border(bottom: BorderSide(color: color.withOpacity(0.12))),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: color.withOpacity(0.15),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: Colors.white, size: 22),
+                  child: Icon(icon, color: color, size: 22),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -352,10 +423,10 @@ class _HomeTab extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(dept,
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w900)),
+                          style: TextStyle(color: color, fontSize: 18, fontWeight: FontWeight.w900)),
                       Text(
                         '$totalStudents students Â· ${deptClasses.length} class${deptClasses.length == 1 ? '' : 'es'}',
-                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                        style: TextStyle(color: color.withOpacity(0.7), fontSize: 12, fontWeight: FontWeight.w600),
                       ),
                     ],
                   ),
@@ -514,45 +585,7 @@ Widget _emptyState(String msg, IconData icon) => Center(
   ),
 );
 
-class _StatCard extends StatelessWidget {
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  const _StatCard({required this.label, required this.value, required this.icon, required this.color});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4))],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(color: color.withOpacity(0.12), borderRadius: BorderRadius.circular(12)),
-            child: Icon(icon, color: color, size: 22),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value, style: TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: color)),
-                Text(label, style: const TextStyle(fontSize: 12, color: Colors.grey)),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// _StatCard removed, using _buildMetricCard instead.
 
 // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 //  TEACHERS TAB
@@ -769,7 +802,7 @@ class _TeachersTabState extends State<_TeachersTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: Colors.transparent,
       body: widget.teachers.isEmpty
           ? _emptyState('No teachers yet. Tap + to add.', Icons.person_add_rounded)
           : ListView.builder(
@@ -1786,7 +1819,7 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
         // Filter bar
         Container(
           height: 60,
-          color: Colors.white,
+          color: Colors.transparent,
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: ListView(
             scrollDirection: Axis.horizontal,

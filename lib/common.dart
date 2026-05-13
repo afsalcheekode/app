@@ -103,67 +103,130 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
 
   Widget buildNoticeBoardCard(Map<String, dynamic> b, int index, {VoidCallback? onEdit}) {
     final gradient = cardGradients[index % cardGradients.length];
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(color: gradient[0].withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(28),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -20, top: -20,
-              child: Icon(Icons.campaign_outlined, size: 100, color: Colors.white.withOpacity(0.07)),
+    return InkWell(
+      onTap: () {
+        showDialog(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
+            title: Row(
+              children: [
+                const Icon(Icons.campaign_rounded, color: Color(0xFF6366F1), size: 30),
+                const SizedBox(width: 12),
+                Expanded(child: Text(b['title'] ?? 'Notice Details', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 24))),
+              ],
             ),
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(color: const Color(0xFF6366F1).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Expanded(child: Text(b['title'] ?? 'Notice', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5))),
-                      if (onEdit != null)
-                        IconButton(
-                          icon: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
-                            child: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
-                          ),
-                          onPressed: onEdit,
-                        ),
+                      const Icon(Icons.calendar_month_rounded, size: 16, color: Color(0xFF6366F1)),
+                      const SizedBox(width: 8),
+                      Text(_formatFullDateTime(b['date']), style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.w900, fontSize: 13)),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(b['desc'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 15, height: 1.6, fontWeight: FontWeight.w500)),
-                  const SizedBox(height: 24),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(30)),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.person_pin, color: Colors.white, size: 14),
-                            const SizedBox(width: 6),
-                            Text(b['publisher'] ?? 'academic_director', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                          ],
-                        ),
-                      ),
-                      const Spacer(),
-                      Text(_formatFullDateTime(b['date']), style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 10, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 20),
+                const Text('DESCRIPTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.5)),
+                const SizedBox(height: 8),
+                Text(b['desc'] ?? b['text'] ?? 'No description available.', style: const TextStyle(fontSize: 16, height: 1.6, color: Color(0xFF1E293B))),
+                const SizedBox(height: 24),
+                const Text('PUBLISHED BY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.5)),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    CircleAvatar(radius: 12, backgroundColor: Colors.indigo.shade50, child: const Icon(Icons.person, size: 14, color: Colors.indigo)),
+                    const SizedBox(width: 8),
+                    Text(b['publisher'] ?? 'Academic Director', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  ],
+                ),
+              ],
             ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('CLOSE', style: TextStyle(fontWeight: FontWeight.bold))),
+            ],
+          ),
+        );
+      },
+      borderRadius: BorderRadius.circular(28),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(colors: gradient, begin: Alignment.topLeft, end: Alignment.bottomRight),
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(color: gradient[0].withOpacity(0.3), blurRadius: 20, offset: const Offset(0, 10)),
           ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(28),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -20, top: -20,
+                child: Icon(Icons.campaign_outlined, size: 100, color: Colors.white.withOpacity(0.07)),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(child: Text(b['title'] ?? 'Notice', style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -0.5))),
+                        if (onEdit != null)
+                          IconButton(
+                            icon: Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+                              child: const Icon(Icons.edit_rounded, color: Colors.white, size: 16),
+                            ),
+                            onPressed: onEdit,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(b['desc'] ?? b['text'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 15, height: 1.6, fontWeight: FontWeight.w500)),
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(30)),
+                          child: Row(
+                            children: [
+                              const Icon(Icons.person_pin, color: Colors.white, size: 14),
+                              const SizedBox(width: 6),
+                              Text(b['publisher'] ?? 'Academic Director', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+                            ],
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
+                          child: Row(
+                            children: [
+                              Icon(Icons.access_time_filled_rounded, color: gradient[0], size: 12),
+                              const SizedBox(width: 4),
+                              Text(_formatFullDateTime(b['date']), style: TextStyle(color: gradient[0], fontSize: 10, fontWeight: FontWeight.w900)),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
