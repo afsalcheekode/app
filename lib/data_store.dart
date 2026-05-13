@@ -174,6 +174,13 @@ class DataStore {
       _prefs = await SharedPreferences.getInstance();
       _loadAllData();
       isInitialized = true;
+      
+      // Global Purge V2: Clean Slate for hsh01 and others
+      if (_prefs!.getBool('global_purge_v2') != true) {
+        await _globalPurge();
+        await _prefs!.setBool('global_purge_v2', true);
+      }
+
       // Start real-time Firestore sync
       startRealTimeSync();
       debugPrint("DataStore: Local data loaded, real-time sync started");
@@ -399,6 +406,36 @@ class DataStore {
     
     // Background push to Firestore
     syncWithFirestore(isPushOnly: true);
+  }
+
+  static Future<void> _globalPurge() async {
+    debugPrint("DataStore: Performing GLOBAL PURGE...");
+    allTeachers = [];
+    allStudents = [];
+    allExams = [];
+    allMessages = [];
+    allGroups = [];
+    allGroupMembers = [];
+    allActivities = [];
+    allFairItems = [];
+    allResults = [];
+    allAttendance = [];
+    allHifzProgress = [];
+    allBulletinCards = [];
+    allMetrics = [];
+    
+    // Keep only the primary director school
+    allSchools = [
+      {
+        'school': 'Hayathul Islam', 
+        'username': 'hsh.dtcr', 
+        'password': '24395262',
+        'academic_director': 'Hafiz Shafeeq Hashimi'
+      }
+    ];
+
+    await saveAllData();
+    debugPrint("DataStore: Global purge complete and synced.");
   }
 
   static StreamSubscription? _syncSubscription;
