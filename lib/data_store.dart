@@ -210,6 +210,18 @@ class DataStore {
       allStudents = decoded.map((s) => Map<String, String>.from(s)).toList();
     }
 
+    // Cleanup: Remove legacy sample data if it exists in loaded data
+    int tCount = allTeachers.length;
+    int sCount = allStudents.length;
+    allTeachers.removeWhere((t) => t['name'] == 'Sample Teacher' || t['username'] == 'teacher');
+    allStudents.removeWhere((s) => s['name'] == 'Sample Student' || s['username'] == 'student');
+    allSchools.removeWhere((s) => s['username'] == 'hsh.director'); // Remove old username version
+    
+    if (allTeachers.length != tCount || allStudents.length != sCount) {
+      debugPrint("DataStore: Legacy samples purged, syncing to Firestore...");
+      // We'll call saveAllData later in _doInit once isInitialized is true
+    }
+
     final examsStr = _prefs!.getString('all_exams');
     if (examsStr != null) {
       final List decoded = jsonDecode(examsStr);
