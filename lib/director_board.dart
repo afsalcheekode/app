@@ -29,6 +29,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
   int _tabIndex = 0;
   late TabController _tabController;
   String? _selectedClassFilter;
+  StreamSubscription? _sessionSubscription;
 
   // helper getters
   List<Map<String, String>> get _teachers => DataStore.allTeachers.where((t) => t['schoolName'] == widget.schoolName || t['schoolName'] == null).toList();
@@ -45,11 +46,36 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
         setState(() => _tabIndex = _tabController.index);
       }
     });
+    _setupSessionListener();
+  }
+
+  void _setupSessionListener() {
+    final user = DataStore.mockUser;
+    if (user != null && user['uid'] != null && user['sessionId'] != null) {
+      _sessionSubscription = FirebaseFirestore.instance.collection('users').doc(user['uid']).snapshots().listen((doc) {
+        if (doc.exists && mounted) {
+          final remoteSessionId = doc.data()?['sessionId'];
+          if (remoteSessionId != null && remoteSessionId != user['sessionId']) {
+            // Logout if session IDs don't match
+            _sessionSubscription?.cancel();
+            AuthService().signOut();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('âš ï¸ Logged out: Account opened on another device.'),
+                backgroundColor: Colors.red,
+                behavior: SnackBarBehavior.floating,
+              )
+            );
+          }
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _sessionSubscription?.cancel();
     super.dispose();
   }
 

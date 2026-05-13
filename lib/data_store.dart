@@ -21,36 +21,16 @@ class DataStore {
   }
 
   // Static list to store all teachers, schools, and students (shared across app)
-  static List<Map<String, String>> allTeachers = [
-    {
-      'name': 'Sample Teacher',
-      'username': 'teacher',
-      'password': '123',
-      'class': '01',
-      'subjects': 'Math, Science'
-    }
-  ];
+  static List<Map<String, String>> allTeachers = [];
   static List<Map<String, String>> allSchools = [
     {
       'school': 'Hayathul Islam', 
-      'username': 'hsh.director', 
+      'username': 'hsh.dtcr', 
       'password': '24395262',
       'academic_director': 'Hafiz Shafeeq Hashimi'
     }
   ];
-  static List<Map<String, String>> allStudents = [
-    {
-      'name': 'Sample Student',
-      'username': 'student',
-      'password': '123',
-      'std': '01',
-      'address': 'Sample Address',
-      'parents': 'Sample Parents',
-      'place': 'Sample Place',
-      'phone': '1234567890',
-      'blood': 'O+'
-    }
-  ];
+  static List<Map<String, String>> allStudents = [];
   static List<Map<String, dynamic>> allExams = [];
   static List<Map<String, dynamic>> allMessages = [];
   static List<Map<String, dynamic>> allGroups = [];
@@ -194,9 +174,9 @@ class DataStore {
       _prefs = await SharedPreferences.getInstance();
       _loadAllData();
       isInitialized = true;
-      // Start Firestore sync in background immediately after local load
-      syncWithFirestore();
-      debugPrint("DataStore: Local data loaded, background sync started");
+      // Start real-time Firestore sync
+      startRealTimeSync();
+      debugPrint("DataStore: Local data loaded, real-time sync started");
     } catch (e) {
       debugPrint("Error in initPrefs: $e");
     } finally {
@@ -409,41 +389,47 @@ class DataStore {
     syncWithFirestore(isPushOnly: true);
   }
 
-  static bool _isSyncing = false;
+  static StreamSubscription? _syncSubscription;
+  static void startRealTimeSync() {
+    _syncSubscription?.cancel();
+    final db = FirebaseFirestore.instance;
+    _syncSubscription = db.collection('app_data').doc('central_store').snapshots().listen((doc) {
+       if (doc.exists) {
+         final data = doc.data()!;
+         bool changed = false;
+         
+         // Only update local lists if remote data exists to prevent wiping local on new setup
+         if (data['allTeachers'] != null) { allTeachers = List<Map<String, String>>.from((data['allTeachers'] as List).map((i) => Map<String, String>.from(i))); changed = true; }
+         if (data['allStudents'] != null) { allStudents = List<Map<String, String>>.from((data['allStudents'] as List).map((i) => Map<String, String>.from(i))); changed = true; }
+         if (data['allSchools'] != null) { allSchools = List<Map<String, String>>.from((data['allSchools'] as List).map((i) => Map<String, String>.from(i))); changed = true; }
+         if (data['allExams'] != null) { allExams = List<Map<String, dynamic>>.from(data['allExams']); changed = true; }
+         if (data['allMessages'] != null) { allMessages = List<Map<String, dynamic>>.from(data['allMessages']); changed = true; }
+         if (data['allActivities'] != null) { allActivities = List<Map<String, dynamic>>.from(data['allActivities']); changed = true; }
+         if (data['allAttendance'] != null) { allAttendance = List<Map<String, dynamic>>.from(data['allAttendance']); changed = true; }
+         if (data['allHifzProgress'] != null) { allHifzProgress = List<Map<String, dynamic>>.from(data['allHifzProgress']); changed = true; }
+         if (data['allClasses'] != null) { allClasses = List<String>.from(data['allClasses']); changed = true; }
+         if (data['classDepts'] != null) { classDepts = Map<String, String>.from(data['classDepts']); changed = true; }
+         if (data['allTimetables'] != null) { allTimetables = Map<String, dynamic>.from(data['allTimetables']); changed = true; }
+         if (data['academicYears'] != null) { academicYears = List<String>.from(data['academicYears']); changed = true; }
+         if (data['selectedAcademicYear'] != null) { selectedAcademicYear = data['selectedAcademicYear']; changed = true; }
+         if (data['holidayDates'] != null) { holidayDates = List<String>.from(data['holidayDates']); changed = true; }
+         if (data['allMetrics'] != null) { allMetrics = List<Map<String, dynamic>>.from(data['allMetrics']); changed = true; }
+         if (data['allBulletinCards'] != null) { allBulletinCards = List<Map<String, dynamic>>.from(data['allBulletinCards']); changed = true; }
+         if (data['featureConfig'] != null) { featureConfig = Map<String, bool>.from(data['featureConfig']); changed = true; }
+
+         if (changed) {
+           _saveLocallyOnly();
+           // Trigger UI rebuild across app by adding current user to stream (even if null)
+           _mockAuthStreamController.add(mockUser);
+         }
+       }
+    });
+  }
+
   static Future<void> syncWithFirestore({bool isPushOnly = false}) async {
-    if (_isSyncing) return;
-    _isSyncing = true;
     try {
       final db = FirebaseFirestore.instance;
       
-      if (!isPushOnly) {
-         // Pull Data with timeout to prevent hang
-         final doc = await db.collection('app_data').doc('central_store').get().timeout(const Duration(seconds: 5));
-         if (doc.exists) {
-           final data = doc.data()!;
-           if (data['allTeachers'] != null) allTeachers = List<Map<String, String>>.from((data['allTeachers'] as List).map((i) => Map<String, String>.from(i)));
-           if (data['allStudents'] != null) allStudents = List<Map<String, String>>.from((data['allStudents'] as List).map((i) => Map<String, String>.from(i)));
-           if (data['allSchools'] != null) allSchools = List<Map<String, String>>.from((data['allSchools'] as List).map((i) => Map<String, String>.from(i)));
-           if (data['allExams'] != null) allExams = List<Map<String, dynamic>>.from(data['allExams']);
-           if (data['allMessages'] != null) allMessages = List<Map<String, dynamic>>.from(data['allMessages']);
-           if (data['allActivities'] != null) allActivities = List<Map<String, dynamic>>.from(data['allActivities']);
-           if (data['allAttendance'] != null) allAttendance = List<Map<String, dynamic>>.from(data['allAttendance']);
-           if (data['allHifzProgress'] != null) allHifzProgress = List<Map<String, dynamic>>.from(data['allHifzProgress']);
-           if (data['allClasses'] != null) allClasses = List<String>.from(data['allClasses']);
-           if (data['classDepts'] != null) classDepts = Map<String, String>.from(data['classDepts']);
-           if (data['allTimetables'] != null) allTimetables = Map<String, dynamic>.from(data['allTimetables']);
-           if (data['academicYears'] != null) academicYears = List<String>.from(data['academicYears']);
-           if (data['selectedAcademicYear'] != null) selectedAcademicYear = data['selectedAcademicYear'];
-           if (data['holidayDates'] != null) holidayDates = List<String>.from(data['holidayDates']);
-           if (data['allMetrics'] != null) allMetrics = List<Map<String, dynamic>>.from(data['allMetrics']);
-           if (data['allBulletinCards'] != null) allBulletinCards = List<Map<String, dynamic>>.from(data['allBulletinCards']);
-           if (data['featureConfig'] != null) featureConfig = Map<String, bool>.from(data['featureConfig']);
-           
-           // Re-save locally after pull
-           _saveLocallyOnly();
-         }
-      }
-
       // Push Data (always push current state to ensure sync)
       await db.collection('app_data').doc('central_store').set({
         'allTeachers': allTeachers,
@@ -468,8 +454,6 @@ class DataStore {
 
     } catch (e) {
       debugPrint("Firestore Sync Error: $e");
-    } finally {
-      _isSyncing = false;
     }
   }
 
@@ -485,5 +469,9 @@ class DataStore {
     _prefs!.setString('all_hifz_progress', jsonEncode(allHifzProgress));
     _prefs!.setString('all_classes', jsonEncode(allClasses));
     _prefs!.setString('all_class_depts', jsonEncode(classDepts));
+    _prefs!.setString('all_bulletin_cards', jsonEncode(allBulletinCards));
+    _prefs!.setString('all_metrics', jsonEncode(allMetrics));
+    _prefs!.setString('feature_config', jsonEncode(featureConfig));
   }
+}
 }

@@ -93,6 +93,13 @@ class AuthService {
       userData['uid'] = user.uid; // Ensure UID is included
       userData['email'] = formattedEmail; // Include email for robust role checking
       
+      // Session Management for Director/Admin (One device at a time)
+      if (userData['role'] == 'director' || userData['role'] == 'admin' || userData['role'] == 'academic_director') {
+        final sessionId = DateTime.now().millisecondsSinceEpoch.toString();
+        userData['sessionId'] = sessionId;
+        await _db.collection('users').doc(user.uid).update({'sessionId': sessionId});
+      }
+
       DataStore.updateMockUser(userData);
       return userData;
 
