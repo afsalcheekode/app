@@ -453,22 +453,39 @@ class DataStore {
          if (data['allSchools'] != null) { allSchools = List<Map<String, String>>.from((data['allSchools'] as List).map((i) => Map<String, String>.from(i))); changed = true; }
          if (data['allExams'] != null) { allExams = List<Map<String, dynamic>>.from(data['allExams']); changed = true; }
          if (data['allMessages'] != null) { allMessages = List<Map<String, dynamic>>.from(data['allMessages']); changed = true; }
-         if (data['allActivities'] != null) { allActivities = List<Map<String, dynamic>>.from(data['allActivities']); changed = true; }
-         if (data['allAttendance'] != null) { allAttendance = List<Map<String, dynamic>>.from(data['allAttendance']); changed = true; }
-         if (data['allHifzProgress'] != null) { allHifzProgress = List<Map<String, dynamic>>.from(data['allHifzProgress']); changed = true; }
-         if (data['allClasses'] != null) { allClasses = List<String>.from(data['allClasses']); changed = true; }
-         if (data['classDepts'] != null) { classDepts = Map<String, String>.from(data['classDepts']); changed = true; }
-         if (data['allTimetables'] != null) { allTimetables = Map<String, dynamic>.from(data['allTimetables']); changed = true; }
-         if (data['academicYears'] != null) { academicYears = List<String>.from(data['academicYears']); changed = true; }
-         if (data['selectedAcademicYear'] != null) { selectedAcademicYear = data['selectedAcademicYear']; changed = true; }
-         if (data['holidayDates'] != null) { holidayDates = List<String>.from(data['holidayDates']); changed = true; }
-         if (data['allMetrics'] != null) { allMetrics = List<Map<String, dynamic>>.from(data['allMetrics']); changed = true; }
-         if (data['allBulletinCards'] != null) { allBulletinCards = List<Map<String, dynamic>>.from(data['allBulletinCards']); changed = true; }
-         if (data['featureConfig'] != null) { featureConfig = Map<String, bool>.from(data['featureConfig']); changed = true; }
+          if (data['allActivities'] != null) { allActivities = List<Map<String, dynamic>>.from(data['allActivities']); changed = true; }
+          if (data['allFairItems'] != null) { allFairItems = List<Map<String, dynamic>>.from(data['allFairItems']); changed = true; }
+          if (data['allResults'] != null) { allResults = List<Map<String, dynamic>>.from(data['allResults']); changed = true; }
+          if (data['allActivitySubmissions'] != null) { allActivitySubmissions = List<Map<String, dynamic>>.from(data['allActivitySubmissions']); changed = true; }
+          if (data['allFairPayments'] != null) { allFairPayments = List<Map<String, dynamic>>.from(data['allFairPayments']); changed = true; }
+          if (data['allGroups'] != null) { allGroups = List<Map<String, dynamic>>.from(data['allGroups']); changed = true; }
+          if (data['allGroupMembers'] != null) { allGroupMembers = List<Map<String, dynamic>>.from(data['allGroupMembers']); changed = true; }
+          if (data['allAttendance'] != null) { allAttendance = List<Map<String, dynamic>>.from(data['allAttendance']); changed = true; }
+          if (data['allHifzProgress'] != null) { allHifzProgress = List<Map<String, dynamic>>.from(data['allHifzProgress']); changed = true; }
+          if (data['allClasses'] != null) { allClasses = List<String>.from(data['allClasses']); changed = true; }
+          if (data['classDepts'] != null) { classDepts = Map<String, String>.from(data['classDepts']); changed = true; }
+          if (data['allTimetables'] != null) { allTimetables = Map<String, dynamic>.from(data['allTimetables']); changed = true; }
+          if (data['academicYears'] != null) { academicYears = List<String>.from(data['academicYears']); changed = true; }
+          if (data['selectedAcademicYear'] != null) { selectedAcademicYear = data['selectedAcademicYear']; changed = true; }
+          if (data['holidayDates'] != null) { holidayDates = List<String>.from(data['holidayDates']); changed = true; }
+          if (data['allMetrics'] != null) { allMetrics = List<Map<String, dynamic>>.from(data['allMetrics']); changed = true; }
+          if (data['allBulletinCards'] != null) { allBulletinCards = List<Map<String, dynamic>>.from(data['allBulletinCards']); changed = true; }
+          if (data['featureConfig'] != null) { featureConfig = Map<String, bool>.from(data['featureConfig']); changed = true; }
 
          if (changed) {
            _saveLocallyOnly();
-           // Trigger UI rebuild across app by adding current user to stream (even if null)
+           // Fetch teacher photos separately and merge into allTeachers
+           FirebaseFirestore.instance.collection('teacher_photos').get().then((snapshot) {
+             for (final doc in snapshot.docs) {
+               final username = doc.data()['username'] as String? ?? '';
+               final photo = doc.data()['photo'] as String? ?? '';
+               final idx = allTeachers.indexWhere((t) => t['username'] == username);
+               if (idx != -1) allTeachers[idx]['photo'] = photo;
+             }
+             _saveLocallyOnly();
+             _mockAuthStreamController.add(mockUser);
+           });
+           // Trigger UI rebuild
            _mockAuthStreamController.add(mockUser);
          }
        }
@@ -478,15 +495,28 @@ class DataStore {
   static Future<void> syncWithFirestore({bool isPushOnly = false}) async {
     try {
       final db = FirebaseFirestore.instance;
-      
-      // Push Data (always push current state to ensure sync)
+
+      // Strip photos from teachers for central_store to avoid 1MB limit
+      final teachersNoPhoto = allTeachers.map((t) {
+        final copy = Map<String, String>.from(t);
+        copy.remove('photo');
+        return copy;
+      }).toList();
+
+      // Push main data without photos
       await db.collection('app_data').doc('central_store').set({
-        'allTeachers': allTeachers,
+        'allTeachers': teachersNoPhoto,
         'allStudents': allStudents,
         'allSchools': allSchools,
         'allExams': allExams,
         'allMessages': allMessages,
         'allActivities': allActivities,
+        'allFairItems': allFairItems,
+        'allResults': allResults,
+        'allActivitySubmissions': allActivitySubmissions,
+        'allFairPayments': allFairPayments,
+        'allGroups': allGroups,
+        'allGroupMembers': allGroupMembers,
         'allAttendance': allAttendance,
         'allHifzProgress': allHifzProgress,
         'allClasses': allClasses,
@@ -501,6 +531,17 @@ class DataStore {
         'lastUpdated': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));
 
+      // Push photos separately per teacher
+      for (final t in allTeachers) {
+        final username = t['username'] ?? '';
+        final photo = t['photo'] ?? '';
+        if (username.isNotEmpty) {
+          await db.collection('teacher_photos').doc(username).set(
+            {'photo': photo, 'username': username},
+            SetOptions(merge: true),
+          );
+        }
+      }
     } catch (e) {
       debugPrint("Firestore Sync Error: $e");
     }
@@ -513,14 +554,23 @@ class DataStore {
     _prefs!.setString('all_students', jsonEncode(allStudents));
     _prefs!.setString('all_exams', jsonEncode(allExams));
     _prefs!.setString('all_messages', jsonEncode(allMessages));
+    _prefs!.setString('all_groups', jsonEncode(allGroups));
+    _prefs!.setString('all_group_members', jsonEncode(allGroupMembers));
     _prefs!.setString('all_activities', jsonEncode(allActivities));
+    _prefs!.setString('all_fair_items', jsonEncode(allFairItems));
+    _prefs!.setString('all_results', jsonEncode(allResults));
+    _prefs!.setString('all_activity_submissions', jsonEncode(allActivitySubmissions));
+    _prefs!.setString('all_fair_payments', jsonEncode(allFairPayments));
     _prefs!.setString('all_attendance', jsonEncode(allAttendance));
     _prefs!.setString('all_hifz_progress', jsonEncode(allHifzProgress));
+    _prefs!.setString('all_timetables', jsonEncode(allTimetables));
+    _prefs!.setString('holiday_dates', jsonEncode(holidayDates));
+    _prefs!.setString('academic_years', jsonEncode(academicYears));
+    _prefs!.setString('selected_academic_year', selectedAcademicYear);
     _prefs!.setString('all_classes', jsonEncode(allClasses));
     _prefs!.setString('all_class_depts', jsonEncode(classDepts));
     _prefs!.setString('all_bulletin_cards', jsonEncode(allBulletinCards));
     _prefs!.setString('all_metrics', jsonEncode(allMetrics));
     _prefs!.setString('feature_config', jsonEncode(featureConfig));
   }
-}
 }

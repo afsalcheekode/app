@@ -8,7 +8,11 @@ import 'data_store.dart';
 import 'notification_service.dart';
 import 'login_screen.dart';
 import 'auth_service.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:typed_data';
+import 'dart:io' show File;
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 // â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 //  SCHOOL DASHBOARD SCREEN  (Academic Director)
@@ -647,6 +651,9 @@ class _TeachersTabState extends State<_TeachersTab> {
     final subjectCtrl  = TextEditingController(text: t?['subjects'] ?? '');
     final usernameCtrl = TextEditingController(text: t?['username'] ?? '');
     final passwordCtrl = TextEditingController(text: t?['password'] ?? '');
+    final qualificationCtrl = TextEditingController(text: t?['qualification'] ?? '');
+    final designationCtrl = TextEditingController(text: t?['designation'] ?? '');
+    String? photoBase64 = t?['photo'];
 
     List<String> selectedClasses = [];
     if (t?['class'] != null && t!['class']!.isNotEmpty) {
@@ -669,7 +676,53 @@ class _TeachersTabState extends State<_TeachersTab> {
               children: [
                 _field(nameCtrl, 'Full Name', Icons.person_rounded),
                 const SizedBox(height: 12),
+                _field(designationCtrl, 'Designation (e.g. Principal, Professor)', Icons.badge_rounded),
+                const SizedBox(height: 12),
                 _field(subjectCtrl, 'Subjects (comma-separated)', Icons.book_rounded),
+                const SizedBox(height: 12),
+                _field(qualificationCtrl, 'Qualifications', Icons.history_edu_rounded, maxLines: 3),
+                const SizedBox(height: 16),
+                const Text('Teacher Photo', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF6366F1))),
+                const SizedBox(height: 8),
+                Center(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final image = await picker.pickImage(
+                        source: ImageSource.gallery, 
+                        imageQuality: 50,
+                        maxWidth: 400,
+                        maxHeight: 400,
+                      );
+                      if (image != null) {
+                        final bytes = await image.readAsBytes();
+                        setDs(() {
+                          photoBase64 = base64Encode(bytes);
+                        });
+                      }
+                    },
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                          backgroundImage: photoBase64 != null ? MemoryImage(base64Decode(photoBase64!)) : null,
+                          child: photoBase64 == null ? const Icon(Icons.person_rounded, size: 50, color: Color(0xFF6366F1)) : null,
+                        ),
+                        Positioned(
+                          bottom: 0, right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(color: Color(0xFF6366F1), shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 const SizedBox(height: 16),
                 if (widget.classes.isNotEmpty) ...[
                   const Text('Assign Classes', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF6366F1))),
@@ -721,8 +774,11 @@ class _TeachersTabState extends State<_TeachersTab> {
 
                 final Map<String, String> newData = Map<String, String>.from({
                   'name': name,
+                  'designation': designationCtrl.text.trim(),
                   'class': selectedClasses.join(', '),
                   'subjects': subjects,
+                  'qualification': qualificationCtrl.text.trim(),
+                  'photo': photoBase64 ?? '',
                   'username': username,
                   'password': password,
                   'schoolName': widget.schoolName,
@@ -776,9 +832,10 @@ class _TeachersTabState extends State<_TeachersTab> {
     );
   }
 
-  Widget _field(TextEditingController ctrl, String label, IconData icon) {
+  Widget _field(TextEditingController ctrl, String label, IconData icon, {int maxLines = 1}) {
     return TextField(
       controller: ctrl,
+      maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: const Color(0xFF6366F1)),
@@ -847,20 +904,23 @@ class _TeachersTabState extends State<_TeachersTab> {
                     contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     leading: CircleAvatar(
                       backgroundColor: const Color(0xFF6366F1).withOpacity(0.12),
-                      child: Text(
+                      backgroundImage: (t['photo'] != null && t['photo']!.isNotEmpty) ? MemoryImage(base64Decode(t['photo']!)) : null,
+                      child: (t['photo'] == null || t['photo']!.isEmpty) ? Text(
                         (t['name'] ?? '?')[0].toUpperCase(),
                         style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF6366F1)),
-                      ),
+                      ) : null,
                     ),
                     title: Text(t['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        if (t['qualification'] != null && t['qualification']!.isNotEmpty)
+                          Text('Qualification: ${t['qualification']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF4F46E5))),
                         if ((t['class'] ?? '').isNotEmpty)
-                          Text('Classes: ${t['class']}', style: const TextStyle(fontSize: 12, color: Color(0xFF6366F1))),
+                          Text('Classes: ${t['class']}', style: const TextStyle(fontSize: 11, color: Color(0xFF6366F1))),
                         if ((t['subjects'] ?? '').isNotEmpty)
-                          Text('Subjects: ${t['subjects']}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                        Text('@${t['username'] ?? ''}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                          Text('Subjects: ${t['subjects']}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        Text('@${t['username'] ?? ''}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
                       ],
                     ),
                     trailing: Row(
@@ -1814,9 +1874,10 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
     );
   }
 
-  Widget _field(TextEditingController ctrl, String label, IconData icon) {
+  Widget _field(TextEditingController ctrl, String label, IconData icon, {int maxLines = 1}) {
     return TextField(
       controller: ctrl,
+      maxLines: maxLines,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon, color: const Color(0xFF6366F1)),

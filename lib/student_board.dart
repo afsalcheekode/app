@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:math';
 import 'dart:async';
 import 'common.dart';
@@ -37,13 +38,17 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
   
   // Use global static lists for persistence
   List<Map<String, String>> get _allStudents => DataStore.allStudents;
-  List<Map<String, dynamic>> get _activities => DataStore.allActivities.where((a) => a['std'] == widget.studentClass).toList();
-  List<Map<String, dynamic>> get _exams => DataStore.allExams.where((e) => e['class'] == widget.studentClass || e['class'] == null).toList();
+  List<Map<String, dynamic>> get _activities => DataStore.allActivities.where((a) => (a['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(widget.studentClass)).toList();
+  List<Map<String, dynamic>> get _exams => DataStore.allExams.where((e) => (e['class'] == null || (e['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(widget.studentClass))).toList();
   List<Map<String, dynamic>> get _results => DataStore.allResults.where((r) => r['studentName'] == widget.studentName).toList();
   List<Map<String, dynamic>> get _messages => DataStore.allMessages;
-  List<Map<String, dynamic>> get _fairList => DataStore.allFairItems.where((f) => f['class'] == widget.studentClass || f['class'] == null).toList();
+  List<Map<String, dynamic>> get _fairList => DataStore.allFairItems.where((f) => (f['class'] == null || (f['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(widget.studentClass))).toList();
   List<Map<String, dynamic>> get _groups => DataStore.allGroups;
-  List<Map<String, String>> get _teachers => DataStore.allTeachers;
+  List<Map<String, String>> get _teachers {
+    final mySchool = widget.studentData['schoolName'] ?? '';
+    if (mySchool.isEmpty) return DataStore.allTeachers;
+    return DataStore.allTeachers.where((t) => t['schoolName'] == mySchool || t['schoolName'] == null || t['schoolName']!.isEmpty).toList();
+  }
 
   // Search controllers for historical data
   final TextEditingController _examSearchCtrl = TextEditingController();
@@ -569,19 +574,67 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         if (status == 'A' && reason != null && reason.isNotEmpty) {
           showDialog(
             context: context,
-            builder: (ctx) => AlertDialog(
-              title: Row(
-                children: [
-                  const Icon(Icons.info_outline_rounded, color: Colors.blue),
-                  const SizedBox(width: 12),
-                  Text('Leave Reason ($label)', style: const TextStyle(fontWeight: FontWeight.w900)),
-                ],
-              ),
-              content: Text(reason, style: const TextStyle(fontSize: 16)),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('GOT IT')),
-              ],
-            ),
+            builder: (ctx) {
+              final colorScheme = Theme.of(context).colorScheme;
+              return Dialog(
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                elevation: 0,
+                backgroundColor: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
+                        child: const Icon(Icons.sick_rounded, color: Colors.red, size: 36),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Leave Reason', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                      const SizedBox(height: 4),
+                      Text(label == 'FN' ? 'Morning Session' : (label == 'AN' ? 'Afternoon Session' : label), style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 24),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8FAFC),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                        ),
+                        child: Text(
+                          reason,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 16, color: Color(0xFF334155), height: 1.5, fontStyle: FontStyle.italic),
+                        ),
+                      ),
+                      const SizedBox(height: 32),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: colorScheme.primary,
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            elevation: 0,
+                          ),
+                          child: const Text('CLOSE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            },
           );
         }
       },
@@ -687,39 +740,96 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                     ),
                   ],
                 ),
-
-                const SizedBox(height: 24),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text('Weekly Progress', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                          Text('${(_activities.where((a) => DataStore.allActivitySubmissions.any((s) => s['studentUsername'] == widget.studentUsername && s['activityId'] == a['id'] && s['isCompleted'] == true)).length / (_activities.isEmpty ? 1 : _activities.length) * 100).toInt()}%', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900)),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: _activities.isEmpty ? 0 : _activities.where((a) => DataStore.allActivitySubmissions.any((s) => s['studentUsername'] == widget.studentUsername && s['activityId'] == a['id'] && s['isCompleted'] == true)).length / _activities.length,
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                          minHeight: 10,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
           ),
+          const SizedBox(height: 24),
+              const SizedBox(height: 32),
+
+          const SizedBox(height: 32),
+          const Text('Our Faculty', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+          const SizedBox(height: 16),
+          _teachers.isEmpty 
+            ? Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                child: Row(
+                  children: [
+                    Icon(Icons.info_outline_rounded, color: colorScheme.primary.withOpacity(0.5)),
+                    const SizedBox(width: 12),
+                    Text('No teachers have been added yet.', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                  ],
+                ),
+              )
+            : SizedBox(
+                height: 180,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: _teachers.length,
+                  itemBuilder: (context, index) {
+                    final t = _teachers[index];
+                    return GestureDetector(
+                      onTap: () => _showTeacherProfile(t, colorScheme),
+                      child: Container(
+                        width: 160,
+                        margin: const EdgeInsets.only(right: 16, bottom: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(24),
+                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Stack(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: LinearGradient(colors: [colorScheme.primary.withOpacity(0.5), colorScheme.secondary.withOpacity(0.5)]),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 35,
+                                    backgroundColor: const Color(0xFFF1F5F9),
+                                    backgroundImage: (t['photo'] != null && t['photo']!.isNotEmpty)
+                                        ? MemoryImage(base64Decode(t['photo']!))
+                                        : const AssetImage('assets/male_avatar.png') as ImageProvider,
+                                  ),
+                                ),
+                                Positioned(
+                                  right: 0, bottom: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(color: colorScheme.primary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                                    child: const Icon(Icons.verified_rounded, color: Colors.white, size: 12),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            Text(t['name'] ?? 'Faculty', 
+                                textAlign: TextAlign.center,
+                                maxLines: 1, overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF1E293B))),
+                            Text(t['designation'] ?? t['subjects'] ?? '', 
+                                textAlign: TextAlign.center,
+                                maxLines: 1, overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: colorScheme.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                            const SizedBox(height: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)),
+                              child: Text('View Profile', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.grey.shade600)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
           const SizedBox(height: 24),
           _buildHifzSectionIfApplicable(colorScheme),
           
@@ -2019,6 +2129,116 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
     } catch (e) {
       return '';
     }
+  }
+  void _showTeacherProfile(Map<String, String> t, ColorScheme colorScheme) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+        contentPadding: EdgeInsets.zero,
+        clipBehavior: Clip.antiAlias,
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Header with Photo
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  height: 150,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [colorScheme.primary, colorScheme.secondary],
+                      begin: Alignment.topLeft, end: Alignment.bottomRight,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 40,
+                  child: Container(
+                    padding: const EdgeInsets.all(5),
+                    decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                    child: CircleAvatar(
+                      radius: 60,
+                      backgroundColor: const Color(0xFFF1F5F9),
+                      backgroundImage: (t['photo'] != null && t['photo']!.isNotEmpty)
+                          ? MemoryImage(base64Decode(t['photo']!))
+                          : const AssetImage('assets/male_avatar.png') as ImageProvider,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 10, right: 10,
+                  child: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 70),
+            // Info Section
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              child: Column(
+                children: [
+                  Text(t['name'] ?? 'Faculty Name', 
+                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                  const SizedBox(height: 4),
+                  Text(t['designation'] ?? 'Faculty Member', 
+                      style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                  const Divider(height: 40),
+                  _profileInfoRow(Icons.book_rounded, 'Subjects', t['subjects'] ?? 'N/A', colorScheme),
+                  const SizedBox(height: 16),
+                  _profileInfoRow(Icons.school_rounded, 'Assigned Class', 'Class ${widget.studentClass}', colorScheme),
+                  const SizedBox(height: 16),
+                  _profileInfoRow(Icons.history_edu_rounded, 'Qualifications', t['qualification'] ?? 'Details not provided.', colorScheme),
+                  const SizedBox(height: 30),
+                  FilledButton.icon(
+                    onPressed: () {
+                      Navigator.pop(ctx);
+                      _setTab(5); // Switch to messages
+                    },
+                    icon: const Icon(Icons.chat_bubble_rounded),
+                    label: const Text('Contact Teacher'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: colorScheme.primary,
+                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _profileInfoRow(IconData icon, String label, String value, ColorScheme colorScheme) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: colorScheme.primary, size: 20),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 }
 

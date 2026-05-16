@@ -137,6 +137,9 @@ class AuthWrapper extends StatelessWidget {
             subjects: data['subjects'] ?? '',
             teacherUsername: username,
             schoolName: data['schoolName'] ?? '',
+            photo: data['photo']?.toString() ?? '',
+            qualification: data['qualification']?.toString() ?? '',
+            designation: data['designation']?.toString() ?? '',
           );
         } else if (role == 'student') {
           return student.StudentBoardScreen(

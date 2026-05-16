@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'dart:typed_data';
 import 'dart:math';
 import 'dart:async';
 import 'common.dart';
@@ -13,6 +14,7 @@ import 'notification_service.dart';
 import 'login_screen.dart';
 import 'chat_screen.dart';
 import 'pdf_service.dart';
+import 'package:image_picker/image_picker.dart';
 
 class TeacherBoardScreen extends StatefulWidget {
   final String teacherName;
@@ -20,6 +22,9 @@ class TeacherBoardScreen extends StatefulWidget {
   final String subjects;
   final String teacherUsername;
   final String schoolName;
+  final String photo;
+  final String qualification;
+  final String designation;
 
   const TeacherBoardScreen({
     super.key,
@@ -28,6 +33,9 @@ class TeacherBoardScreen extends StatefulWidget {
     required this.subjects,
     required this.teacherUsername,
     required this.schoolName,
+    this.photo = '',
+    this.qualification = '',
+    this.designation = '',
   });
 
   @override
@@ -37,6 +45,13 @@ class TeacherBoardScreen extends StatefulWidget {
 class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCenterMixin {
   @override
   String get currentUsername => widget.teacherUsername;
+
+  String get _currentPhoto {
+    if (widget.photo.isNotEmpty) return widget.photo;
+    final t = DataStore.allTeachers.firstWhere((t) => t['username'] == widget.teacherUsername, orElse: () => {});
+    return t['photo'] ?? '';
+  }
+
   int _currentIndex = -1; // -1: Overview, 0: Students, 1: Activities, 2: Fair, 3: Exam, 4: Result, 5: Message, 6: Group
   Timer? _refreshTimer;
   String? _teacherSelectedClass;
@@ -152,22 +167,175 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     super.dispose();
   }
 
+  void _showMyProfile(ColorScheme colorScheme) {
+    String currentPhoto = _currentPhoto;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDs) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          contentPadding: EdgeInsets.zero,
+          clipBehavior: Clip.antiAlias,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    height: 150,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [colorScheme.primary, colorScheme.secondary],
+                        begin: Alignment.topLeft, end: Alignment.bottomRight,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 40,
+                    child: GestureDetector(
+                      onTap: () async {
+                        final picker = ImagePicker();
+                        final image = await picker.pickImage(
+                          source: ImageSource.gallery,
+                          imageQuality: 50,
+                          maxWidth: 400,
+                          maxHeight: 400,
+                        );
+                        if (image != null) {
+                          final bytes = await image.readAsBytes();
+                          final base64 = base64Encode(bytes);
+                          
+                          // Update Firestore
+                          FirebaseFirestore.instance.collection('users')
+                              .where('username', isEqualTo: widget.teacherUsername)
+                              .get().then((query) {
+                            if (query.docs.isNotEmpty) {
+                              query.docs.first.reference.update({'photo': base64});
+                            }
+                          });
+
+                          // Update local DataStore
+                          final teacherIndex = DataStore.allTeachers.indexWhere((t) => t['username'] == widget.teacherUsername);
+                          if (teacherIndex != -1) {
+                            DataStore.allTeachers[teacherIndex]['photo'] = base64;
+                            DataStore.saveAllData();
+                          }
+                          
+                          // Update current mockUser to reflect change in UI
+                          if (DataStore.mockUser != null && DataStore.mockUser!['username'] == widget.teacherUsername) {
+                            final newUser = Map<String, dynamic>.from(DataStore.mockUser!);
+                            newUser['photo'] = base64;
+                            DataStore.updateMockUser(newUser);
+                          }
+
+                          setDs(() {
+                            currentPhoto = base64;
+                          });
+                        }
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
+                        child: Stack(
+                          alignment: Alignment.bottomRight,
+                          children: [
+                            CircleAvatar(
+                              radius: 60,
+                              backgroundColor: const Color(0xFFF1F5F9),
+                              backgroundImage: (currentPhoto.isNotEmpty)
+                                  ? MemoryImage(base64Decode(currentPhoto))
+                                  : const AssetImage('assets/male_avatar.png') as ImageProvider,
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(color: colorScheme.primary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                              child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 16),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 10, right: 10,
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 70),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                child: Column(
+                  children: [
+                    Text(widget.teacherName, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                    const SizedBox(height: 4),
+                    Text(widget.designation.isNotEmpty ? widget.designation : 'Faculty Member', 
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: colorScheme.primary)),
+                    const Divider(height: 40),
+                    _profileInfoRow(Icons.book_rounded, 'Subjects', widget.subjects, colorScheme),
+                    const SizedBox(height: 16),
+                    _profileInfoRow(Icons.school_rounded, 'Assigned Classes', widget.assignedClass, colorScheme),
+                    const SizedBox(height: 16),
+                    _profileInfoRow(Icons.history_edu_rounded, 'Qualifications', widget.qualification.isNotEmpty ? widget.qualification : 'N/A', colorScheme),
+                    const SizedBox(height: 30),
+                    const Text('Tip: Tap your photo to update it.', 
+                        style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic)),
+                    const SizedBox(height: 20),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _profileInfoRow(IconData icon, String label, String value, ColorScheme colorScheme) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
+          child: Icon(icon, color: colorScheme.primary, size: 20),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
+              Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF1E293B))),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
   // Use global static lists for persistence
   List<String> get _classes => DataStore.allClasses;
   List<Map<String, String>> get _allStudents => DataStore.allStudents;
-  List<Map<String, dynamic>> get _activities => DataStore.allActivities.where((a) => a['std'] == (_teacherSelectedClass ?? widget.assignedClass) && (a['academicYear'] == DataStore.selectedAcademicYear || a['academicYear'] == null)).toList();
-  List<Map<String, dynamic>> get _exams => DataStore.allExams.where((e) => (e['class'] == (_teacherSelectedClass ?? widget.assignedClass) || e['class'] == null) && (e['academicYear'] == DataStore.selectedAcademicYear || e['academicYear'] == null)).toList();
+  List<Map<String, dynamic>> get _activities => DataStore.allActivities.where((a) => (a['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(_teacherSelectedClass ?? widget.assignedClass) && (a['academicYear'] == DataStore.selectedAcademicYear || a['academicYear'] == null)).toList();
+  List<Map<String, dynamic>> get _exams => DataStore.allExams.where((e) => (e['class'] == null || (e['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(_teacherSelectedClass ?? widget.assignedClass)) && (e['academicYear'] == DataStore.selectedAcademicYear || e['academicYear'] == null)).toList();
   List<Map<String, dynamic>> get _results => DataStore.allResults.where((r) => 
     _students.any((s) => s['name'] == r['studentName']) && (r['academicYear'] == DataStore.selectedAcademicYear || r['academicYear'] == null)
   ).toList();
   List<Map<String, dynamic>> get _messages => DataStore.allMessages;
-  List<Map<String, dynamic>> get _fairList => DataStore.allFairItems.where((f) => (f['class'] == (_teacherSelectedClass ?? widget.assignedClass) || f['class'] == null) && (f['academicYear'] == DataStore.selectedAcademicYear || f['academicYear'] == null)).toList();
+  List<Map<String, dynamic>> get _fairList => DataStore.allFairItems.where((f) => (f['class'] == null || (f['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(_teacherSelectedClass ?? widget.assignedClass)) && (f['academicYear'] == DataStore.selectedAcademicYear || f['academicYear'] == null)).toList();
   List<Map<String, dynamic>> get _groups => DataStore.allGroups;
   List<Map<String, dynamic>> get _groupMembers => DataStore.allGroupMembers;
   List<Map<String, String>> get _teachers => DataStore.allTeachers;
 
   List<Map<String, String>> get _students => _allStudents.where((s) => 
-    s['std'] == (_teacherSelectedClass ?? widget.assignedClass) && 
+    (s['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(_teacherSelectedClass ?? widget.assignedClass) && 
     (s['academicYear'] == DataStore.selectedAcademicYear || s['academicYear'] == null) &&
     (s['schoolName'] == widget.schoolName || s['schoolName'] == null)
   ).toList();
@@ -420,10 +588,16 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
           ),
           const Divider(height: 1),
           ListTile(
+            onTap: () => _showMyProfile(colorScheme),
             contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            leading: CircleAvatar(backgroundColor: colorScheme.primary.withOpacity(0.1), child: Text(widget.teacherName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))),
+            leading: CircleAvatar(
+              backgroundColor: colorScheme.primary.withOpacity(0.1),
+              backgroundImage: _currentPhoto.isNotEmpty
+                  ? MemoryImage(base64Decode(_currentPhoto))
+                  : const AssetImage('assets/male_avatar.png') as ImageProvider,
+            ),
             title: Text(widget.teacherName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-            subtitle: Text('ID: ${widget.teacherUsername}', style: const TextStyle(fontSize: 10)),
+            subtitle: Text(widget.designation.isNotEmpty ? widget.designation : 'ID: ${widget.teacherUsername}', style: const TextStyle(fontSize: 10)),
             trailing: IconButton(icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.grey), onPressed: () => AuthService().signOut()),
           ),
         ],
@@ -658,7 +832,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   'description': descCtrl.text,
                   'marks': markCtrl.text,
                   'date': dateCtrl.text,
-                  'std': widget.assignedClass,
+                  'std': _teacherSelectedClass ?? widget.assignedClass,
                   'academicYear': DataStore.selectedAcademicYear,
                 };
                 if (index != null) {
@@ -714,7 +888,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   'description': descCtrl.text,
                   'amount': amountCtrl.text,
                   'date': dateCtrl.text,
-                  'class': widget.assignedClass,
+                  'class': _teacherSelectedClass ?? widget.assignedClass,
                   'academicYear': DataStore.selectedAcademicYear,
                 };
                 if (index != null) {
@@ -744,7 +918,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     final daysCtrl = TextEditingController(text: e?['days'] ?? '');
     final datesCtrl = TextEditingController(text: e?['dates'] ?? '');
     final timeCtrl = TextEditingController(text: e?['time'] ?? '');
-    final classCtrl = TextEditingController(text: widget.assignedClass);
+    final classCtrl = TextEditingController(text: _teacherSelectedClass ?? widget.assignedClass);
     
     String selectedType = typeCtrl;
     List<Map<String, String>> subjects = List<Map<String, String>>.from(
@@ -844,7 +1018,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                     'type': selectedType,
                     'title': nameCtrl.text, // Unified title
                     'examName': selectedType == 'Exam' ? nameCtrl.text : null, // keep old key for compatibility
-                    'class': widget.assignedClass,
+                    'class': _teacherSelectedClass ?? widget.assignedClass,
                     'description': descCtrl.text,
                     'days': daysCtrl.text,
                     'dates': datesCtrl.text,
@@ -885,12 +1059,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     final scoredMarkCtrl = TextEditingController();
     
     // Get all exams for this teacher's class
-    List<Map<String, dynamic>> classExams = [];
-    for (var exam in _exams) {
-      if (exam['class'] == widget.assignedClass) {
-        classExams.add(exam);
-      }
-    }
+    List<Map<String, dynamic>> classExams = _exams;
 
     // Get subjects from selected exam
     List<String> getSubjectsForSelectedExam() {
@@ -985,37 +1154,39 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                         const SizedBox(height: 8),
                         Column(
                           children: [
-                            Row(
+                            Column(
                               children: [
-                                Expanded(
-                                  flex: 2,
-                                  child: DropdownButtonFormField<String>(
-                                    value: tempSelectedSubject,
-                                    decoration: const InputDecoration(labelText: 'Subject', prefixIcon: Icon(Icons.book)),
-                                    items: getSubjectsForSelectedExam().where((s) => !subjectResults.any((r) => r['subject'] == s)).map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-                                    onChanged: (val) => setStateDialog(() => tempSelectedSubject = val),
-                                  ),
+                                DropdownButtonFormField<String>(
+                                  value: tempSelectedSubject,
+                                  isExpanded: true,
+                                  decoration: const InputDecoration(labelText: 'Subject', prefixIcon: Icon(Icons.book)),
+                                  items: getSubjectsForSelectedExam().where((s) => !subjectResults.any((r) => r['subject'] == s)).map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+                                  onChanged: (val) => setStateDialog(() => tempSelectedSubject = val),
                                 ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: TextField(
-                                    controller: totalMarkCtrl,
-                                    keyboardType: TextInputType.number,
-                                    decoration: const InputDecoration(labelText: 'Total', prefixIcon: Icon(Icons.star_outline)),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                                Expanded(
-                                  child: TextField(
-                                    controller: scoredMarkCtrl,
-                                    keyboardType: TextInputType.number,
-                                    onChanged: (val) => setStateDialog((){}),
-                                    decoration: const InputDecoration(labelText: 'Scored', prefixIcon: Icon(Icons.star)),
-                                  ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: TextField(
+                                        controller: totalMarkCtrl,
+                                        keyboardType: TextInputType.number,
+                                        decoration: const InputDecoration(labelText: 'Total', prefixIcon: Icon(Icons.star_outline)),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: TextField(
+                                        controller: scoredMarkCtrl,
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (val) => setStateDialog((){}),
+                                        decoration: const InputDecoration(labelText: 'Scored', prefixIcon: Icon(Icons.star)),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: 16),
                             ElevatedButton.icon(
                               onPressed: tempSelectedSubject == null || scoredMarkCtrl.text.isEmpty ? null : () {
                                 setStateDialog(() {
@@ -1048,7 +1219,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                     'studentName': selectedStudent,
                     'examName': selectedExam,
                     'subjectResults': List<Map<String, dynamic>>.from(subjectResults),
-                    'class': widget.assignedClass,
+                    'class': _teacherSelectedClass ?? widget.assignedClass,
                     'academicYear': DataStore.selectedAcademicYear,
                   };
                   if (index != null) {
@@ -1256,7 +1427,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                       _allStudents.add(studentData);
                       
                       // Auto-enroll student in class group
-                      final className = widget.assignedClass;
+                      final className = _teacherSelectedClass ?? widget.assignedClass;
                       var classGroup = _groups.firstWhere((g) => g['name'] == className && g['type'] == 'class', orElse: () => {});
                       if (classGroup.isEmpty) {
                         classGroup = {
@@ -1492,6 +1663,59 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
             ],
           ),
 
+          const SizedBox(height: 32),
+          const SizedBox(height: 32),
+          const Text('Faculty Profiles', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+          const SizedBox(height: 16),
+          _teachers.isEmpty 
+            ? Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: Colors.grey.withOpacity(0.05), borderRadius: BorderRadius.circular(24)),
+                child: const Text('No faculty profiles added yet.', style: TextStyle(color: Colors.grey)),
+              )
+            : SizedBox(
+                height: 130,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  itemCount: _teachers.length,
+                  itemBuilder: (context, index) {
+                    final t = _teachers[index];
+                    return Container(
+                      width: 280,
+                      margin: const EdgeInsets.only(right: 16),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 15, offset: const Offset(0, 8))],
+                      ),
+                      child: Row(
+                        children: [
+                          CircleAvatar(
+                            radius: 35,
+                            backgroundColor: colorScheme.primary.withOpacity(0.1),
+                            backgroundImage: (t['photo'] != null && t['photo']!.isNotEmpty) ? MemoryImage(base64Decode(t['photo']!)) : null,
+                            child: (t['photo'] == null || t['photo']!.isEmpty) ? Icon(Icons.person_rounded, size: 35, color: colorScheme.primary) : null,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(t['name'] ?? 'Faculty', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                Text(t['qualification'] ?? 'Teacher', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                const SizedBox(height: 4),
+                                Text('Subjects: ${t['subjects'] ?? ""}', style: const TextStyle(color: Colors.grey, fontSize: 10), maxLines: 1, overflow: TextOverflow.ellipsis),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
           const SizedBox(height: 32),
           const Text('Notice Board', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
           const SizedBox(height: 16),
@@ -2449,19 +2673,67 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
          if (status == 'A' && reason != null && reason.isNotEmpty) {
            showDialog(
              context: context,
-             builder: (ctx) => AlertDialog(
-               title: Row(
-                 children: [
-                   const Icon(Icons.info_outline_rounded, color: Colors.blue),
-                   const SizedBox(width: 12),
-                   Text('Leave Reason ($label)', style: const TextStyle(fontWeight: FontWeight.w900)),
-                 ],
-               ),
-               content: Text(reason, style: const TextStyle(fontSize: 16)),
-               actions: [
-                 TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('GOT IT')),
-               ],
-             ),
+             builder: (ctx) {
+               final colorScheme = Theme.of(context).colorScheme;
+               return Dialog(
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                 elevation: 0,
+                 backgroundColor: Colors.transparent,
+                 child: Container(
+                   padding: const EdgeInsets.all(24),
+                   decoration: BoxDecoration(
+                     color: Colors.white,
+                     borderRadius: BorderRadius.circular(24),
+                     boxShadow: [
+                       BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 20, offset: const Offset(0, 10)),
+                     ],
+                   ),
+                   child: Column(
+                     mainAxisSize: MainAxisSize.min,
+                     children: [
+                       Container(
+                         padding: const EdgeInsets.all(16),
+                         decoration: BoxDecoration(color: Colors.red.withOpacity(0.1), shape: BoxShape.circle),
+                         child: const Icon(Icons.sick_rounded, color: Colors.red, size: 36),
+                       ),
+                       const SizedBox(height: 16),
+                       const Text('Leave Reason', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+                       const SizedBox(height: 4),
+                       Text(label == 'FN' ? 'Morning Session' : (label == 'AN' ? 'Afternoon Session' : label), style: TextStyle(fontSize: 14, color: Colors.grey.shade600, fontWeight: FontWeight.w600)),
+                       const SizedBox(height: 24),
+                       Container(
+                         width: double.infinity,
+                         padding: const EdgeInsets.all(20),
+                         decoration: BoxDecoration(
+                           color: const Color(0xFFF8FAFC),
+                           borderRadius: BorderRadius.circular(16),
+                           border: Border.all(color: const Color(0xFFE2E8F0)),
+                         ),
+                         child: Text(
+                           reason,
+                           textAlign: TextAlign.center,
+                           style: const TextStyle(fontSize: 16, color: Color(0xFF334155), height: 1.5, fontStyle: FontStyle.italic),
+                         ),
+                       ),
+                       const SizedBox(height: 32),
+                       SizedBox(
+                         width: double.infinity,
+                         child: FilledButton(
+                           onPressed: () => Navigator.pop(ctx),
+                           style: FilledButton.styleFrom(
+                             backgroundColor: colorScheme.primary,
+                             padding: const EdgeInsets.symmetric(vertical: 16),
+                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                             elevation: 0,
+                           ),
+                           child: const Text('CLOSE', style: TextStyle(fontWeight: FontWeight.bold, letterSpacing: 1.2)),
+                         ),
+                       ),
+                     ],
+                   ),
+                 ),
+               );
+             },
            );
          }
        },

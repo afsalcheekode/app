@@ -147,6 +147,17 @@ class AuthService {
         // 3. Store metadata in Firestore using primary app instance
         userData['uid'] = result.user!.uid;
         userData['role'] = userData['role'] ?? (userData.containsKey('std') ? 'student' : 'teacher');
+        
+        // Strip photo to avoid 1MB document limit, save it to teacher_photos collection
+        final photo = userData['photo'];
+        if (photo != null && photo.toString().isNotEmpty) {
+           userData.remove('photo');
+           await _db.collection('teacher_photos').doc(userData['username']).set(
+             {'photo': photo, 'username': userData['username']},
+             SetOptions(merge: true)
+           );
+        }
+        
         await _db.collection('users').doc(result.user!.uid).set(userData);
       }
     } catch (e) {
