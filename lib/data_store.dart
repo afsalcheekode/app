@@ -10,11 +10,14 @@ class DataStore {
   static SharedPreferences? _prefs;
   static bool isInitialized = false;
   static Map<String, dynamic>? mockUser;
-  static final _mockAuthStreamController = StreamController<Map<String, dynamic>?>.broadcast();
-  static Stream<Map<String, dynamic>?> get mockAuthStream => _mockAuthStreamController.stream;
+  static final _mockAuthStreamController =
+      StreamController<Map<String, dynamic>?>.broadcast();
+  static Stream<Map<String, dynamic>?> get mockAuthStream =>
+      _mockAuthStreamController.stream;
 
   static void updateMockUser(Map<String, dynamic>? user) {
-    debugPrint("DataStore: Updating Mock User to -> ${user == null ? 'null' : user['username']}");
+    debugPrint(
+        "DataStore: Updating Mock User to -> ${user == null ? 'null' : user['username']}");
     mockUser = user;
     saveAllData(); // Persist login state
     _mockAuthStreamController.add(user);
@@ -24,8 +27,8 @@ class DataStore {
   static List<Map<String, String>> allTeachers = [];
   static List<Map<String, String>> allSchools = [
     {
-      'school': 'Hayathul Islam', 
-      'username': 'hsh.dtcr', 
+      'school': 'Hayathul Islam',
+      'username': 'hsh.dtcr',
       'password': '24395262',
       'academic_director': 'Hafiz Shafeeq Hashimi'
     }
@@ -61,25 +64,31 @@ class DataStore {
   };
   static Map<String, String> classDepts = {};
 
-  static Future<void> saveInt(String key, int val) async => await _prefs?.setInt(key, val);
+  static Future<void> saveInt(String key, int val) async =>
+      await _prefs?.setInt(key, val);
   static int loadInt(String key, int def) => _prefs?.getInt(key) ?? def;
-  static Future<void> saveString(String key, String val) async => await _prefs?.setString(key, val);
+  static Future<void> saveString(String key, String val) async =>
+      await _prefs?.setString(key, val);
   static String? loadString(String key) => _prefs?.getString(key);
-  
+
   static int getUnreadMessageCount(String username) {
     if (allMessages.isEmpty) return 0;
     int totalForMe = allMessages.where((m) {
       final recipients = m['recipients'] as List?;
-      return (m['receiverId'] == username || recipients?.contains(username) == true) && m['senderId'] != username;
+      return (m['receiverId'] == username ||
+              recipients?.contains(username) == true) &&
+          m['senderId'] != username;
     }).length;
     int lastSeen = loadInt('last_seen_msg_count_$username', 0);
     return max(0, totalForMe - lastSeen);
   }
-  
+
   static void markMessagesAsRead(String username) async {
     int totalForMe = allMessages.where((m) {
-       final recipients = m['recipients'] as List?;
-       return (m['receiverId'] == username || recipients?.contains(username) == true) && m['senderId'] != username;
+      final recipients = m['recipients'] as List?;
+      return (m['receiverId'] == username ||
+              recipients?.contains(username) == true) &&
+          m['senderId'] != username;
     }).length;
     await saveInt('last_seen_msg_count_$username', totalForMe);
   }
@@ -87,24 +96,25 @@ class DataStore {
   static Map<String, int> _lastNotifiedMsgCount = {};
 
   static void checkForNewAndNotify(String username) {
-     int currentCount = getUnreadMessageCount(username);
-     int lastNotified = _lastNotifiedMsgCount[username] ?? 0;
-     if (currentCount > lastNotified) {
-        NotificationService.showNotification(
-          title: 'New Message',
-          body: 'You have $currentCount unread message(s)',
-        );
-     }
-     _lastNotifiedMsgCount[username] = currentCount;
+    int currentCount = getUnreadMessageCount(username);
+    int lastNotified = _lastNotifiedMsgCount[username] ?? 0;
+    if (currentCount > lastNotified) {
+      NotificationService.showNotification(
+        title: 'New Message',
+        body: 'You have $currentCount unread message(s)',
+      );
+    }
+    _lastNotifiedMsgCount[username] = currentCount;
   }
 
-  static Map<String, int> getAttendanceStats(String username, int? month, int? year) {
+  static Map<String, int> getAttendanceStats(
+      String username, int? month, int? year) {
     int total = 0;
     int present = 0;
     for (var a in allAttendance) {
       if (a['studentUsername'] != username) continue;
-      if (a['academicYear'] != selectedAcademicYear && year == null) continue; 
-      
+      if (a['academicYear'] != selectedAcademicYear && year == null) continue;
+
       final date = DateTime.tryParse(a['date'] ?? '');
       if (date == null) continue;
       if (month != null && date.month != month) continue;
@@ -118,11 +128,13 @@ class DataStore {
     return {'total': total, 'present': present};
   }
 
-  static Map<String, int> getAcademicYearStats(String username, String academicYear) {
+  static Map<String, int> getAcademicYearStats(
+      String username, String academicYear) {
     int total = 0;
     int present = 0;
     for (var a in allAttendance) {
-      if (a['studentUsername'] == username && a['academicYear'] == academicYear) {
+      if (a['studentUsername'] == username &&
+          a['academicYear'] == academicYear) {
         final periods = Map<String, String>.from(a['periods'] ?? {});
         if (periods.isNotEmpty) {
           total++;
@@ -135,26 +147,35 @@ class DataStore {
 
   static IconData getIconDataFromCodePoint(int codePoint) {
     const icons = {
-       0xe54d: Icons.school,
-       0xe0e1: Icons.badge,
-       0xe23a: Icons.event,
-       0xe211: Icons.emoji_events,
-       0xe0a1: Icons.assignment,
-       0xe491: Icons.people,
-       0xe0ef: Icons.book,
-       0xe5f9: Icons.star,
-       0xe440: Icons.notifications,
-       0xe060: Icons.analytics,
-       0xe163: Icons.class_,
-       0xe0bb: Icons.calendar_month,
+      0xe54d: Icons.school,
+      0xe0e1: Icons.badge,
+      0xe23a: Icons.event,
+      0xe211: Icons.emoji_events,
+      0xe0a1: Icons.assignment,
+      0xe491: Icons.people,
+      0xe0ef: Icons.book,
+      0xe5f9: Icons.star,
+      0xe440: Icons.notifications,
+      0xe060: Icons.analytics,
+      0xe163: Icons.class_,
+      0xe0bb: Icons.calendar_month,
     };
     return icons[codePoint] ?? Icons.help_outline;
   }
 
   static MaterialColor getColorFromValueActual(int value) {
-    const colors = [Colors.teal, Colors.green, Colors.orange, Colors.purple, Colors.red, Colors.pink, Colors.teal, Colors.green];
+    const colors = [
+      Colors.teal,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.red,
+      Colors.pink,
+      Colors.teal,
+      Colors.green
+    ];
     for (var c in colors) {
-       if (c.value == value) return c;
+      if (c.value == value) return c;
     }
     return Colors.teal;
   }
@@ -174,12 +195,12 @@ class DataStore {
       _prefs = await SharedPreferences.getInstance();
       _loadAllData();
       isInitialized = true;
-      
+
       // Global Purge V2: Clean Slate for hsh01 and others
-      if (_prefs!.getBool('global_purge_v2') != true) {
-        await _globalPurge();
-        await _prefs!.setBool('global_purge_v2', true);
-      }
+      // if (_prefs!.getBool('global_purge_v2') != true) {
+      // await _globalPurge();
+      //  await _prefs!.setBool('global_purge_v2', true);
+      // }
 
       // Start real-time Firestore sync
       startRealTimeSync();
@@ -193,7 +214,7 @@ class DataStore {
 
   static void _loadAllData() {
     if (_prefs == null) return;
-    
+
     final schoolsStr = _prefs!.getString('all_schools');
     if (schoolsStr != null) {
       try {
@@ -204,13 +225,13 @@ class DataStore {
         debugPrint("Error decoding schools: $e");
       }
     }
-    
+
     final teachersStr = _prefs!.getString('all_teachers');
     if (teachersStr != null) {
       final List decoded = jsonDecode(teachersStr);
       allTeachers = decoded.map((t) => Map<String, String>.from(t)).toList();
     }
-    
+
     final studentsStr = _prefs!.getString('all_students');
     if (studentsStr != null) {
       final List decoded = jsonDecode(studentsStr);
@@ -220,10 +241,13 @@ class DataStore {
     // Cleanup: Remove legacy sample data if it exists in loaded data
     int tCount = allTeachers.length;
     int sCount = allStudents.length;
-    allTeachers.removeWhere((t) => t['name'] == 'Sample Teacher' || t['username'] == 'teacher');
-    allStudents.removeWhere((s) => s['name'] == 'Sample Student' || s['username'] == 'student');
-    allSchools.removeWhere((s) => s['username'] == 'hsh.director'); // Remove old username version
-    
+    allTeachers.removeWhere(
+        (t) => t['name'] == 'Sample Teacher' || t['username'] == 'teacher');
+    allStudents.removeWhere(
+        (s) => s['name'] == 'Sample Student' || s['username'] == 'student');
+    allSchools.removeWhere(
+        (s) => s['username'] == 'hsh.director'); // Remove old username version
+
     if (allTeachers.length != tCount || allStudents.length != sCount) {
       debugPrint("DataStore: Legacy samples purged, syncing to Firestore...");
       // We'll call saveAllData later in _doInit once isInitialized is true
@@ -236,13 +260,16 @@ class DataStore {
     }
 
     // Inject System Update Notification if not present
-    bool exists = allExams.any((e) => e['title'] == 'System Enhancement Summary');
+    bool exists =
+        allExams.any((e) => e['title'] == 'System Enhancement Summary');
     if (!exists) {
       allExams.add({
         'type': 'Announcement',
         'title': 'System Enhancement Summary',
-        'description': 'Director Board updated with Broadcast system, quick-action shortcuts, and colorful announcement cards for all users. Check the sidebar for new commands.',
-        'date': '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}',
+        'description':
+            'Director Board updated with Broadcast system, quick-action shortcuts, and colorful announcement cards for all users. Check the sidebar for new commands.',
+        'date':
+            '${DateTime.now().year}-${DateTime.now().month}-${DateTime.now().day}',
         'day': 'Product Update',
         'time': 'NEW',
         'class': null,
@@ -265,7 +292,8 @@ class DataStore {
     final gmStr = _prefs!.getString('all_group_members');
     if (gmStr != null) {
       final List decoded = jsonDecode(gmStr);
-      allGroupMembers = decoded.map((g) => Map<String, dynamic>.from(g)).toList();
+      allGroupMembers =
+          decoded.map((g) => Map<String, dynamic>.from(g)).toList();
     }
 
     final activitiesStr = _prefs!.getString('all_activities');
@@ -289,13 +317,15 @@ class DataStore {
     final subStr = _prefs!.getString('all_activity_submissions');
     if (subStr != null) {
       final List decoded = jsonDecode(subStr);
-      allActivitySubmissions = decoded.map((s) => Map<String, dynamic>.from(s)).toList();
+      allActivitySubmissions =
+          decoded.map((s) => Map<String, dynamic>.from(s)).toList();
     }
 
     final payStr = _prefs!.getString('all_fair_payments');
     if (payStr != null) {
       final List decoded = jsonDecode(payStr);
-      allFairPayments = decoded.map((p) => Map<String, dynamic>.from(p)).toList();
+      allFairPayments =
+          decoded.map((p) => Map<String, dynamic>.from(p)).toList();
     }
 
     final attStr = _prefs!.getString('all_attendance');
@@ -307,7 +337,8 @@ class DataStore {
     final hifzStr = _prefs!.getString('all_hifz_progress');
     if (hifzStr != null) {
       final List decoded = jsonDecode(hifzStr);
-      allHifzProgress = decoded.map((h) => Map<String, dynamic>.from(h)).toList();
+      allHifzProgress =
+          decoded.map((h) => Map<String, dynamic>.from(h)).toList();
     }
 
     final ttStr = _prefs!.getString('all_timetables');
@@ -386,7 +417,8 @@ class DataStore {
     await _prefs!.setString('all_activities', jsonEncode(allActivities));
     await _prefs!.setString('all_fair_items', jsonEncode(allFairItems));
     await _prefs!.setString('all_results', jsonEncode(allResults));
-    await _prefs!.setString('all_activity_submissions', jsonEncode(allActivitySubmissions));
+    await _prefs!.setString(
+        'all_activity_submissions', jsonEncode(allActivitySubmissions));
     await _prefs!.setString('all_fair_payments', jsonEncode(allFairPayments));
     await _prefs!.setString('all_attendance', jsonEncode(allAttendance));
     await _prefs!.setString('all_hifz_progress', jsonEncode(allHifzProgress));
@@ -403,7 +435,7 @@ class DataStore {
     } else {
       await _prefs!.remove('mock_user');
     }
-    
+
     // Background push to Firestore
     syncWithFirestore(isPushOnly: true);
   }
@@ -423,12 +455,12 @@ class DataStore {
     allHifzProgress = [];
     allBulletinCards = [];
     allMetrics = [];
-    
+
     // Keep only the primary director school
     allSchools = [
       {
-        'school': 'Hayathul Islam', 
-        'username': 'hsh.dtcr', 
+        'school': 'Hayathul Islam',
+        'username': 'hsh.dtcr',
         'password': '24395262',
         'academic_director': 'Hafiz Shafeeq Hashimi'
       }
@@ -442,53 +474,143 @@ class DataStore {
   static void startRealTimeSync() {
     _syncSubscription?.cancel();
     final db = FirebaseFirestore.instance;
-    _syncSubscription = db.collection('app_data').doc('central_store').snapshots().listen((doc) {
-       if (doc.exists) {
-         final data = doc.data()!;
-         bool changed = false;
-         
-         // Only update local lists if remote data exists to prevent wiping local on new setup
-         if (data['allTeachers'] != null) { allTeachers = List<Map<String, String>>.from((data['allTeachers'] as List).map((i) => Map<String, String>.from(i))); changed = true; }
-         if (data['allStudents'] != null) { allStudents = List<Map<String, String>>.from((data['allStudents'] as List).map((i) => Map<String, String>.from(i))); changed = true; }
-         if (data['allSchools'] != null) { allSchools = List<Map<String, String>>.from((data['allSchools'] as List).map((i) => Map<String, String>.from(i))); changed = true; }
-         if (data['allExams'] != null) { allExams = List<Map<String, dynamic>>.from(data['allExams']); changed = true; }
-         if (data['allMessages'] != null) { allMessages = List<Map<String, dynamic>>.from(data['allMessages']); changed = true; }
-          if (data['allActivities'] != null) { allActivities = List<Map<String, dynamic>>.from(data['allActivities']); changed = true; }
-          if (data['allFairItems'] != null) { allFairItems = List<Map<String, dynamic>>.from(data['allFairItems']); changed = true; }
-          if (data['allResults'] != null) { allResults = List<Map<String, dynamic>>.from(data['allResults']); changed = true; }
-          if (data['allActivitySubmissions'] != null) { allActivitySubmissions = List<Map<String, dynamic>>.from(data['allActivitySubmissions']); changed = true; }
-          if (data['allFairPayments'] != null) { allFairPayments = List<Map<String, dynamic>>.from(data['allFairPayments']); changed = true; }
-          if (data['allGroups'] != null) { allGroups = List<Map<String, dynamic>>.from(data['allGroups']); changed = true; }
-          if (data['allGroupMembers'] != null) { allGroupMembers = List<Map<String, dynamic>>.from(data['allGroupMembers']); changed = true; }
-          if (data['allAttendance'] != null) { allAttendance = List<Map<String, dynamic>>.from(data['allAttendance']); changed = true; }
-          if (data['allHifzProgress'] != null) { allHifzProgress = List<Map<String, dynamic>>.from(data['allHifzProgress']); changed = true; }
-          if (data['allClasses'] != null) { allClasses = List<String>.from(data['allClasses']); changed = true; }
-          if (data['classDepts'] != null) { classDepts = Map<String, String>.from(data['classDepts']); changed = true; }
-          if (data['allTimetables'] != null) { allTimetables = Map<String, dynamic>.from(data['allTimetables']); changed = true; }
-          if (data['academicYears'] != null) { academicYears = List<String>.from(data['academicYears']); changed = true; }
-          if (data['selectedAcademicYear'] != null) { selectedAcademicYear = data['selectedAcademicYear']; changed = true; }
-          if (data['holidayDates'] != null) { holidayDates = List<String>.from(data['holidayDates']); changed = true; }
-          if (data['allMetrics'] != null) { allMetrics = List<Map<String, dynamic>>.from(data['allMetrics']); changed = true; }
-          if (data['allBulletinCards'] != null) { allBulletinCards = List<Map<String, dynamic>>.from(data['allBulletinCards']); changed = true; }
-          if (data['featureConfig'] != null) { featureConfig = Map<String, bool>.from(data['featureConfig']); changed = true; }
+    _syncSubscription = db
+        .collection('app_data')
+        .doc('central_store')
+        .snapshots()
+        .listen((doc) {
+      if (doc.exists) {
+        final data = doc.data()!;
+        bool changed = false;
 
-         if (changed) {
-           _saveLocallyOnly();
-           // Fetch teacher photos separately and merge into allTeachers
-           FirebaseFirestore.instance.collection('teacher_photos').get().then((snapshot) {
-             for (final doc in snapshot.docs) {
-               final username = doc.data()['username'] as String? ?? '';
-               final photo = doc.data()['photo'] as String? ?? '';
-               final idx = allTeachers.indexWhere((t) => t['username'] == username);
-               if (idx != -1) allTeachers[idx]['photo'] = photo;
-             }
-             _saveLocallyOnly();
-             _mockAuthStreamController.add(mockUser);
-           });
-           // Trigger UI rebuild
-           _mockAuthStreamController.add(mockUser);
-         }
-       }
+        // Only update local lists if remote data exists to prevent wiping local on new setup
+        if (data['allTeachers'] != null) {
+          allTeachers = List<Map<String, String>>.from(
+              (data['allTeachers'] as List)
+                  .map((i) => Map<String, String>.from(i)));
+          changed = true;
+        }
+        if (data['allStudents'] != null) {
+          allStudents = List<Map<String, String>>.from(
+              (data['allStudents'] as List)
+                  .map((i) => Map<String, String>.from(i)));
+          changed = true;
+        }
+        if (data['allSchools'] != null) {
+          allSchools = List<Map<String, String>>.from(
+              (data['allSchools'] as List)
+                  .map((i) => Map<String, String>.from(i)));
+          changed = true;
+        }
+        if (data['allExams'] != null) {
+          allExams = List<Map<String, dynamic>>.from(data['allExams']);
+          changed = true;
+        }
+        if (data['allMessages'] != null) {
+          allMessages = List<Map<String, dynamic>>.from(data['allMessages']);
+          changed = true;
+        }
+        if (data['allActivities'] != null) {
+          allActivities =
+              List<Map<String, dynamic>>.from(data['allActivities']);
+          changed = true;
+        }
+        if (data['allFairItems'] != null) {
+          allFairItems = List<Map<String, dynamic>>.from(data['allFairItems']);
+          changed = true;
+        }
+        if (data['allResults'] != null) {
+          allResults = List<Map<String, dynamic>>.from(data['allResults']);
+          changed = true;
+        }
+        if (data['allActivitySubmissions'] != null) {
+          allActivitySubmissions =
+              List<Map<String, dynamic>>.from(data['allActivitySubmissions']);
+          changed = true;
+        }
+        if (data['allFairPayments'] != null) {
+          allFairPayments =
+              List<Map<String, dynamic>>.from(data['allFairPayments']);
+          changed = true;
+        }
+        if (data['allGroups'] != null) {
+          allGroups = List<Map<String, dynamic>>.from(data['allGroups']);
+          changed = true;
+        }
+        if (data['allGroupMembers'] != null) {
+          allGroupMembers =
+              List<Map<String, dynamic>>.from(data['allGroupMembers']);
+          changed = true;
+        }
+        if (data['allAttendance'] != null) {
+          allAttendance =
+              List<Map<String, dynamic>>.from(data['allAttendance']);
+          changed = true;
+        }
+        if (data['allHifzProgress'] != null) {
+          allHifzProgress =
+              List<Map<String, dynamic>>.from(data['allHifzProgress']);
+          changed = true;
+        }
+        if (data['allClasses'] != null) {
+          allClasses = List<String>.from(data['allClasses']);
+          changed = true;
+        }
+        if (data['classDepts'] != null) {
+          classDepts = Map<String, String>.from(data['classDepts']);
+          changed = true;
+        }
+        if (data['allTimetables'] != null) {
+          allTimetables = Map<String, dynamic>.from(data['allTimetables']);
+          changed = true;
+        }
+        if (data['academicYears'] != null) {
+          academicYears = List<String>.from(data['academicYears']);
+          changed = true;
+        }
+        if (data['selectedAcademicYear'] != null) {
+          selectedAcademicYear = data['selectedAcademicYear'];
+          changed = true;
+        }
+        if (data['holidayDates'] != null) {
+          holidayDates = List<String>.from(data['holidayDates']);
+          changed = true;
+        }
+        if (data['allMetrics'] != null) {
+          allMetrics = List<Map<String, dynamic>>.from(data['allMetrics']);
+          changed = true;
+        }
+        if (data['allBulletinCards'] != null) {
+          allBulletinCards =
+              List<Map<String, dynamic>>.from(data['allBulletinCards']);
+          changed = true;
+        }
+        if (data['featureConfig'] != null) {
+          featureConfig = Map<String, bool>.from(data['featureConfig']);
+          changed = true;
+        }
+
+        if (changed) {
+          _saveLocallyOnly();
+          // Fetch teacher photos separately and merge into allTeachers
+          FirebaseFirestore.instance
+              .collection('teacher_photos')
+              .get()
+              .then((snapshot) {
+            for (final doc in snapshot.docs) {
+              final username = doc.data()['username'] as String? ?? '';
+              final photo = doc.data()['photo'] as String? ?? '';
+              final idx =
+                  allTeachers.indexWhere((t) => t['username'] == username);
+              if (idx != -1) allTeachers[idx]['photo'] = photo;
+            }
+            _saveLocallyOnly();
+            _mockAuthStreamController.add(mockUser);
+          });
+          // Trigger UI rebuild
+          _mockAuthStreamController.add(mockUser);
+        }
+      }
     });
   }
 
@@ -559,7 +681,8 @@ class DataStore {
     _prefs!.setString('all_activities', jsonEncode(allActivities));
     _prefs!.setString('all_fair_items', jsonEncode(allFairItems));
     _prefs!.setString('all_results', jsonEncode(allResults));
-    _prefs!.setString('all_activity_submissions', jsonEncode(allActivitySubmissions));
+    _prefs!.setString(
+        'all_activity_submissions', jsonEncode(allActivitySubmissions));
     _prefs!.setString('all_fair_payments', jsonEncode(allFairPayments));
     _prefs!.setString('all_attendance', jsonEncode(allAttendance));
     _prefs!.setString('all_hifz_progress', jsonEncode(allHifzProgress));
