@@ -819,6 +819,15 @@ class _TeachersTabState extends State<_TeachersTab> {
                         query.docs.first.reference.update(newData);
                       }
                     });
+                    
+                    final oldUsername = oldData['username']!;
+                    final newUsername = newData['username']!;
+                    if (oldUsername != newUsername) {
+                      FirebaseFirestore.instance.collection('teacher_photos').doc(oldUsername).delete();
+                    }
+                    FirebaseFirestore.instance.collection('teacher_photos')
+                        .doc(newUsername)
+                        .set({'username': newUsername, 'photo': newData['photo'] ?? ''}, SetOptions(merge: true));
                   });
                   Navigator.pop(context);
                 }
