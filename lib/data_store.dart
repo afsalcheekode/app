@@ -9,6 +9,7 @@ import 'notification_service.dart';
 class DataStore {
   static SharedPreferences? _prefs;
   static bool isInitialized = false;
+  static bool hasFetchedFromFirestore = false;
   static Map<String, dynamic>? mockUser;
   static final _mockAuthStreamController =
       StreamController<Map<String, dynamic>?>.broadcast();
@@ -19,7 +20,13 @@ class DataStore {
     debugPrint(
         "DataStore: Updating Mock User to -> ${user == null ? 'null' : user['username']}");
     mockUser = user;
-    saveAllData(); // Persist login state
+    if (_prefs != null) {
+      if (user != null) {
+        _prefs!.setString('mock_user', jsonEncode(user));
+      } else {
+        _prefs!.remove('mock_user');
+      }
+    }
     _mockAuthStreamController.add(user);
   }
 
@@ -205,6 +212,36 @@ class DataStore {
       // Start real-time Firestore sync
       startRealTimeSync();
       debugPrint("DataStore: Local data loaded, real-time sync started");
+
+      // RECOVERY LOGIC: Restore vanished teachers and students from Auth/users collection
+      FirebaseFirestore.instance.collection('users').get().then((snap) {
+        bool changed = false;
+        for (var doc in snap.docs) {
+          final data = doc.data();
+          if (data['role'] == 'teacher') {
+             if (!allTeachers.any((t) => t['username'] == data['username'])) {
+                final tMap = <String, String>{};
+                data.forEach((k,v) => tMap[k] = v?.toString() ?? '');
+                allTeachers.add(tMap);
+                changed = true;
+             }
+          }
+          if (data['role'] == 'student') {
+             if (!allStudents.any((s) => s['username'] == data['username'])) {
+                final sMap = <String, String>{};
+                data.forEach((k,v) => sMap[k] = v?.toString() ?? '');
+                allStudents.add(sMap);
+                changed = true;
+             }
+          }
+        }
+        if (changed) {
+          hasFetchedFromFirestore = true;
+          saveAllData();
+          debugPrint("DataStore: Recovered vanished users and synced to database.");
+        }
+      }).catchError((e) => debugPrint("Recovery error: $e"));
+
     } catch (e) {
       debugPrint("Error in initPrefs: $e");
     } finally {
@@ -479,6 +516,7 @@ class DataStore {
         .doc('central_store')
         .snapshots()
         .listen((doc) {
+      hasFetchedFromFirestore = true;
       if (doc.exists) {
         final data = doc.data()!;
         bool changed = false;
@@ -615,6 +653,10 @@ class DataStore {
   }
 
   static Future<void> syncWithFirestore({bool isPushOnly = false}) async {
+    if (!hasFetchedFromFirestore) {
+      debugPrint("DataStore: Skipping syncWithFirestore because data has not been fetched yet to prevent overwriting.");
+      return;
+    }
     try {
       final db = FirebaseFirestore.instance;
 

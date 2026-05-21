@@ -207,14 +207,10 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                           final bytes = await image.readAsBytes();
                           final base64 = base64Encode(bytes);
                           
-                          // Update Firestore
-                          FirebaseFirestore.instance.collection('users')
-                              .where('username', isEqualTo: widget.teacherUsername)
-                              .get().then((query) {
-                            if (query.docs.isNotEmpty) {
-                              query.docs.first.reference.update({'photo': base64});
-                            }
-                          });
+                          // Update Firestore teacher_photos collection
+                          FirebaseFirestore.instance.collection('teacher_photos')
+                              .doc(widget.teacherUsername)
+                              .set({'photo': base64, 'username': widget.teacherUsername}, SetOptions(merge: true));
 
                           // Update local DataStore
                           final teacherIndex = DataStore.allTeachers.indexWhere((t) => t['username'] == widget.teacherUsername);
