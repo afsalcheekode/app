@@ -9,13 +9,18 @@ import 'data_store.dart';
 mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
   int unreadNoticeCount = 0;
   String get currentUsername;
+  String get currentSchoolName;
+
+  List<Map<String, dynamic>> get filteredBulletinCards {
+    return DataStore.allBulletinCards.where((b) => b['schoolName'] == currentSchoolName || b['schoolName'] == null).toList();
+  }
 
   void initNoticeCount() {
     updateNoticeCount();
   }
 
   void updateNoticeCount() {
-    int total = DataStore.allBulletinCards.length;
+    int total = filteredBulletinCards.length;
     int lastSeen = DataStore.loadInt('last_seen_notice_count_$currentUsername', 0);
     int newCount = max(0, total - lastSeen);
     
@@ -25,7 +30,7 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
   }
 
   void showNoticeCenter(BuildContext context) async {
-    await DataStore.saveInt('last_seen_notice_count_$currentUsername', DataStore.allBulletinCards.length);
+    await DataStore.saveInt('last_seen_notice_count_$currentUsername', filteredBulletinCards.length);
     setState(() => unreadNoticeCount = 0);
     showDialog(
       context: context,
@@ -40,11 +45,11 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
         ),
         content: SizedBox(
           width: 400,
-          child: DataStore.allBulletinCards.isEmpty
+          child: filteredBulletinCards.isEmpty
               ? const Padding(padding: EdgeInsets.all(20), child: Text('No new updates from the Academic Director.'))
               : Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: DataStore.allBulletinCards.reversed.take(4).map((b) => Container(
+                  children: filteredBulletinCards.reversed.take(4).map((b) => Container(
                     margin: const EdgeInsets.only(bottom: 12),
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(color: Colors.grey.withOpacity(0.05), border: Border.all(color: Colors.grey.withOpacity(0.1)), borderRadius: BorderRadius.circular(16)),

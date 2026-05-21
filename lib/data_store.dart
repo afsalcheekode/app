@@ -508,8 +508,10 @@ class DataStore {
   }
 
   static StreamSubscription? _syncSubscription;
+  static StreamSubscription? _photoSubscription;
   static void startRealTimeSync() {
     _syncSubscription?.cancel();
+    _photoSubscription?.cancel();
     final db = FirebaseFirestore.instance;
     _syncSubscription = db
         .collection('app_data')
@@ -630,24 +632,25 @@ class DataStore {
 
         if (changed) {
           _saveLocallyOnly();
-          // Fetch teacher photos separately and merge into allTeachers
-          FirebaseFirestore.instance
-              .collection('teacher_photos')
-              .get()
-              .then((snapshot) {
-            for (final doc in snapshot.docs) {
-              final username = doc.data()['username'] as String? ?? '';
-              final photo = doc.data()['photo'] as String? ?? '';
-              final idx =
-                  allTeachers.indexWhere((t) => t['username'] == username);
-              if (idx != -1) allTeachers[idx]['photo'] = photo;
-            }
-            _saveLocallyOnly();
-            _mockAuthStreamController.add(mockUser);
-          });
-          // Trigger UI rebuild
           _mockAuthStreamController.add(mockUser);
         }
+      }
+    });
+
+    _photoSubscription = db.collection('teacher_photos').snapshots().listen((snapshot) {
+      bool photoChanged = false;
+      for (final doc in snapshot.docs) {
+        final username = doc.data()['username'] as String? ?? '';
+        final photo = doc.data()['photo'] as String? ?? '';
+        final idx = allTeachers.indexWhere((t) => t['username'] == username);
+        if (idx != -1 && allTeachers[idx]['photo'] != photo) {
+          allTeachers[idx]['photo'] = photo;
+          photoChanged = true;
+        }
+      }
+      if (photoChanged) {
+        _saveLocallyOnly();
+        _mockAuthStreamController.add(mockUser);
       }
     });
   }

@@ -38,6 +38,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
   // helper getters
   List<Map<String, String>> get _teachers => DataStore.allTeachers.where((t) => t['schoolName'] == widget.schoolName || t['schoolName'] == null).toList();
   List<Map<String, String>> get _students => DataStore.allStudents.where((s) => s['schoolName'] == widget.schoolName || s['schoolName'] == null).toList();
+  List<Map<String, dynamic>> get _myCards => DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName || b['schoolName'] == null).toList();
   List<String>              get _classes  => DataStore.allClasses;
   Map<String, String>       get _classDepts => DataStore.classDepts;
 
@@ -237,6 +238,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
             students: _students,
             onRefresh: () => setState(() {}),
             currentUsername: widget.username,
+            schoolName: widget.schoolName,
           ),
         ],
       ),
@@ -1249,12 +1251,14 @@ class _BroadcastTab extends StatefulWidget {
   final List<Map<String, String>> teachers;
   final List<Map<String, String>> students;
   final String currentUsername;
+  final String schoolName;
   final VoidCallback onRefresh;
 
   const _BroadcastTab({
     required this.teachers,
     required this.students,
     required this.currentUsername,
+    required this.schoolName,
     required this.onRefresh,
   });
 
@@ -1302,6 +1306,7 @@ class _BroadcastTabState extends State<_BroadcastTab> {
         'timestamp': timestamp,
         'isBroadcast': true,
         'broadcastTarget': _target,
+        'schoolName': widget.schoolName,
       });
     }
 
@@ -1311,6 +1316,7 @@ class _BroadcastTabState extends State<_BroadcastTab> {
         'title': 'New Announcement',
         'text': text,
         'date': timestamp,
+        'schoolName': widget.schoolName,
       });
     }
 
@@ -1475,7 +1481,7 @@ class _BroadcastTabState extends State<_BroadcastTab> {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: DataStore.allBulletinCards.isEmpty
+                  child: DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName || b['schoolName'] == null).toList().isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -1487,9 +1493,10 @@ class _BroadcastTabState extends State<_BroadcastTab> {
                           ),
                         )
                       : ListView.builder(
-                          itemCount: DataStore.allBulletinCards.length,
+                          itemCount: DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName || b['schoolName'] == null).toList().length,
                           itemBuilder: (context, idx) {
-                            final card = DataStore.allBulletinCards[idx];
+                            final myFilteredCards = DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName || b['schoolName'] == null).toList();
+                            final card = myFilteredCards[idx];
                             final List<Color> colors = [Colors.blue, Colors.indigo, Colors.purple, Colors.teal, Colors.orange];
                             final Color cardColor = colors[idx % colors.length];
                             
@@ -1536,7 +1543,7 @@ class _BroadcastTabState extends State<_BroadcastTab> {
                                           child: const Icon(Icons.delete_rounded, color: Colors.red, size: 18),
                                         ),
                                         onPressed: () {
-                                          setState(() => DataStore.allBulletinCards.removeAt(idx));
+                                          setState(() => DataStore.allBulletinCards.remove(card));
                                           DataStore.saveAllData();
                                         },
                                       ),
@@ -1681,6 +1688,7 @@ class _BroadcastTabState extends State<_BroadcastTab> {
                         'title': titleCtrl.text,
                         'text': textCtrl.text,
                         'date': finalDate.toIso8601String(),
+                        'schoolName': widget.schoolName,
                       });
                     });
                     DataStore.saveAllData();

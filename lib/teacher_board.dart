@@ -45,6 +45,11 @@ class TeacherBoardScreen extends StatefulWidget {
 class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCenterMixin {
   @override
   String get currentUsername => widget.teacherUsername;
+  
+  @override
+  String get currentSchoolName => widget.schoolName;
+
+  bool _isMobile = false;
 
   String get _currentPhoto {
     if (widget.photo.isNotEmpty) return widget.photo;
@@ -318,22 +323,21 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
 
   // Use global static lists for persistence
   List<String> get _classes => DataStore.allClasses;
-  List<Map<String, String>> get _allStudents => DataStore.allStudents;
-  List<Map<String, dynamic>> get _activities => DataStore.allActivities.where((a) => (a['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(_teacherSelectedClass ?? widget.assignedClass) && (a['academicYear'] == DataStore.selectedAcademicYear || a['academicYear'] == null)).toList();
-  List<Map<String, dynamic>> get _exams => DataStore.allExams.where((e) => (e['class'] == null || (e['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(_teacherSelectedClass ?? widget.assignedClass)) && (e['academicYear'] == DataStore.selectedAcademicYear || e['academicYear'] == null)).toList();
+  List<Map<String, String>> get _allStudents => DataStore.allStudents.where((s) => s['schoolName'] == widget.schoolName || s['schoolName'] == null).toList();
+  List<Map<String, dynamic>> get _activities => DataStore.allActivities.where((a) => (a['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(_teacherSelectedClass ?? widget.assignedClass) && (a['academicYear'] == DataStore.selectedAcademicYear || a['academicYear'] == null) && (a['schoolName'] == widget.schoolName || a['schoolName'] == null)).toList();
+  List<Map<String, dynamic>> get _exams => DataStore.allExams.where((e) => (e['class'] == null || (e['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(_teacherSelectedClass ?? widget.assignedClass)) && (e['academicYear'] == DataStore.selectedAcademicYear || e['academicYear'] == null) && (e['schoolName'] == widget.schoolName || e['schoolName'] == null)).toList();
   List<Map<String, dynamic>> get _results => DataStore.allResults.where((r) => 
-    _students.any((s) => s['name'] == r['studentName']) && (r['academicYear'] == DataStore.selectedAcademicYear || r['academicYear'] == null)
+    _students.any((s) => s['name'] == r['studentName']) && (r['academicYear'] == DataStore.selectedAcademicYear || r['academicYear'] == null) && (r['schoolName'] == widget.schoolName || r['schoolName'] == null)
   ).toList();
-  List<Map<String, dynamic>> get _messages => DataStore.allMessages;
-  List<Map<String, dynamic>> get _fairList => DataStore.allFairItems.where((f) => (f['class'] == null || (f['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(_teacherSelectedClass ?? widget.assignedClass)) && (f['academicYear'] == DataStore.selectedAcademicYear || f['academicYear'] == null)).toList();
-  List<Map<String, dynamic>> get _groups => DataStore.allGroups;
-  List<Map<String, dynamic>> get _groupMembers => DataStore.allGroupMembers;
-  List<Map<String, String>> get _teachers => DataStore.allTeachers;
+  List<Map<String, dynamic>> get _messages => DataStore.allMessages.where((m) => m['schoolName'] == widget.schoolName || m['schoolName'] == null).toList();
+  List<Map<String, dynamic>> get _fairList => DataStore.allFairItems.where((f) => (f['class'] == null || (f['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(_teacherSelectedClass ?? widget.assignedClass)) && (f['academicYear'] == DataStore.selectedAcademicYear || f['academicYear'] == null) && (f['schoolName'] == widget.schoolName || f['schoolName'] == null)).toList();
+  List<Map<String, dynamic>> get _groups => DataStore.allGroups.where((g) => g['schoolName'] == widget.schoolName || g['schoolName'] == null).toList();
+  List<Map<String, dynamic>> get _groupMembers => DataStore.allGroupMembers.where((gm) => gm['schoolName'] == widget.schoolName || gm['schoolName'] == null).toList();
+  List<Map<String, String>> get _teachers => DataStore.allTeachers.where((t) => t['schoolName'] == widget.schoolName || t['schoolName'] == null).toList();
 
   List<Map<String, String>> get _students => _allStudents.where((s) => 
     (s['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(_teacherSelectedClass ?? widget.assignedClass) && 
-    (s['academicYear'] == DataStore.selectedAcademicYear || s['academicYear'] == null) &&
-    (s['schoolName'] == widget.schoolName || s['schoolName'] == null)
+    (s['academicYear'] == DataStore.selectedAcademicYear || s['academicYear'] == null)
   ).toList();
   
   final Map<String, List<Map<String, dynamic>>> _studentFairs = {}; // studentName -> list of fairs with status
@@ -830,6 +834,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   'date': dateCtrl.text,
                   'std': _teacherSelectedClass ?? widget.assignedClass,
                   'academicYear': DataStore.selectedAcademicYear,
+                  'schoolName': widget.schoolName,
                 };
                 if (index != null) {
                   final oldData = _activities[index];
@@ -886,6 +891,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   'date': dateCtrl.text,
                   'class': _teacherSelectedClass ?? widget.assignedClass,
                   'academicYear': DataStore.selectedAcademicYear,
+                  'schoolName': widget.schoolName,
                 };
                 if (index != null) {
                   final oldData = _fairList[index];
@@ -1020,6 +1026,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                     'dates': datesCtrl.text,
                     'time': timeCtrl.text,
                     'subjects': selectedType == 'Exam' ? subjects : null,
+                    'schoolName': widget.schoolName,
                   };
                   if (index != null) {
                     final oldData = _exams[index];
@@ -1217,6 +1224,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                     'subjectResults': List<Map<String, dynamic>>.from(subjectResults),
                     'class': _teacherSelectedClass ?? widget.assignedClass,
                     'academicYear': DataStore.selectedAcademicYear,
+                    'schoolName': widget.schoolName,
                   };
                   if (index != null) {
                     final oldData = _results[index];
@@ -1655,7 +1663,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
               _buildMetricCard('Results', '${_results.length}', Icons.analytics_rounded, Colors.orange, 4),
               _buildMetricCard('Today Attendance', '', Icons.how_to_reg_rounded, Colors.green, 7),
               _buildMetricCard('Messages', '${DataStore.getUnreadMessageCount(widget.teacherUsername)}', Icons.message_rounded, Colors.blue, 5),
-              _buildMetricCard('Announce', '${DataStore.allBulletinCards.length}', Icons.campaign_rounded, Colors.purple, -1),
+              _buildMetricCard('Announce', '${filteredBulletinCards.length}', Icons.campaign_rounded, Colors.purple, -1),
             ],
           ),
 
@@ -1722,7 +1730,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   }
 
   Widget _buildBulletinCards(ColorScheme colorScheme) {
-    if (DataStore.allBulletinCards.isEmpty) {
+    if (filteredBulletinCards.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(40),
         width: double.infinity,
@@ -1739,9 +1747,9 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     return ListView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: DataStore.allBulletinCards.length,
+      itemCount: filteredBulletinCards.length,
       itemBuilder: (context, index) {
-        final b = DataStore.allBulletinCards[index];
+        final b = filteredBulletinCards[index];
         return buildNoticeBoardCard(b, index);
       },
     );
@@ -3920,6 +3928,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
         'receiverId': _activeChatPeerId,
         'receiverName': _activeChatPeerName,
         'recipients': [_activeChatPeerId, widget.teacherUsername],
+        'schoolName': widget.schoolName,
       });
       DataStore.saveAllData();
       _chatMsgCtrl.clear();
