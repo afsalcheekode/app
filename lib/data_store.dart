@@ -509,6 +509,8 @@ class DataStore {
 
   static StreamSubscription? _syncSubscription;
   static StreamSubscription? _photoSubscription;
+  static Map<String, String> teacherPhotoCache = {};
+  
   static void startRealTimeSync() {
     _syncSubscription?.cancel();
     _photoSubscription?.cancel();
@@ -525,9 +527,25 @@ class DataStore {
 
         // Only update local lists if remote data exists to prevent wiping local on new setup
         if (data['allTeachers'] != null) {
-          allTeachers = List<Map<String, String>>.from(
+          final newTeachers = List<Map<String, String>>.from(
               (data['allTeachers'] as List)
                   .map((i) => Map<String, String>.from(i)));
+                  
+          for (var nt in newTeachers) {
+            final username = nt['username'];
+            if (username != null && teacherPhotoCache.containsKey(username)) {
+              nt['photo'] = teacherPhotoCache[username]!;
+            } else {
+              final oldIdx = allTeachers.indexWhere((t) => t['username'] == username);
+              if (oldIdx != -1) {
+                final oldPhoto = allTeachers[oldIdx]['photo'];
+                if (oldPhoto != null && oldPhoto.isNotEmpty) {
+                  nt['photo'] = oldPhoto;
+                }
+              }
+            }
+          }
+          allTeachers = newTeachers;
           changed = true;
         }
         if (data['allStudents'] != null) {
@@ -600,6 +618,25 @@ class DataStore {
           classDepts = Map<String, String>.from(data['classDepts']);
           changed = true;
         }
+
+        // Auto-recover missing classes from students and teachers
+        for (final s in allStudents) {
+          final c = s['std'];
+          if (c != null && c.isNotEmpty && !allClasses.contains(c)) {
+            allClasses.add(c);
+            if (!classDepts.containsKey(c)) classDepts[c] = 'DA\'WA';
+            changed = true;
+          }
+        }
+        for (final t in allTeachers) {
+          final c = t['class'];
+          if (c != null && c.isNotEmpty && !allClasses.contains(c)) {
+            allClasses.add(c);
+            if (!classDepts.containsKey(c)) classDepts[c] = 'DA\'WA';
+            changed = true;
+          }
+        }
+
         if (data['allTimetables'] != null) {
           allTimetables = Map<String, dynamic>.from(data['allTimetables']);
           changed = true;
@@ -642,6 +679,11 @@ class DataStore {
       for (final doc in snapshot.docs) {
         final username = doc.data()['username'] as String? ?? '';
         final photo = doc.data()['photo'] as String? ?? '';
+        
+        if (username.isNotEmpty && photo.isNotEmpty) {
+          teacherPhotoCache[username] = photo;
+        }
+
         final idx = allTeachers.indexWhere((t) => t['username'] == username);
         if (idx != -1 && allTeachers[idx]['photo'] != photo) {
           allTeachers[idx]['photo'] = photo;

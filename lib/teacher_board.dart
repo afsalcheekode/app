@@ -52,9 +52,11 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   bool _isMobile = false;
 
   String get _currentPhoto {
-    if (widget.photo.isNotEmpty) return widget.photo;
     final t = DataStore.allTeachers.firstWhere((t) => t['username'] == widget.teacherUsername, orElse: () => {});
-    return t['photo'] ?? '';
+    if (t['photo'] != null && t['photo']!.isNotEmpty) {
+      return t['photo']!;
+    }
+    return widget.photo;
   }
 
   int _currentIndex = -1; // -1: Overview, 0: Students, 1: Activities, 2: Fair, 3: Exam, 4: Result, 5: Message, 6: Group
