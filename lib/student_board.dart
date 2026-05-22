@@ -2142,9 +2142,11 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
         contentPadding: EdgeInsets.zero,
         clipBehavior: Clip.antiAlias,
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+        content: SizedBox(
+          width: 400,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
             // Header with Photo
             Stack(
               alignment: Alignment.center,
@@ -2222,7 +2224,8 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _profileInfoRow(IconData icon, String label, String value, ColorScheme colorScheme) {
