@@ -629,12 +629,27 @@ class DataStore {
           }
         }
         for (final t in allTeachers) {
-          final c = t['class'];
-          if (c != null && c.isNotEmpty && !allClasses.contains(c)) {
-            allClasses.add(c);
-            if (!classDepts.containsKey(c)) classDepts[c] = 'DA\'WA';
-            changed = true;
+          final cField = t['class'];
+          if (cField != null && cField.isNotEmpty) {
+            final classesInField = cField.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
+            for (final c in classesInField) {
+              if (!allClasses.contains(c)) {
+                allClasses.add(c);
+                if (!classDepts.containsKey(c)) classDepts[c] = 'DA\'WA';
+                changed = true;
+              }
+            }
           }
+        }
+        
+        // Clean up garbage classes created by previous bug
+        final garbageClasses = allClasses.where((c) => c.contains(',')).toList();
+        if (garbageClasses.isNotEmpty) {
+          for (final g in garbageClasses) {
+            allClasses.remove(g);
+            classDepts.remove(g);
+          }
+          changed = true;
         }
 
         if (data['allTimetables'] != null) {
