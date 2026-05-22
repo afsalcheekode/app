@@ -1071,13 +1071,49 @@ class _DepartmentsTabState extends State<_DepartmentsTab> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Delete Class'),
-        content: Text('Are you sure you want to delete Class $className? Students in this class will not be deleted.'),
+        content: Text('Are you sure you want to delete Class $className? All students enrolled in this class will also be permanently deleted.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               setState(() {
+                // 1. Delete all students in this class
+                final studentsToDelete = DataStore.allStudents.where((s) => s['std'] == className).toList();
+                for (final s in studentsToDelete) {
+                  DataStore.allStudents.removeWhere((x) => x['username'] == s['username']);
+                  widget.students.removeWhere((x) => x['username'] == s['username']);
+                  
+                  FirebaseFirestore.instance.collection('users')
+                      .where('username', isEqualTo: s['username'])
+                      .get().then((query) {
+                    if (query.docs.isNotEmpty) {
+                      query.docs.first.reference.delete();
+                    }
+                  });
+                }
+
+                // 2. Unassign this class from any teachers
+                for (var t in DataStore.allTeachers) {
+                  final cField = t['class'];
+                  if (cField != null && cField.isNotEmpty) {
+                    var classes = cField.split(',').map((e) => e.trim()).toList();
+                    if (classes.contains(className)) {
+                      classes.remove(className);
+                      t['class'] = classes.join(', ');
+                      
+                      FirebaseFirestore.instance.collection('users')
+                          .where('username', isEqualTo: t['username'])
+                          .get().then((query) {
+                        if (query.docs.isNotEmpty) {
+                          query.docs.first.reference.update({'class': classes.join(', ')});
+                        }
+                      });
+                    }
+                  }
+                }
+
+                // 3. Delete the class itself
                 DataStore.allClasses.remove(className);
                 DataStore.classDepts.remove(className);
                 DataStore.saveAllData();
@@ -1085,7 +1121,7 @@ class _DepartmentsTabState extends State<_DepartmentsTab> {
               widget.onRefresh();
               Navigator.pop(context);
             },
-            child: const Text('Delete'),
+            child: const Text('Delete Class & Students'),
           ),
         ],
       ),
