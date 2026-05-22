@@ -133,12 +133,13 @@ class AuthWrapper extends StatelessWidget {
         } else if (role == 'teacher') {
           return teacher.TeacherBoardScreen(
             teacherName: data['name'] ?? 'Teacher',
+            fullName: data['fullName'] ?? '',
             assignedClass: data['class'] ?? '',
-            subjects: data['subjects'] ?? '',
             teacherUsername: username,
             schoolName: data['schoolName'] ?? '',
             photo: data['photo']?.toString() ?? '',
-            qualification: data['qualification']?.toString() ?? '',
+            qualIslamic: data['qual_islamic']?.toString() ?? '',
+            qualAcademic: data['qual_academic']?.toString() ?? '',
             designation: data['designation']?.toString() ?? '',
           );
         } else if (role == 'student') {

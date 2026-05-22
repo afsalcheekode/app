@@ -650,10 +650,11 @@ class _TeachersTabState extends State<_TeachersTab> {
   void _openAddTeacher({int? index}) {
     final t = index != null ? widget.teachers[index] : null;
     final nameCtrl     = TextEditingController(text: t?['name'] ?? '');
-    final subjectCtrl  = TextEditingController(text: t?['subjects'] ?? '');
+    final fullNameCtrl = TextEditingController(text: t?['fullName'] ?? '');
     final usernameCtrl = TextEditingController(text: t?['username'] ?? '');
     final passwordCtrl = TextEditingController(text: t?['password'] ?? '');
-    final qualificationCtrl = TextEditingController(text: t?['qualification'] ?? '');
+    final qualIslamicCtrl = TextEditingController(text: t?['qual_islamic'] ?? '');
+    final qualAcademicCtrl = TextEditingController(text: t?['qual_academic'] ?? '');
     final designationCtrl = TextEditingController(text: t?['designation'] ?? '');
     String? photoBase64 = t?['photo'];
 
@@ -676,13 +677,17 @@ class _TeachersTabState extends State<_TeachersTab> {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                _field(nameCtrl, 'Full Name', Icons.person_rounded),
+                _field(nameCtrl, 'Profile Name', Icons.person_rounded),
                 const SizedBox(height: 12),
-                _field(designationCtrl, 'Designation (e.g. Principal, Professor)', Icons.badge_rounded),
+                _field(fullNameCtrl, 'Full Name', Icons.badge_rounded),
                 const SizedBox(height: 12),
-                _field(subjectCtrl, 'Subjects (comma-separated)', Icons.book_rounded),
-                const SizedBox(height: 12),
-                _field(qualificationCtrl, 'Qualifications', Icons.history_edu_rounded, maxLines: 3),
+                _field(designationCtrl, 'Designation (e.g. Principal, Mudaris)', Icons.work_rounded),
+                const SizedBox(height: 16),
+                const Text('Qualifications', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF6366F1))),
+                const SizedBox(height: 8),
+                _field(qualIslamicCtrl, '1. Islamic Qualification', Icons.history_edu_rounded),
+                const SizedBox(height: 8),
+                _field(qualAcademicCtrl, '2. Academic Qualification', Icons.school_rounded),
                 const SizedBox(height: 16),
                 const Text('Teacher Photo', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF6366F1))),
                 const SizedBox(height: 8),
@@ -764,7 +769,6 @@ class _TeachersTabState extends State<_TeachersTab> {
               style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
               onPressed: () async {
                 final name = nameCtrl.text.trim();
-                final subjects = subjectCtrl.text.trim();
                 if (name.isEmpty) return;
 
                 final username = index != null
@@ -776,10 +780,11 @@ class _TeachersTabState extends State<_TeachersTab> {
 
                 final Map<String, String> newData = Map<String, String>.from({
                   'name': name,
+                  'fullName': fullNameCtrl.text.trim(),
                   'designation': designationCtrl.text.trim(),
                   'class': selectedClasses.join(', '),
-                  'subjects': subjects,
-                  'qualification': qualificationCtrl.text.trim(),
+                  'qual_islamic': qualIslamicCtrl.text.trim(),
+                  'qual_academic': qualAcademicCtrl.text.trim(),
                   'photo': photoBase64 ?? '',
                   'username': username,
                   'password': password,
@@ -925,12 +930,12 @@ class _TeachersTabState extends State<_TeachersTab> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        if (t['qualification'] != null && t['qualification']!.isNotEmpty)
-                          Text('Qualification: ${t['qualification']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF4F46E5))),
+                        if (t['designation'] != null && t['designation']!.isNotEmpty)
+                          Text('${t['designation']}', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF4F46E5))),
                         if ((t['class'] ?? '').isNotEmpty)
                           Text('Classes: ${t['class']}', style: const TextStyle(fontSize: 11, color: Color(0xFF6366F1))),
-                        if ((t['subjects'] ?? '').isNotEmpty)
-                          Text('Subjects: ${t['subjects']}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                        if ((t['fullName'] ?? '').isNotEmpty)
+                          Text('Full Name: ${t['fullName']}', style: const TextStyle(fontSize: 11, color: Colors.grey)),
                         Text('@${t['username'] ?? ''}', style: const TextStyle(fontSize: 10, color: Colors.grey)),
                       ],
                     ),

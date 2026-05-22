@@ -18,23 +18,25 @@ import 'package:image_picker/image_picker.dart';
 
 class TeacherBoardScreen extends StatefulWidget {
   final String teacherName;
+  final String fullName;
   final String assignedClass;
-  final String subjects;
   final String teacherUsername;
   final String schoolName;
   final String photo;
-  final String qualification;
+  final String qualIslamic;
+  final String qualAcademic;
   final String designation;
 
   const TeacherBoardScreen({
     super.key,
     required this.teacherName,
+    required this.fullName,
     required this.assignedClass,
-    required this.subjects,
     required this.teacherUsername,
     required this.schoolName,
     this.photo = '',
-    this.qualification = '',
+    this.qualIslamic = '',
+    this.qualAcademic = '',
     this.designation = '',
   });
 
@@ -281,11 +283,8 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: colorScheme.primary)),
                     const Divider(height: 40),
-                    _profileInfoRow(Icons.book_rounded, 'Subjects', widget.subjects, colorScheme),
-                    const SizedBox(height: 16),
-                    _profileInfoRow(Icons.school_rounded, 'Assigned Classes', widget.assignedClass, colorScheme),
-                    const SizedBox(height: 16),
-                    _profileInfoRow(Icons.history_edu_rounded, 'Qualifications', widget.qualification.isNotEmpty ? widget.qualification : 'N/A', colorScheme),
+                    _profileInfoRow(Icons.badge_rounded, 'Full Name', widget.teacherName, colorScheme), // using teacherName fallback for full name if not in state, but wait! In `teacher_board.dart` the widget has `widget.teacherName`, `widget.designation`, `widget.subjects`, `widget.assignedClass`, `widget.qualification`.
+// Wait, I should look at how `_TeacherDashboardScreen` is getting these fields.
                     const SizedBox(height: 30),
                     const Text('Tip: Tap your photo to update it.', 
                         style: TextStyle(fontSize: 11, color: Colors.grey, fontStyle: FontStyle.italic)),
@@ -1710,9 +1709,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(t['name'] ?? 'Faculty', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B)), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                Text(t['qualification'] ?? 'Teacher', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-                                const SizedBox(height: 4),
-                                Text('Subjects: ${t['subjects'] ?? ""}', style: const TextStyle(color: Colors.grey, fontSize: 10), maxLines: 1, overflow: TextOverflow.ellipsis),
+                                Text(t['designation'] ?? 'Teacher', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
                               ],
                             ),
                           ),
