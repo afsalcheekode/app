@@ -1384,6 +1384,15 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                       );
                       if (image != null) {
                         final bytes = await image.readAsBytes();
+                        if (bytes.length > 30 * 1024) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                              content: Text('Photo size must be less than 30KB'),
+                              backgroundColor: Colors.red,
+                            ));
+                          }
+                          return;
+                        }
                         setStateDialog(() {
                           photoBase64 = base64Encode(bytes);
                         });
@@ -1472,7 +1481,10 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                 
                 if (index != null) {
                   final oldData = _allStudents[index];
-                  _allStudents[index] = studentData;
+                  final globalIdx = DataStore.allStudents.indexOf(oldData);
+                  if (globalIdx != -1) {
+                    DataStore.allStudents[globalIdx] = studentData;
+                  }
                   
                   // Update in Firestore
                   FirebaseFirestore.instance.collection('users')
@@ -1488,7 +1500,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   AuthService().registerUser({...studentData, 'role': 'student'}, pass.text.trim()).then((_) {
                     Navigator.of(context, rootNavigator: true).pop(); // pop loading
                     setState(() {
-                      _allStudents.add(studentData);
+                      DataStore.allStudents.add(studentData);
                       
                       // Auto-enroll student in class group
                       final className = _teacherSelectedClass ?? widget.assignedClass;
@@ -2411,7 +2423,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(onPressed: () {
             setState(() {
-              _allStudents.removeWhere((x) => x['username'] == s['username']);
+              DataStore.allStudents.removeWhere((x) => x['username'] == s['username']);
               DataStore.saveAllData();
               
               // Delete from Firestore
@@ -2424,7 +2436,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
               });
             });
             Navigator.pop(context);
-          }, child: const Text('Delete', style: TextStyle(color: Colors.red))),
+          }, child: const Text('Delete', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
         ],
       ),
     );
