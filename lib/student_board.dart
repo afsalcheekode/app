@@ -47,6 +47,15 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
     );
     if (image != null) {
       final bytes = await image.readAsBytes();
+      if (bytes.length > 30 * 1024) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Photo size must be less than 30KB'),
+            backgroundColor: Colors.red,
+          ));
+        }
+        return;
+      }
       final base64String = base64Encode(bytes);
       
       setState(() {

@@ -2287,7 +2287,8 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
         leading: CircleAvatar(
           radius: 26,
           backgroundColor: colorScheme.primary.withOpacity(0.1),
-          child: Text(s['name']?[0] ?? 'S', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 18)),
+          backgroundImage: (s['photo'] != null && s['photo']!.isNotEmpty) ? MemoryImage(base64Decode(s['photo']!)) : null,
+          child: (s['photo'] == null || s['photo']!.isEmpty) ? Text(s['name']?[0] ?? 'S', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 18)) : null,
         ),
         title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B))),
         subtitle: Column(

@@ -711,6 +711,15 @@ class _TeachersTabState extends State<_TeachersTab> {
                       );
                       if (image != null) {
                         final bytes = await image.readAsBytes();
+                        if (bytes.length > 30 * 1024) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                              content: Text('Photo size must be less than 30KB'),
+                              backgroundColor: Colors.red,
+                            ));
+                          }
+                          return;
+                        }
                         setDs(() {
                           photoBase64 = base64Encode(bytes);
                         });
@@ -1841,6 +1850,15 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
                       );
                       if (image != null) {
                         final bytes = await image.readAsBytes();
+                        if (bytes.length > 30 * 1024) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                              content: Text('Photo size must be less than 30KB'),
+                              backgroundColor: Colors.red,
+                            ));
+                          }
+                          return;
+                        }
                         setDs(() {
                           photoBase64 = base64Encode(bytes);
                         });
@@ -2058,7 +2076,8 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
                     child: ListTile(
                       leading: CircleAvatar(
                         backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
-                        child: Text((s['name'] ?? '?')[0].toUpperCase(), style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)),
+                        backgroundImage: (s['photo'] != null && s['photo']!.isNotEmpty) ? MemoryImage(base64Decode(s['photo']!)) : null,
+                        child: (s['photo'] == null || s['photo']!.isEmpty) ? Text((s['name'] ?? '?')[0].toUpperCase(), style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.bold)) : null,
                       ),
                       title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold)),
                       subtitle: Text('Class ${s['std']} | @${s['username']}', style: const TextStyle(fontSize: 12)),
