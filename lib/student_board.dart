@@ -219,7 +219,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: GestureDetector(
-            onTap: _uploadPhoto,
+            onTap: null,
             child: CircleAvatar(
               backgroundColor: Colors.white24,
               backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty
@@ -337,7 +337,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             leading: GestureDetector(
-              onTap: _uploadPhoto,
+              onTap: null,
               child: CircleAvatar(
                 backgroundColor: colorScheme.primary.withOpacity(0.1),
                 backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty
@@ -397,7 +397,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
       leading: Padding(
         padding: const EdgeInsets.only(top: 24.0, bottom: 16.0),
         child: GestureDetector(
-          onTap: _uploadPhoto,
+          onTap: null,
           child: CircleAvatar(
             backgroundColor: colorScheme.primary.withOpacity(0.1),
             backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty
@@ -830,7 +830,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                     Row(
                       children: [
                         GestureDetector(
-                          onTap: _uploadPhoto,
+                          onTap: null,
                           child: CircleAvatar(
                             radius: 28,
                             backgroundColor: Colors.white.withOpacity(0.2),
