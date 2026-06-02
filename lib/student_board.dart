@@ -829,13 +829,15 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                     ),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.rocket_launch_rounded, color: Colors.white, size: 30),
+                        CircleAvatar(
+                          radius: 28,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          backgroundImage: (widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty) 
+                              ? MemoryImage(base64Decode(widget.studentData['photo']!)) 
+                              : null,
+                          child: (widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty) 
+                              ? Text(widget.studentName[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 24)) 
+                              : null,
                         ),
                       ],
                     ),
