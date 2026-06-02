@@ -62,7 +62,8 @@ class _LoginScreenState extends State<LoginScreen> {
         await DataStore.initPrefs();
       }
 
-      final email = userInput.contains('@') ? userInput.toLowerCase() : '$userInput@harakat.com'.toLowerCase();
+      String cleanInput = userInput.startsWith('@') ? userInput.substring(1) : userInput;
+      final email = cleanInput.contains('@') ? cleanInput.toLowerCase() : '$cleanInput@harakat.com'.toLowerCase();
       await AuthService().signIn(email, pass);
       
       // Success is handled by AuthWrapper stream
@@ -232,25 +233,6 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ],
                       ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  TextButton.icon(
-                    onPressed: () {
-                      if (kIsWeb) {
-                        reloadApp();
-                      } else {
-                        // For non-web, we can't reload the window, but we can restart the app logic if needed.
-                        // For now, just show a message.
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Refresh is only available on Web.')),
-                        );
-                      }
-                    },
-                    icon: const Icon(Icons.refresh_rounded, size: 16, color: Colors.grey),
-                    label: const Text(
-                      'Refresh App',
-                      style: TextStyle(color: Colors.grey, fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   ),
                 ],

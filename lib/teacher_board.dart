@@ -326,18 +326,18 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
   }
 
   // Use global static lists for persistence
-  List<String> get _classes => DataStore.allClasses;
-  List<Map<String, String>> get _allStudents => DataStore.allStudents.where((s) => s['schoolName'] == widget.schoolName || s['schoolName'] == null).toList();
-  List<Map<String, dynamic>> get _activities => DataStore.allActivities.where((a) => (a['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(_teacherSelectedClass ?? widget.assignedClass) && (a['academicYear'] == DataStore.selectedAcademicYear || a['academicYear'] == null) && (a['schoolName'] == widget.schoolName || a['schoolName'] == null)).toList();
-  List<Map<String, dynamic>> get _exams => DataStore.allExams.where((e) => (e['class'] == null || (e['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(_teacherSelectedClass ?? widget.assignedClass)) && (e['academicYear'] == DataStore.selectedAcademicYear || e['academicYear'] == null) && (e['schoolName'] == widget.schoolName || e['schoolName'] == null)).toList();
+  List<String> get _classes => DataStore.getClassesForSchool(widget.schoolName);
+  List<Map<String, String>> get _allStudents => DataStore.allStudents.where((s) => s['schoolName'] == widget.schoolName).toList();
+  List<Map<String, dynamic>> get _activities => DataStore.allActivities.where((a) => (a['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(_teacherSelectedClass ?? widget.assignedClass) && (a['academicYear'] == DataStore.selectedAcademicYear || a['academicYear'] == null) && a['schoolName'] == widget.schoolName).toList();
+  List<Map<String, dynamic>> get _exams => DataStore.allExams.where((e) => (e['class'] == null || (e['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(_teacherSelectedClass ?? widget.assignedClass)) && (e['academicYear'] == DataStore.selectedAcademicYear || e['academicYear'] == null) && e['schoolName'] == widget.schoolName).toList();
   List<Map<String, dynamic>> get _results => DataStore.allResults.where((r) => 
-    _students.any((s) => s['name'] == r['studentName']) && (r['academicYear'] == DataStore.selectedAcademicYear || r['academicYear'] == null) && (r['schoolName'] == widget.schoolName || r['schoolName'] == null)
+    _students.any((s) => s['name'] == r['studentName']) && (r['academicYear'] == DataStore.selectedAcademicYear || r['academicYear'] == null) && r['schoolName'] == widget.schoolName
   ).toList();
-  List<Map<String, dynamic>> get _messages => DataStore.allMessages.where((m) => m['schoolName'] == widget.schoolName || m['schoolName'] == null).toList();
-  List<Map<String, dynamic>> get _fairList => DataStore.allFairItems.where((f) => (f['class'] == null || (f['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(_teacherSelectedClass ?? widget.assignedClass)) && (f['academicYear'] == DataStore.selectedAcademicYear || f['academicYear'] == null) && (f['schoolName'] == widget.schoolName || f['schoolName'] == null)).toList();
-  List<Map<String, dynamic>> get _groups => DataStore.allGroups.where((g) => g['schoolName'] == widget.schoolName || g['schoolName'] == null).toList();
-  List<Map<String, dynamic>> get _groupMembers => DataStore.allGroupMembers.where((gm) => gm['schoolName'] == widget.schoolName || gm['schoolName'] == null).toList();
-  List<Map<String, String>> get _teachers => DataStore.allTeachers.where((t) => t['schoolName'] == widget.schoolName || t['schoolName'] == null).toList();
+  List<Map<String, dynamic>> get _messages => DataStore.allMessages.where((m) => m['schoolName'] == widget.schoolName).toList();
+  List<Map<String, dynamic>> get _fairList => DataStore.allFairItems.where((f) => (f['class'] == null || (f['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(_teacherSelectedClass ?? widget.assignedClass)) && (f['academicYear'] == DataStore.selectedAcademicYear || f['academicYear'] == null) && f['schoolName'] == widget.schoolName).toList();
+  List<Map<String, dynamic>> get _groups => DataStore.allGroups.where((g) => g['schoolName'] == widget.schoolName).toList();
+  List<Map<String, dynamic>> get _groupMembers => DataStore.allGroupMembers.where((gm) => gm['schoolName'] == widget.schoolName).toList();
+  List<Map<String, String>> get _teachers => DataStore.allTeachers.where((t) => t['schoolName'] == widget.schoolName).toList();
 
   List<Map<String, String>> get _students => _allStudents.where((s) => 
     (s['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(_teacherSelectedClass ?? widget.assignedClass) && 
@@ -476,12 +476,37 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     // Helper to check feature enablement
     bool isEnabled(String feature) => config[feature] ?? true;
 
+    final List<Map<String, dynamic>> items = [
+      {'icon': const Icon(Icons.dashboard_rounded), 'label': 'Overview', 'targetIndex': -1},
+    ];
+
+    if (isEnabled('Students')) items.add({'icon': const Icon(Icons.people_rounded), 'label': 'Students', 'targetIndex': 0});
+    if (isEnabled('Activities')) items.add({'icon': const Icon(Icons.play_circle_fill), 'label': 'Activities', 'targetIndex': 1});
+    if (isEnabled('F.transactions')) items.add({'icon': const Icon(Icons.local_activity), 'label': 'F.transactions', 'targetIndex': 2});
+    if (isEnabled('Schedule')) items.add({'icon': const Icon(Icons.calendar_month), 'label': 'Schedule', 'targetIndex': 3});
+    if (isEnabled('Results')) items.add({'icon': const Icon(Icons.analytics), 'label': 'Results', 'targetIndex': 4});
+    if (isEnabled('Attendance')) items.add({'icon': const Icon(Icons.how_to_reg), 'label': 'Attendance', 'targetIndex': 7});
+    if (isEnabled('Messages')) {
+      items.add({
+        'icon': Stack(
+          children: [
+            const Icon(Icons.message),
+            if (DataStore.getUnreadMessageCount(widget.teacherUsername) > 0)
+              Positioned(right: 0, top: 0, child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle))),
+          ],
+        ),
+        'label': 'Messages',
+        'targetIndex': 5,
+      });
+    }
+
+    int selectedRailIndex = items.indexWhere((item) => item['targetIndex'] == _currentIndex);
+    if (selectedRailIndex == -1) selectedRailIndex = 0;
+
     return NavigationRail(
-      selectedIndex: _currentIndex + 1, // mapping -1 to 0
+      selectedIndex: selectedRailIndex,
       onDestinationSelected: (int index) {
-         int targetIndex = index - 1;
-         // Handle feature checks if necessary, but rail shows all for simplicity usually
-         setState(() => _currentIndex = targetIndex);
+         setState(() => _currentIndex = items[index]['targetIndex']);
       },
       backgroundColor: Colors.white,
       labelType: NavigationRailLabelType.selected,
@@ -492,25 +517,12 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
         padding: const EdgeInsets.symmetric(vertical: 24),
         child: Icon(Icons.auto_awesome_rounded, color: colorScheme.primary, size: 32),
       ),
-      destinations: [
-        const NavigationRailDestination(icon: Icon(Icons.dashboard_rounded), label: Text('Overview')),
-        if (isEnabled('Students')) const NavigationRailDestination(icon: Icon(Icons.people_rounded), label: Text('Students')),
-        if (isEnabled('Activities')) const NavigationRailDestination(icon: Icon(Icons.play_circle_fill), label: Text('Activities')),
-        if (isEnabled('F.transactions')) const NavigationRailDestination(icon: Icon(Icons.local_activity), label: Text('F.transactions')),
-        if (isEnabled('Schedule')) const NavigationRailDestination(icon: Icon(Icons.calendar_month), label: Text('Schedule')),
-        if (isEnabled('Results')) const NavigationRailDestination(icon: Icon(Icons.analytics), label: Text('Results')),
-        if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.how_to_reg), label: Text('Attendance')),
-        if (isEnabled('Messages')) NavigationRailDestination(
-          icon: Stack(
-            children: [
-              const Icon(Icons.message),
-              if (DataStore.getUnreadMessageCount(widget.teacherUsername) > 0)
-                Positioned(right: 0, top: 0, child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle))),
-            ],
-          ),
-          label: const Text('Messages'),
-        ),
-      ],
+      destinations: items.map((item) {
+        return NavigationRailDestination(
+          icon: item['icon'] as Widget,
+          label: Text(item['label'] as String),
+        );
+      }).toList(),
       trailing: Expanded(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
@@ -1337,6 +1349,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     final blood = bloodCtrl ?? TextEditingController(text: s?['blood'] ?? '');
     final user = userCtrl ?? TextEditingController(text: s?['username'] ?? '');
     final pass = passCtrl ?? TextEditingController(text: s?['password'] ?? (1000 + Random().nextInt(8999)).toString());
+    String? photoBase64 = s?['photo'];
 
     if (index == null && userCtrl == null) {
       name.addListener(() {
@@ -1355,6 +1368,48 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const SizedBox(height: 16),
+                const Text('Student Photo', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF6366F1))),
+                const SizedBox(height: 8),
+                Center(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final image = await picker.pickImage(
+                        source: ImageSource.gallery, 
+                        imageQuality: 50,
+                        maxWidth: 400,
+                        maxHeight: 400,
+                      );
+                      if (image != null) {
+                        final bytes = await image.readAsBytes();
+                        setStateDialog(() {
+                          photoBase64 = base64Encode(bytes);
+                        });
+                      }
+                    },
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                          backgroundImage: photoBase64 != null && photoBase64!.isNotEmpty ? MemoryImage(base64Decode(photoBase64!)) : null,
+                          child: (photoBase64 == null || photoBase64!.isEmpty) ? const Icon(Icons.person_rounded, size: 50, color: Color(0xFF6366F1)) : null,
+                        ),
+                        Positioned(
+                          bottom: 0, right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(color: Color(0xFF6366F1), shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 TextField(controller: name, decoration: const InputDecoration(labelText: 'Student Name *', prefixIcon: Icon(Icons.person))),
                 TextField(controller: address, decoration: const InputDecoration(labelText: 'Address *', prefixIcon: Icon(Icons.location_on))),
                 TextField(controller: parents, decoration: const InputDecoration(labelText: "Parent's Name *", prefixIcon: Icon(Icons.family_restroom))),
@@ -1412,6 +1467,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   'password': pass.text.trim(),
                   'academicYear': DataStore.selectedAcademicYear,
                   'schoolName': widget.schoolName,
+                  'photo': photoBase64 ?? '',
                 };
                 
                 if (index != null) {
@@ -2331,7 +2387,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
           ElevatedButton(onPressed: () {
             if (nameCtrl.text.isNotEmpty) {
               setState(() {
-                DataStore.allClasses.add(nameCtrl.text);
+                DataStore.addClassForSchool(widget.schoolName, nameCtrl.text);
                 _teacherSelectedClass = nameCtrl.text;
                 DataStore.saveAllData();
               });

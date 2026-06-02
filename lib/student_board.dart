@@ -10,6 +10,8 @@ import 'common.dart';
 import 'data_store.dart';
 import 'auth_service.dart';
 import 'notification_service.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'login_screen.dart';
 import 'chat_screen.dart';
 
@@ -35,6 +37,38 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
   @override
   String get currentUsername => widget.studentUsername;
 
+  Future<void> _uploadPhoto() async {
+    final picker = ImagePicker();
+    final image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 50,
+      maxWidth: 400,
+      maxHeight: 400,
+    );
+    if (image != null) {
+      final bytes = await image.readAsBytes();
+      final base64String = base64Encode(bytes);
+      
+      setState(() {
+        widget.studentData['photo'] = base64String;
+      });
+
+      // Update in DataStore
+      final globalIndex = DataStore.allStudents.indexWhere((s) => s['username'] == widget.studentUsername);
+      if (globalIndex != -1) {
+        DataStore.allStudents[globalIndex]['photo'] = base64String;
+        DataStore.saveAllData();
+      }
+
+      // Update in Firestore
+      final query = await FirebaseFirestore.instance.collection('users')
+          .where('username', isEqualTo: widget.studentUsername).get();
+      if (query.docs.isNotEmpty) {
+        query.docs.first.reference.update({'photo': base64String});
+      }
+    }
+  }
+
   @override
   String get currentSchoolName => widget.studentData['schoolName'] ?? '';
 
@@ -42,16 +76,15 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
   
   // Use global static lists for persistence
   String get _mySchool => currentSchoolName;
-  List<Map<String, String>> get _allStudents => DataStore.allStudents.where((s) => s['schoolName'] == _mySchool || s['schoolName'] == null).toList();
-  List<Map<String, dynamic>> get _activities => DataStore.allActivities.where((a) => (a['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(widget.studentClass) && (a['schoolName'] == _mySchool || a['schoolName'] == null)).toList();
-  List<Map<String, dynamic>> get _exams => DataStore.allExams.where((e) => (e['class'] == null || (e['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(widget.studentClass)) && (e['schoolName'] == _mySchool || e['schoolName'] == null)).toList();
-  List<Map<String, dynamic>> get _results => DataStore.allResults.where((r) => r['studentName'] == widget.studentName && (r['schoolName'] == _mySchool || r['schoolName'] == null)).toList();
-  List<Map<String, dynamic>> get _messages => DataStore.allMessages.where((m) => m['schoolName'] == _mySchool || m['schoolName'] == null).toList();
-  List<Map<String, dynamic>> get _fairList => DataStore.allFairItems.where((f) => (f['class'] == null || (f['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(widget.studentClass)) && (f['schoolName'] == _mySchool || f['schoolName'] == null)).toList();
-  List<Map<String, dynamic>> get _groups => DataStore.allGroups.where((g) => g['schoolName'] == _mySchool || g['schoolName'] == null).toList();
+  List<Map<String, String>> get _allStudents => DataStore.allStudents.where((s) => s['schoolName'] == _mySchool).toList();
+  List<Map<String, dynamic>> get _activities => DataStore.allActivities.where((a) => (a['std']?.toString() ?? '').split(',').map((e) => e.trim()).contains(widget.studentClass) && a['schoolName'] == _mySchool).toList();
+  List<Map<String, dynamic>> get _exams => DataStore.allExams.where((e) => (e['class'] == null || (e['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(widget.studentClass)) && e['schoolName'] == _mySchool).toList();
+  List<Map<String, dynamic>> get _results => DataStore.allResults.where((r) => r['studentName'] == widget.studentName && r['schoolName'] == _mySchool).toList();
+  List<Map<String, dynamic>> get _messages => DataStore.allMessages.where((m) => m['schoolName'] == _mySchool).toList();
+  List<Map<String, dynamic>> get _fairList => DataStore.allFairItems.where((f) => (f['class'] == null || (f['class']?.toString() ?? '').split(',').map((x) => x.trim()).contains(widget.studentClass)) && f['schoolName'] == _mySchool).toList();
+  List<Map<String, dynamic>> get _groups => DataStore.allGroups.where((g) => g['schoolName'] == _mySchool).toList();
   List<Map<String, String>> get _teachers {
-    if (_mySchool.isEmpty) return DataStore.allTeachers;
-    return DataStore.allTeachers.where((t) => t['schoolName'] == _mySchool || t['schoolName'] == null || t['schoolName']!.isEmpty).toList();
+    return DataStore.allTeachers.where((t) => t['schoolName'] == _mySchool).toList();
   }
 
   // Search controllers for historical data
@@ -174,6 +207,21 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         backgroundColor: colorScheme.primary,
         foregroundColor: Colors.white,
         centerTitle: true,
+        leading: Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: GestureDetector(
+            onTap: _uploadPhoto,
+            child: CircleAvatar(
+              backgroundColor: Colors.white24,
+              backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty
+                  ? MemoryImage(base64Decode(widget.studentData['photo']!))
+                  : null,
+              child: widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty
+                  ? Text(widget.studentName[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                  : null,
+            ),
+          ),
+        ),
         title: Column(
           children: [
             Text(widget.studentName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
@@ -279,7 +327,18 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
           const Divider(height: 1),
           ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            leading: CircleAvatar(backgroundColor: colorScheme.primary.withOpacity(0.1), child: Text(widget.studentName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))),
+            leading: GestureDetector(
+              onTap: _uploadPhoto,
+              child: CircleAvatar(
+                backgroundColor: colorScheme.primary.withOpacity(0.1),
+                backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty
+                    ? MemoryImage(base64Decode(widget.studentData['photo']!))
+                    : null,
+                child: widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty
+                    ? Text(widget.studentName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))
+                    : null,
+              ),
+            ),
             title: Text(widget.studentName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
             subtitle: Text('Class ${widget.studentClass}', style: const TextStyle(fontSize: 10)),
             trailing: IconButton(icon: const Icon(Icons.logout_rounded, size: 20, color: Colors.grey), onPressed: () => AuthService().signOut()),
@@ -293,31 +352,60 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
     final config = DataStore.featureConfig;
     bool isEnabled(String f) => config[f] ?? true;
 
-    return NavigationRail(
-      selectedIndex: _currentIndex,
-      onDestinationSelected: (int index) => _setTab(index),
+    final List<Map<String, dynamic>> items = [
+      {'icon': const Icon(Icons.home_rounded), 'label': 'Home', 'targetIndex': 0},
+    ];
 
+    if (isEnabled('Activities')) items.add({'icon': const Icon(Icons.play_circle_fill), 'label': 'Activities', 'targetIndex': 1});
+    if (isEnabled('F.transactions')) items.add({'icon': const Icon(Icons.local_activity_rounded), 'label': 'F.transactions', 'targetIndex': 2});
+    if (isEnabled('Schedule')) items.add({'icon': const Icon(Icons.calendar_month_rounded), 'label': 'Schedule', 'targetIndex': 3});
+    if (isEnabled('Results')) items.add({'icon': const Icon(Icons.analytics_rounded), 'label': 'Results', 'targetIndex': 4});
+    if (isEnabled('Attendance')) items.add({'icon': const Icon(Icons.fingerprint_rounded), 'label': 'Attendance Report', 'targetIndex': 7});
+    if (isEnabled('Messages')) {
+      items.add({
+        'icon': Stack(
+          children: [
+            const Icon(Icons.chat_bubble_rounded),
+            if (DataStore.getUnreadMessageCount(widget.studentUsername) > 0)
+              Positioned(right: 0, top: 0, child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle))),
+          ],
+        ),
+        'label': 'Messages',
+        'targetIndex': 5,
+      });
+    }
+    if (_isHifzStudent) items.add({'icon': const Icon(Icons.menu_book_rounded), 'label': 'Hifz', 'targetIndex': 8});
+
+    int selectedRailIndex = items.indexWhere((item) => item['targetIndex'] == _currentIndex);
+    if (selectedRailIndex == -1) selectedRailIndex = 0;
+
+    return NavigationRail(
+      selectedIndex: selectedRailIndex,
+      onDestinationSelected: (int index) => _setTab(items[index]['targetIndex']),
       backgroundColor: Colors.white,
       labelType: NavigationRailLabelType.selected,
       selectedIconTheme: IconThemeData(color: colorScheme.primary),
-      destinations: [
-        const NavigationRailDestination(icon: Icon(Icons.home_rounded), label: Text('Home')),
-        if (isEnabled('Activities')) const NavigationRailDestination(icon: Icon(Icons.play_circle_fill), label: Text('Activities')),
-        if (isEnabled('F.transactions')) const NavigationRailDestination(icon: Icon(Icons.local_activity_rounded), label: Text('F.transactions')),
-        if (isEnabled('Schedule')) const NavigationRailDestination(icon: Icon(Icons.calendar_month_rounded), label: Text('Schedule')),
-        if (isEnabled('Results')) const NavigationRailDestination(icon: Icon(Icons.analytics_rounded), label: Text('Results')),
-        if (isEnabled('Attendance')) const NavigationRailDestination(icon: Icon(Icons.fingerprint_rounded), label: Text('Attendance Report')),
-        if (isEnabled('Messages')) NavigationRailDestination(
-          icon: Stack(
-            children: [
-              const Icon(Icons.chat_bubble_rounded),
-              if (DataStore.getUnreadMessageCount(widget.studentUsername) > 0)
-                Positioned(right: 0, top: 0, child: Container(width: 8, height: 8, decoration: const BoxDecoration(color: Colors.red, shape: BoxShape.circle))),
-            ],
+      leading: Padding(
+        padding: const EdgeInsets.only(top: 24.0, bottom: 16.0),
+        child: GestureDetector(
+          onTap: _uploadPhoto,
+          child: CircleAvatar(
+            backgroundColor: colorScheme.primary.withOpacity(0.1),
+            backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty
+                ? MemoryImage(base64Decode(widget.studentData['photo']!))
+                : null,
+            child: widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty
+                ? Text(widget.studentName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))
+                : null,
           ),
-          label: const Text('Messages'),
         ),
-      ],
+      ),
+      destinations: items.map((item) {
+        return NavigationRailDestination(
+          icon: item['icon'] as Widget,
+          label: Text(item['label'] as String),
+        );
+      }).toList(),
       trailing: Expanded(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,

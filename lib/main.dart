@@ -9,80 +9,25 @@ import 'teacher_board.dart' as teacher;
 import 'student_board.dart' as student;
 import 'admin_board.dart' as admin;
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+    await DataStore.initPrefs();
+  } catch (e) {
+    debugPrint("Init Error: $e");
+  }
   runApp(const SchoolApp());
 }
 
-class SchoolApp extends StatefulWidget {
+class SchoolApp extends StatelessWidget {
   const SchoolApp({super.key});
 
   @override
-  State<SchoolApp> createState() => _SchoolAppState();
-}
-
-class _SchoolAppState extends State<SchoolApp> {
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _init();
-  }
-
-  Future<void> _init() async {
-    try {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-      await DataStore.initPrefs();
-      // Assets are pre-cached after the UI is already visible
-      if (mounted) {
-        precacheImage(const AssetImage('assets/images/app_logo_v2.png'), context);
-        precacheImage(const AssetImage('assets/images/app_name_arabic.png'), context);
-      }
-    } catch (e) {
-      debugPrint("Init Error: $e");
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
-    }
-  }
-
-  @override
   Widget build(BuildContext context) {
-    if (_loading) {
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: Scaffold(
-          backgroundColor: const Color(0xFF075E54),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.2), blurRadius: 20, offset: const Offset(0, 10))
-                    ],
-                  ),
-                  child: Image.asset('assets/images/app_logo_v2.png', height: 100),
-                ),
-                const SizedBox(height: 40),
-                const CircularProgressIndicator(color: Colors.white),
-                const SizedBox(height: 20),
-                const Text(
-                  'LOADING BRIDGE...',
-                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 2),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
+    // Precache images if possible
+    precacheImage(const AssetImage('assets/images/app_logo_v2.png'), context);
+    precacheImage(const AssetImage('assets/images/app_name_arabic.png'), context);
 
     return MaterialApp(
       title: 'حركات الحياة',

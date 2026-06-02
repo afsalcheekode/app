@@ -71,6 +71,47 @@ class DataStore {
   };
   static Map<String, String> classDepts = {};
 
+  static Map<String, List<String>> classesBySchool = {};
+  static Map<String, Map<String, String>> deptsBySchool = {};
+
+  static List<String> getClassesForSchool(String? schoolName) {
+    if (schoolName == null || schoolName.isEmpty) return [];
+    return classesBySchool[schoolName] ?? [];
+  }
+
+  static void addClassForSchool(String? schoolName, String className) {
+    if (schoolName == null || schoolName.isEmpty) return;
+    if (!classesBySchool.containsKey(schoolName)) {
+      classesBySchool[schoolName] = [];
+    }
+    if (!classesBySchool[schoolName]!.contains(className)) {
+      classesBySchool[schoolName]!.add(className);
+    }
+  }
+
+  static void removeClassForSchool(String? schoolName, String className) {
+    if (schoolName == null || schoolName.isEmpty) return;
+    classesBySchool[schoolName]?.remove(className);
+  }
+
+  static String getDeptForClass(String? schoolName, String className) {
+    if (schoolName == null || schoolName.isEmpty) return 'DA\'WA';
+    return deptsBySchool[schoolName]?[className] ?? 'DA\'WA';
+  }
+
+  static void setDeptForClass(String? schoolName, String className, String dept) {
+    if (schoolName == null || schoolName.isEmpty) return;
+    if (!deptsBySchool.containsKey(schoolName)) {
+      deptsBySchool[schoolName] = {};
+    }
+    deptsBySchool[schoolName]![className] = dept;
+  }
+  
+  static void removeDeptForClass(String? schoolName, String className) {
+    if (schoolName == null || schoolName.isEmpty) return;
+    deptsBySchool[schoolName]?.remove(className);
+  }
+
   static Future<void> saveInt(String key, int val) async =>
       await _prefs?.setInt(key, val);
   static int loadInt(String key, int def) => _prefs?.getInt(key) ?? def;
@@ -410,7 +451,20 @@ class DataStore {
     if (deptsStr != null) {
       classDepts = Map<String, String>.from(jsonDecode(deptsStr));
     }
-    // Migration: Ensure all classes have a department
+
+    final cbsStr = _prefs!.getString('classes_by_school');
+    if (cbsStr != null) {
+      final Map decoded = jsonDecode(cbsStr);
+      classesBySchool = decoded.map((k, v) => MapEntry(k.toString(), List<String>.from(v)));
+    }
+
+    final dbsStr = _prefs!.getString('depts_by_school');
+    if (dbsStr != null) {
+      final Map decoded = jsonDecode(dbsStr);
+      deptsBySchool = decoded.map((k, v) => MapEntry(k.toString(), Map<String, String>.from(v)));
+    }
+
+    // Migration: Ensure all classes have a department and move old global classes to Hayathul Islam
     bool deptsChanged = false;
     for (var c in allClasses) {
       if (classDepts[c] == null) {
@@ -418,6 +472,17 @@ class DataStore {
         deptsChanged = true;
       }
     }
+    
+    // Migration logic for old data lacking strict multi-tenancy
+    if (classesBySchool.isEmpty && allClasses.isNotEmpty) {
+      classesBySchool['Hayathul Islam'] = List.from(allClasses);
+      deptsChanged = true;
+    }
+    if (deptsBySchool.isEmpty && classDepts.isNotEmpty) {
+      deptsBySchool['Hayathul Islam'] = Map.from(classDepts);
+      deptsChanged = true;
+    }
+
     if (deptsChanged) saveAllData();
 
     final metricsStr = _prefs!.getString('all_metrics');
@@ -464,9 +529,11 @@ class DataStore {
     await _prefs!.setString('academic_years', jsonEncode(academicYears));
     await _prefs!.setString('selected_academic_year', selectedAcademicYear);
     await _prefs!.setString('all_classes', jsonEncode(allClasses));
+    await _prefs!.setString('all_class_depts', jsonEncode(classDepts));
+    await _prefs!.setString('classes_by_school', jsonEncode(classesBySchool));
+    await _prefs!.setString('depts_by_school', jsonEncode(deptsBySchool));
     await _prefs!.setString('all_metrics', jsonEncode(allMetrics));
     await _prefs!.setString('feature_config', jsonEncode(featureConfig));
-    await _prefs!.setString('all_class_depts', jsonEncode(classDepts));
     if (mockUser != null) {
       await _prefs!.setString('mock_user', jsonEncode(mockUser));
     } else {
@@ -549,9 +616,25 @@ class DataStore {
           changed = true;
         }
         if (data['allStudents'] != null) {
-          allStudents = List<Map<String, String>>.from(
+          final newStudents = List<Map<String, String>>.from(
               (data['allStudents'] as List)
                   .map((i) => Map<String, String>.from(i)));
+                  
+          for (var ns in newStudents) {
+            final username = ns['username'];
+            if (username != null && teacherPhotoCache.containsKey(username)) {
+              ns['photo'] = teacherPhotoCache[username]!;
+            } else {
+              final oldIdx = allStudents.indexWhere((s) => s['username'] == username);
+              if (oldIdx != -1) {
+                final oldPhoto = allStudents[oldIdx]['photo'];
+                if (oldPhoto != null && oldPhoto.isNotEmpty) {
+                  ns['photo'] = oldPhoto;
+                }
+              }
+            }
+          }
+          allStudents = newStudents;
           changed = true;
         }
         if (data['allSchools'] != null) {
@@ -618,30 +701,30 @@ class DataStore {
           classDepts = Map<String, String>.from(data['classDepts']);
           changed = true;
         }
+        if (data['classesBySchool'] != null) {
+          classesBySchool = (data['classesBySchool'] as Map).map((k, v) => MapEntry(k.toString(), List<String>.from(v)));
+          changed = true;
+        }
+        if (data['deptsBySchool'] != null) {
+          deptsBySchool = (data['deptsBySchool'] as Map).map((k, v) => MapEntry(k.toString(), Map<String, String>.from(v)));
+          changed = true;
+        }
 
-        // Auto-recover missing classes from students and teachers
-        for (final s in allStudents) {
-          final c = s['std'];
-          if (c != null && c.isNotEmpty && !allClasses.contains(c)) {
-            allClasses.add(c);
-            if (!classDepts.containsKey(c)) classDepts[c] = 'DA\'WA';
+        // Recovery logic for accidentally deleted Hayathul Islam classes
+        if (classesBySchool['Hayathul Islam'] == null || classesBySchool['Hayathul Islam']!.isEmpty) {
+          if (allClasses.isNotEmpty) {
+            classesBySchool['Hayathul Islam'] = List.from(allClasses);
             changed = true;
           }
         }
-        for (final t in allTeachers) {
-          final cField = t['class'];
-          if (cField != null && cField.isNotEmpty) {
-            final classesInField = cField.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty);
-            for (final c in classesInField) {
-              if (!allClasses.contains(c)) {
-                allClasses.add(c);
-                if (!classDepts.containsKey(c)) classDepts[c] = 'DA\'WA';
-                changed = true;
-              }
-            }
+        if (deptsBySchool['Hayathul Islam'] == null || deptsBySchool['Hayathul Islam']!.isEmpty) {
+          if (classDepts.isNotEmpty) {
+            deptsBySchool['Hayathul Islam'] = Map.from(classDepts);
+            changed = true;
           }
         }
-        
+
+
         // Clean up garbage classes created by previous bug
         final garbageClasses = allClasses.where((c) => c.contains(',')).toList();
         if (garbageClasses.isNotEmpty) {
@@ -699,9 +782,15 @@ class DataStore {
           teacherPhotoCache[username] = photo;
         }
 
-        final idx = allTeachers.indexWhere((t) => t['username'] == username);
-        if (idx != -1 && allTeachers[idx]['photo'] != photo) {
-          allTeachers[idx]['photo'] = photo;
+        final idxT = allTeachers.indexWhere((t) => t['username'] == username);
+        if (idxT != -1 && allTeachers[idxT]['photo'] != photo) {
+          allTeachers[idxT]['photo'] = photo;
+          photoChanged = true;
+        }
+        
+        final idxS = allStudents.indexWhere((s) => s['username'] == username);
+        if (idxS != -1 && allStudents[idxS]['photo'] != photo) {
+          allStudents[idxS]['photo'] = photo;
           photoChanged = true;
         }
       }
@@ -727,10 +816,16 @@ class DataStore {
         return copy;
       }).toList();
 
+      final studentsNoPhoto = allStudents.map((s) {
+        final copy = Map<String, String>.from(s);
+        copy.remove('photo');
+        return copy;
+      }).toList();
+
       // Push main data without photos
       await db.collection('app_data').doc('central_store').set({
         'allTeachers': teachersNoPhoto,
-        'allStudents': allStudents,
+        'allStudents': studentsNoPhoto,
         'allSchools': allSchools,
         'allExams': allExams,
         'allMessages': allMessages,
@@ -745,6 +840,8 @@ class DataStore {
         'allHifzProgress': allHifzProgress,
         'allClasses': allClasses,
         'classDepts': classDepts,
+        'classesBySchool': classesBySchool,
+        'deptsBySchool': deptsBySchool,
         'allTimetables': allTimetables,
         'academicYears': academicYears,
         'selectedAcademicYear': selectedAcademicYear,
@@ -788,12 +885,14 @@ class DataStore {
     _prefs!.setString('all_fair_payments', jsonEncode(allFairPayments));
     _prefs!.setString('all_attendance', jsonEncode(allAttendance));
     _prefs!.setString('all_hifz_progress', jsonEncode(allHifzProgress));
+    _prefs!.setString('all_classes', jsonEncode(allClasses));
+    _prefs!.setString('all_class_depts', jsonEncode(classDepts));
+    _prefs!.setString('classes_by_school', jsonEncode(classesBySchool));
+    _prefs!.setString('depts_by_school', jsonEncode(deptsBySchool));
     _prefs!.setString('all_timetables', jsonEncode(allTimetables));
     _prefs!.setString('holiday_dates', jsonEncode(holidayDates));
     _prefs!.setString('academic_years', jsonEncode(academicYears));
     _prefs!.setString('selected_academic_year', selectedAcademicYear);
-    _prefs!.setString('all_classes', jsonEncode(allClasses));
-    _prefs!.setString('all_class_depts', jsonEncode(classDepts));
     _prefs!.setString('all_bulletin_cards', jsonEncode(allBulletinCards));
     _prefs!.setString('all_metrics', jsonEncode(allMetrics));
     _prefs!.setString('feature_config', jsonEncode(featureConfig));

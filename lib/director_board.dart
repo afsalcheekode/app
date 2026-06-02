@@ -36,11 +36,17 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
   StreamSubscription? _sessionSubscription;
 
   // helper getters
-  List<Map<String, String>> get _teachers => DataStore.allTeachers.where((t) => t['schoolName'] == widget.schoolName || t['schoolName'] == null).toList();
-  List<Map<String, String>> get _students => DataStore.allStudents.where((s) => s['schoolName'] == widget.schoolName || s['schoolName'] == null).toList();
-  List<Map<String, dynamic>> get _myCards => DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName || b['schoolName'] == null).toList();
-  List<String>              get _classes  => DataStore.allClasses;
-  Map<String, String>       get _classDepts => DataStore.classDepts;
+  List<Map<String, String>> get _teachers => DataStore.allTeachers.where((t) => t['schoolName'] == widget.schoolName).toList();
+  List<Map<String, String>> get _students => DataStore.allStudents.where((s) => s['schoolName'] == widget.schoolName).toList();
+  List<Map<String, dynamic>> get _myCards => DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName).toList();
+  List<String>              get _classes  => DataStore.getClassesForSchool(widget.schoolName);
+  Map<String, String>       get _classDepts {
+    final depts = <String, String>{};
+    for (var c in _classes) {
+      depts[c] = DataStore.getDeptForClass(widget.schoolName, c);
+    }
+    return depts;
+  }
 
   @override
   void initState() {
@@ -228,6 +234,7 @@ class _SchoolDashboardScreenState extends State<SchoolDashboardScreen>
             schoolName: widget.schoolName,
           ),
           _DepartmentsTab(
+            schoolName: widget.schoolName,
             classes: _classes,
             students: _students,
             classDepts: _classDepts,
@@ -970,12 +977,14 @@ class _TeachersTabState extends State<_TeachersTab> {
 //  DEPARTMENTS TAB
 // â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• â• 
 class _DepartmentsTab extends StatefulWidget {
+  final String schoolName;
   final List<String> classes;
   final List<Map<String, String>> students;
   final Map<String, String> classDepts;
   final VoidCallback onRefresh;
 
   const _DepartmentsTab({
+    required this.schoolName,
     required this.classes,
     required this.students,
     required this.classDepts,
@@ -1050,14 +1059,14 @@ class _DepartmentsTabState extends State<_DepartmentsTab> {
               onPressed: () {
                 final name = ctrl.text.trim();
                 if (name.isEmpty) return;
-                if (DataStore.allClasses.contains(name)) {
+                if (DataStore.getClassesForSchool(widget.schoolName).contains(name)) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Class already exists!')));
                   return;
                 }
                 setState(() {
-                  DataStore.allClasses.add(name);
-                  DataStore.classDepts[name] = selectedDept;
+                  DataStore.addClassForSchool(widget.schoolName, name);
+                  DataStore.setDeptForClass(widget.schoolName, name, selectedDept);
                   DataStore.saveAllData();
                 });
                 widget.onRefresh();
@@ -1083,8 +1092,8 @@ class _DepartmentsTabState extends State<_DepartmentsTab> {
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
               setState(() {
-                // 1. Delete all students in this class
-                final studentsToDelete = DataStore.allStudents.where((s) => s['std'] == className).toList();
+                // 1. Delete all students in this class for this school
+                final studentsToDelete = DataStore.allStudents.where((s) => s['std'] == className && s['schoolName'] == widget.schoolName).toList();
                 for (final s in studentsToDelete) {
                   DataStore.allStudents.removeWhere((x) => x['username'] == s['username']);
                   widget.students.removeWhere((x) => x['username'] == s['username']);
@@ -1098,8 +1107,9 @@ class _DepartmentsTabState extends State<_DepartmentsTab> {
                   });
                 }
 
-                // 2. Unassign this class from any teachers
+                // 2. Unassign this class from any teachers in this school
                 for (var t in DataStore.allTeachers) {
+                  if (t['schoolName'] != widget.schoolName) continue;
                   final cField = t['class'];
                   if (cField != null && cField.isNotEmpty) {
                     var classes = cField.split(',').map((e) => e.trim()).toList();
@@ -1119,8 +1129,8 @@ class _DepartmentsTabState extends State<_DepartmentsTab> {
                 }
 
                 // 3. Delete the class itself
-                DataStore.allClasses.remove(className);
-                DataStore.classDepts.remove(className);
+                DataStore.removeClassForSchool(widget.schoolName, className);
+                DataStore.removeDeptForClass(widget.schoolName, className);
                 DataStore.saveAllData();
               });
               widget.onRefresh();
@@ -1136,7 +1146,7 @@ class _DepartmentsTabState extends State<_DepartmentsTab> {
   void _changeDept(String className, String currentDept) {
     final newDept = currentDept == 'HIFZ' ? 'DA\'WA' : 'HIFZ';
     setState(() {
-      DataStore.classDepts[className] = newDept;
+      DataStore.setDeptForClass(widget.schoolName, className, newDept);
       DataStore.saveAllData();
     });
     widget.onRefresh();
@@ -1522,7 +1532,7 @@ class _BroadcastTabState extends State<_BroadcastTab> {
                 ),
                 const SizedBox(height: 16),
                 Expanded(
-                  child: DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName || b['schoolName'] == null).toList().isEmpty
+                  child: DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName).toList().isEmpty
                       ? Center(
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -1534,9 +1544,9 @@ class _BroadcastTabState extends State<_BroadcastTab> {
                           ),
                         )
                       : ListView.builder(
-                          itemCount: DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName || b['schoolName'] == null).toList().length,
+                          itemCount: DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName).toList().length,
                           itemBuilder: (context, idx) {
-                            final myFilteredCards = DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName || b['schoolName'] == null).toList();
+                            final myFilteredCards = DataStore.allBulletinCards.where((b) => b['schoolName'] == widget.schoolName).toList();
                             final card = myFilteredCards[idx];
                             final List<Color> colors = [Colors.blue, Colors.indigo, Colors.purple, Colors.teal, Colors.orange];
                             final Color cardColor = colors[idx % colors.length];
@@ -1803,6 +1813,7 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
     final userCtrl = TextEditingController(text: s?['username'] ?? '');
     final passCtrl = TextEditingController(text: s?['password'] ?? '');
     String selectedClass = s?['std'] ?? (widget.classes.isNotEmpty ? widget.classes.first : '');
+    String? photoBase64 = s?['photo'];
 
     showDialog(
       context: context,
@@ -1814,6 +1825,48 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
+                const SizedBox(height: 16),
+                const Text('Student Photo', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF6366F1))),
+                const SizedBox(height: 8),
+                Center(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: () async {
+                      final picker = ImagePicker();
+                      final image = await picker.pickImage(
+                        source: ImageSource.gallery, 
+                        imageQuality: 50,
+                        maxWidth: 400,
+                        maxHeight: 400,
+                      );
+                      if (image != null) {
+                        final bytes = await image.readAsBytes();
+                        setDs(() {
+                          photoBase64 = base64Encode(bytes);
+                        });
+                      }
+                    },
+                    child: Stack(
+                      children: [
+                        CircleAvatar(
+                          radius: 50,
+                          backgroundColor: const Color(0xFF6366F1).withOpacity(0.1),
+                          backgroundImage: photoBase64 != null && photoBase64!.isNotEmpty ? MemoryImage(base64Decode(photoBase64!)) : null,
+                          child: (photoBase64 == null || photoBase64!.isEmpty) ? const Icon(Icons.person_rounded, size: 50, color: Color(0xFF6366F1)) : null,
+                        ),
+                        Positioned(
+                          bottom: 0, right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: const BoxDecoration(color: Color(0xFF6366F1), shape: BoxShape.circle),
+                            child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
                 _field(nameCtrl, 'Full Name', Icons.person_rounded),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
@@ -1866,17 +1919,37 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
                     'password': password,
                     'schoolName': widget.schoolName,
                     'academicYear': DataStore.selectedAcademicYear,
+                    'photo': photoBase64 ?? '',
                 });
 
-                setState(() {
-                  if (index != null) {
-                    // Find original in DataStore to update
+                if (index == null) {
+                  try {
+                    showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
+                    await AuthService().registerUser({...newData, 'role': 'student'}, password);
+                    Navigator.of(context, rootNavigator: true).pop(); // pop loading
+                    Navigator.of(context, rootNavigator: true).pop(); // pop dialog
+                    setState(() {
+                      DataStore.allStudents.add(newData);
+                      widget.students.add(newData);
+                      DataStore.saveAllData();
+                    });
+                    widget.showCredentials('Student', username, password);
+                  } catch (e) {
+                    Navigator.of(context, rootNavigator: true).pop(); // pop loading
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Registration failed: $e'), backgroundColor: Colors.red));
+                    }
+                    return;
+                  }
+                } else {
+                  setState(() {
                     final oldData = widget.students[index];
                     final globalIndex = DataStore.allStudents.indexWhere((s) => s['username'] == oldData['username']);
                     if (globalIndex != -1) {
                       DataStore.allStudents[globalIndex] = newData;
                     }
                     widget.students[index] = newData;
+                    DataStore.saveAllData();
                     
                     // Update in Firestore
                     FirebaseFirestore.instance.collection('users')
@@ -1886,43 +1959,24 @@ class _StudentsManagementTabState extends State<_StudentsManagementTab> {
                         query.docs.first.reference.update(newData);
                       }
                     });
-                  } else {
-                    DataStore.allStudents.add(newData);
-                    widget.students.add(newData);
-                  }
-                  DataStore.saveAllData();
-                });
-                
-                widget.onRefresh();
 
-                // Verify login immediately
-                try {
-                  showDialog(context: context, barrierDismissible: false, builder: (_) => const Center(child: CircularProgressIndicator()));
-                  if (index == null) {
-                    await AuthService().registerUser({...newData, 'role': 'student'}, password);
-                  }
-                  // We removed signIn for existing students to prevent logging the director out
-                  // Updates to existing users are handled by Firestore rules or admin SDK, but locally we already updated DataStore
-                  Navigator.of(context, rootNavigator: true).pop(); // pop loading
-                  Navigator.of(context, rootNavigator: true).pop(); // pop dialog
-                  
-                  if (index == null) {
-                    widget.showCredentials('Student', username, password);
-                  } else {
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Student "$name" updated locally!'), backgroundColor: Colors.green)
-                      );
+                    final oldUsername = oldData['username']!;
+                    final newUsername = newData['username']!;
+                    if (oldUsername != newUsername) {
+                      FirebaseFirestore.instance.collection('teacher_photos').doc(oldUsername).delete();
                     }
-                  }
-                } catch (e) {
-                  Navigator.of(context, rootNavigator: true).pop(); // pop loading
+                    FirebaseFirestore.instance.collection('teacher_photos')
+                        .doc(newUsername)
+                        .set({'username': newUsername, 'photo': newData['photo'] ?? ''}, SetOptions(merge: true));
+                  });
+                  Navigator.pop(context); // pop dialog
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Action failed: ${e.toString().replaceAll('Exception: ', '')}'), backgroundColor: Colors.orange)
+                      SnackBar(content: Text('Student "$name" updated locally!'), backgroundColor: Colors.green)
                     );
                   }
                 }
+                widget.onRefresh();
               },
               child: Text(index != null ? 'Update' : 'Add Student'),
             ),
