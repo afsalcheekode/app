@@ -829,15 +829,18 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                     ),
                     Row(
                       children: [
-                        CircleAvatar(
-                          radius: 28,
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                          backgroundImage: (widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty) 
-                              ? MemoryImage(base64Decode(widget.studentData['photo']!)) 
-                              : null,
-                          child: (widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty) 
-                              ? Text(widget.studentName[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 24)) 
-                              : null,
+                        GestureDetector(
+                          onTap: _uploadPhoto,
+                          child: CircleAvatar(
+                            radius: 28,
+                            backgroundColor: Colors.white.withOpacity(0.2),
+                            backgroundImage: (widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty) 
+                                ? MemoryImage(base64Decode(widget.studentData['photo']!)) 
+                                : null,
+                            child: (widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty) 
+                                ? Text(widget.studentName[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 24)) 
+                                : null,
+                          ),
                         ),
                       ],
                     ),
