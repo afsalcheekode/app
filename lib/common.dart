@@ -106,8 +106,8 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
     [Color(0xFF0EA5E9), Color(0xFF2563EB)], // Sky - Blue
   ];
 
-  Widget buildNoticeBoardCard(Map<String, dynamic> b, int index, {VoidCallback? onEdit}) {
-    final gradient = cardGradients[index % cardGradients.length];
+  Widget buildNoticeBoardCard(Map<String, dynamic> b, ColorScheme colorScheme, {VoidCallback? onEdit}) {
+    final gradient = [colorScheme.primary, colorScheme.secondary];
     return InkWell(
       onTap: () {
         showDialog(
@@ -116,7 +116,7 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(28)),
             title: Row(
               children: [
-                const Icon(Icons.campaign_rounded, color: Color(0xFF6366F1), size: 30),
+                Icon(Icons.campaign_rounded, color: colorScheme.primary, size: 30),
                 const SizedBox(width: 12),
                 Expanded(child: Text(b['title'] ?? 'Notice Details', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 24))),
               ],
@@ -127,13 +127,13 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
               children: [
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                  decoration: BoxDecoration(color: const Color(0xFF6366F1).withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                  decoration: BoxDecoration(color: colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.calendar_month_rounded, size: 16, color: Color(0xFF6366F1)),
+                      Icon(Icons.calendar_month_rounded, size: 18, color: colorScheme.primary),
                       const SizedBox(width: 8),
-                      Text(_formatFullDateTime(b['date']), style: const TextStyle(color: Color(0xFF6366F1), fontWeight: FontWeight.w900, fontSize: 13)),
+                      Text(_formatFullDateTime(b['date']), style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 15)),
                     ],
                   ),
                 ),
@@ -141,16 +141,6 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
                 const Text('DESCRIPTION', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.5)),
                 const SizedBox(height: 8),
                 Text(b['desc'] ?? b['text'] ?? 'No description available.', style: const TextStyle(fontSize: 16, height: 1.6, color: Color(0xFF1E293B))),
-                const SizedBox(height: 24),
-                const Text('PUBLISHED BY', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 1.5)),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    CircleAvatar(radius: 12, backgroundColor: Colors.indigo.shade50, child: const Icon(Icons.person, size: 14, color: Colors.indigo)),
-                    const SizedBox(width: 8),
-                    Text(b['publisher'] ?? 'Academic Director', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                  ],
-                ),
               ],
             ),
             actions: [
@@ -200,32 +190,17 @@ mixin NoticeCenterMixin<T extends StatefulWidget> on State<T> {
                     const SizedBox(height: 12),
                     Text(b['desc'] ?? b['text'] ?? '', style: TextStyle(color: Colors.white.withOpacity(0.95), fontSize: 15, height: 1.6, fontWeight: FontWeight.w500)),
                     const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(30)),
-                          child: Row(
-                            children: [
-                              const Icon(Icons.person_pin, color: Colors.white, size: 14),
-                              const SizedBox(width: 6),
-                              Text(b['publisher'] ?? 'Academic Director', style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
-                            ],
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(10)),
-                          child: Row(
-                            children: [
-                              Icon(Icons.access_time_filled_rounded, color: gradient[0], size: 12),
-                              const SizedBox(width: 4),
-                              Text(_formatFullDateTime(b['date']), style: TextStyle(color: gradient[0], fontSize: 10, fontWeight: FontWeight.w900)),
-                            ],
-                          ),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(12)),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.access_time_filled_rounded, color: gradient[0], size: 18),
+                          const SizedBox(width: 8),
+                          Text(_formatFullDateTime(b['date']), style: TextStyle(color: gradient[0], fontSize: 13, fontWeight: FontWeight.w900)),
+                        ],
+                      ),
                     ),
                   ],
                 ),

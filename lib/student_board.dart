@@ -1196,7 +1196,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
       itemCount: filteredBulletinCards.length,
       itemBuilder: (context, index) {
         final b = filteredBulletinCards[index];
-        return buildNoticeBoardCard(b, index);
+        return buildNoticeBoardCard(b, colorScheme);
       },
     );
   }
