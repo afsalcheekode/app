@@ -934,6 +934,15 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                 ),
               ),
           const SizedBox(height: 24),
+          
+          if (filteredBulletinCards.isNotEmpty) ...[
+            const SizedBox(height: 8),
+            const Text('Notice Board', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+            const SizedBox(height: 16),
+            _buildBulletinList(colorScheme),
+            const SizedBox(height: 32),
+          ],
+          
           _buildHifzSectionIfApplicable(colorScheme),
           
           const SizedBox(height: 32),
@@ -953,10 +962,12 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
             },
           ),
 
-          const SizedBox(height: 32),
-          const Text('Notice Board', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
-          const SizedBox(height: 16),
-          _buildBulletinList(colorScheme),
+          if (filteredBulletinCards.isEmpty) ...[
+            const SizedBox(height: 32),
+            const Text('Notice Board', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Color(0xFF1E293B))),
+            const SizedBox(height: 16),
+            _buildBulletinList(colorScheme),
+          ],
         ],
       ),
     );
