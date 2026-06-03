@@ -36,7 +36,7 @@
 
   <style>
     body {
-      background-color: #FFFFFF;
+      background-color: #FAFAFA;
       margin: 0;
       padding: 0;
     }
@@ -49,45 +49,55 @@
       position: absolute;
       top: 50%;
       left: 50%;
-      -ms-transform: translate(-50%, -50%);
       transform: translate(-50%, -50%);
     }
 
     .loader-container {
       position: relative;
-      width: 150px;
-      height: 150px;
+      width: 200px;
+      height: 200px;
       display: flex;
       justify-content: center;
       align-items: center;
     }
 
-    .loader {
-      border: 4px solid rgba(255, 255, 255, 0.1);
+    .loader-container::before, .loader-container::after {
+      content: '';
+      position: absolute;
       border-radius: 50%;
-      border-top: 4px solid #F43F5E;
-      width: 140px;
-      height: 140px;
-      -webkit-animation: spin 1.5s linear infinite;
-      animation: spin 1.5s linear infinite;
+      background: radial-gradient(circle, rgba(7, 94, 84, 0.2) 0%, rgba(37, 211, 102, 0.05) 70%, transparent 100%);
+      animation: ripple 2.5s cubic-bezier(0.1, 0.5, 0.8, 1) infinite;
+    }
+    .loader-container::after {
+      animation-delay: -1.25s;
     }
 
-    @-webkit-keyframes spin {
-      0% { -webkit-transform: rotate(0deg); }
-      100% { -webkit-transform: rotate(360deg); }
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+    @keyframes ripple {
+      0% {
+        width: 80px;
+        height: 80px;
+        opacity: 1;
+      }
+      100% {
+        width: 220px;
+        height: 220px;
+        opacity: 0;
+      }
     }
 
     #splash-logo {
-      width: 80px;
-      height: 80px;
-      position: absolute;
+      width: 90px;
+      height: 90px;
+      position: relative;
       z-index: 10;
-      border-radius: 20px;
+      border-radius: 22px;
+      box-shadow: 0 15px 35px rgba(7, 94, 84, 0.25);
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0px) scale(1); }
+      50% { transform: translateY(-10px) scale(1.02); }
     }
 
     .loading-text {
@@ -114,10 +124,9 @@
 <body>
   <div id="loading" class="loading">
     <div class="loader-container">
-      <div class="loader"></div>
       <img id="splash-logo" src="favicon.png?v=2" alt="حركات الحياة Logo">
     </div>
-    <div class="loading-text">حركات الحياة</div>
+
   </div>
 
   <script>
