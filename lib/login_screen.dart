@@ -102,9 +102,7 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                FadeInEntrance(
-                  delay: 0.2,
-                  child: Column(
+                Column(
                     children: [
                       Container(
                         width: 140,
@@ -165,11 +163,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ],
                   ),
-                ),
                 const SizedBox(height: 60),
-                FadeInEntrance(
-                  delay: 0.4,
-                  child: Container(
+                Container(
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
                       color: Colors.white,
@@ -260,7 +255,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
                   ),
-                ),
               ],
             ),
           ),
