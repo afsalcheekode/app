@@ -14,7 +14,7 @@ const db = getFirestore(app);
 
 async function fixFirestoreUsers() {
   try {
-    const rawData = fs.readFileSync('current_auth.json', 'utf8');
+    const rawData = fs.readFileSync('new_auth.json', 'utf8');
     const authData = JSON.parse(rawData);
     
     const targets = ['hsh@harakat.com', 'mun@harakat.com', 'ahs@harakat.com', 'mah@harakat.com'];
@@ -23,13 +23,6 @@ async function fixFirestoreUsers() {
       if (targets.includes(u.email)) {
         const username = u.email.split('@')[0];
         let role = 'teacher';
-        if (username === 'hsh') {
-           // Wait, hsh shouldn't be a teacher, he is a director! 
-           // But actually the user said "make user name like this and this order 1. hsh 2.mun 3.ahs 4.mah" in the TEACHER board!
-           // Does the user want hsh to be a teacher AND a director? 
-           // Earlier hsh04 was a teacher!
-           role = 'teacher';
-        }
         
         await setDoc(doc(db, 'users', u.localId), {
           uid: u.localId,
@@ -40,7 +33,7 @@ async function fixFirestoreUsers() {
           schoolName: 'كلية حياة الإسلام'
         }, { merge: true });
         
-        console.log(`Created Firestore doc for ${username} with UID ${u.localId}`);
+        console.log(`Created Firestore doc for ${username} with NEW UID ${u.localId}`);
       }
     }
     
