@@ -153,11 +153,18 @@
             renderer: "html",
           }).then(function(appRunner) {
             appRunner.runApp().then(function() {
-              // Hide the loading screen when the app is ready
-              var loading = document.getElementById('loading');
-              if (loading) {
-                loading.style.display = 'none';
-              }
+              // Wait for Flutter to paint its first frame before hiding the loading screen
+              window.setTimeout(function() {
+                var loading = document.getElementById('loading');
+                if (loading) {
+                  // Add a quick fade out transition
+                  loading.style.transition = 'opacity 0.2s ease-out';
+                  loading.style.opacity = '0';
+                  window.setTimeout(function() {
+                    loading.style.display = 'none';
+                  }, 200);
+                }
+              }, 150);
             });
           });
         }
