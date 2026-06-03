@@ -1035,7 +1035,11 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                   _hifzProgressRow('New Lesson', '${latest['todayFromSura']} ${latest['todayFromAya']} | ${latest['todayToSura']} ${latest['todayToAya']}', Colors.blue),
                   const SizedBox(height: 12),
                   _hifzProgressRow('Old Review', '${latest['oldFromSura']} ${latest['oldFromAya']} | ${latest['oldToSura']} ${latest['oldToAya']}', Colors.orange),
-                  if (latest['oldPortionJuzh'] != null) ...[
+                  if (latest['murajaaFromSura'] != null && latest['murajaaFromSura'].toString().isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    _hifzProgressRow('Muraja\'a', '${latest['murajaaFromSura']} ${latest['murajaaFromAya']} | ${latest['murajaaToSura']} ${latest['murajaaToAya']}', Colors.purple),
+                  ],
+                  if (latest['oldPortionJuzh'] != null && latest['oldPortionJuzh'].toString().isNotEmpty) ...[
                     const SizedBox(height: 12),
                     _hifzProgressRow('Old Portion Memorized', 'Juzh ${latest['oldPortionJuzh']}', Colors.deepOrange),
                   ],
@@ -1151,7 +1155,11 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                           _hifzProgressRow('New Lesson', '${p['todayFromSura']} ${p['todayFromAya']} | ${p['todayToSura']} ${p['todayToAya']}', Colors.blue),
                           const SizedBox(height: 12),
                           _hifzProgressRow('Old Review', '${p['oldFromSura']} ${p['oldFromAya']} | ${p['oldToSura']} ${p['oldToAya']}', Colors.orange),
-                          if (p['oldPortionJuzh'] != null) ...[
+                          if (p['murajaaFromSura'] != null && p['murajaaFromSura'].toString().isNotEmpty) ...[
+                            const SizedBox(height: 12),
+                            _hifzProgressRow('Muraja\'a', '${p['murajaaFromSura']} ${p['murajaaFromAya']} | ${p['murajaaToSura']} ${p['murajaaToAya']}', Colors.purple),
+                          ],
+                          if (p['oldPortionJuzh'] != null && p['oldPortionJuzh'].toString().isNotEmpty) ...[
                             const SizedBox(height: 12),
                             _hifzProgressRow('Old Portion Memorized', 'Juzh ${p['oldPortionJuzh']}', Colors.deepOrange),
                           ],
