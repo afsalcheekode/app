@@ -1,3 +1,4 @@
+import 'surah_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/gestures.dart';
@@ -2136,18 +2137,22 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
       orElse: () => {},
     );
 
-    final tSFrom = TextEditingController(text: existing['todayFromSura'] ?? '');
+    String tSFrom = existing['todayFromSura'] ?? quranSurahsArabic[0];
     final tAFrom = TextEditingController(text: existing['todayFromAya'] ?? '');
-    final tSTo = TextEditingController(text: existing['todayToSura'] ?? '');
+    String tSTo = existing['todayToSura'] ?? quranSurahsArabic[0];
     final tATo = TextEditingController(text: existing['todayToAya'] ?? '');
     
-    final oSFrom = TextEditingController(text: existing['oldFromSura'] ?? '');
+    String oSFrom = existing['oldFromSura'] ?? quranSurahsArabic[0];
     final oAFrom = TextEditingController(text: existing['oldFromAya'] ?? '');
-    final oSTo = TextEditingController(text: existing['oldToSura'] ?? '');
+    String oSTo = existing['oldToSura'] ?? quranSurahsArabic[0];
     final oATo = TextEditingController(text: existing['oldToAya'] ?? '');
     
+    String mSFrom = existing['murajaaFromSura'] ?? quranSurahsArabic[0];
+    final mAFrom = TextEditingController(text: existing['murajaaFromAya'] ?? '');
+    String mSTo = existing['murajaaToSura'] ?? quranSurahsArabic[0];
+    final mATo = TextEditingController(text: existing['murajaaToAya'] ?? '');
+    
     int selectedJuzh = int.tryParse(existing['juzh']?.toString() ?? '1') ?? 1;
-    int oldPortionJuzh = int.tryParse(existing['oldPortionJuzh']?.toString() ?? '1') ?? 1;
 
     showDialog(
       context: context,
@@ -2160,28 +2165,28 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _hifzSectionTitle('TODAY\'S PORTION', Icons.today_rounded, Colors.blue),
-                _hifzAyaRangeRow(tSFrom, tAFrom, tSTo, tATo),
-                const SizedBox(height: 20),
-                _hifzSectionTitle('OLD PORTION', Icons.history_rounded, Colors.orange),
-                _hifzAyaRangeRow(oSFrom, oAFrom, oSTo, oATo),
-                const SizedBox(height: 12),
-                const Text('OLD PORTION MEMORIZED (JUZH)', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.orange)),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  decoration: BoxDecoration(color: Colors.orange.withOpacity(0.05), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.orange.withOpacity(0.1))),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<int>(
-                      isExpanded: true,
-                      value: oldPortionJuzh,
-                      items: List.generate(30, (i) => DropdownMenuItem(value: i + 1, child: Text('Juzh ${i + 1}'))).toList(),
-                      onChanged: (v) => setDialogState(() => oldPortionJuzh = v ?? 1),
-                    ),
-                  ),
+                _hifzSectionTitle('TODAY\'S LESSON', Icons.today_rounded, Colors.blue),
+                _hifzSurahAyaRangeRow(
+                  tSFrom, a: tAFrom, b: tSTo, c: tATo,
+                  onFromSurahChanged: (v) => setDialogState(() => tSFrom = v!),
+                  onToSurahChanged: (v) => setDialogState(() => tSTo = v!),
+                ),
+                const SizedBox(height: 16),
+                _hifzSectionTitle('OLD LESSON', Icons.history_rounded, Colors.orange),
+                _hifzSurahAyaRangeRow(
+                  oSFrom, a: oAFrom, b: oSTo, c: oATo,
+                  onFromSurahChanged: (v) => setDialogState(() => oSFrom = v!),
+                  onToSurahChanged: (v) => setDialogState(() => oSTo = v!),
+                ),
+                const SizedBox(height: 16),
+                _hifzSectionTitle('MURAJA\'A (REVIEW)', Icons.repeat_rounded, Colors.purple),
+                _hifzSurahAyaRangeRow(
+                  mSFrom, a: mAFrom, b: mSTo, c: mATo,
+                  onFromSurahChanged: (v) => setDialogState(() => mSFrom = v!),
+                  onToSurahChanged: (v) => setDialogState(() => mSTo = v!),
                 ),
                 const SizedBox(height: 20),
-                _hifzSectionTitle('PROGRESS (JUZH)', Icons.menu_book_rounded, Colors.green),
+                _hifzSectionTitle('GROWTH (JUZH)', Icons.trending_up_rounded, Colors.green),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12),
                   decoration: BoxDecoration(color: Colors.grey.shade50, borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.grey.shade200)),
@@ -2206,16 +2211,19 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   final data = {
                     'studentUsername': student['username'],
                     'date': today,
-                    'todayFromSura': tSFrom.text,
+                    'todayFromSura': tSFrom,
                     'todayFromAya': tAFrom.text,
-                    'todayToSura': tSTo.text,
+                    'todayToSura': tSTo,
                     'todayToAya': tATo.text,
-                    'oldFromSura': oSFrom.text,
+                    'oldFromSura': oSFrom,
                     'oldFromAya': oAFrom.text,
-                    'oldToSura': oSTo.text,
+                    'oldToSura': oSTo,
                     'oldToAya': oATo.text,
+                    'murajaaFromSura': mSFrom,
+                    'murajaaFromAya': mAFrom.text,
+                    'murajaaToSura': mSTo,
+                    'murajaaToAya': mATo.text,
                     'juzh': selectedJuzh.toString(),
-                    'oldPortionJuzh': oldPortionJuzh.toString(),
                   };
                   if (existing.isNotEmpty) {
                     final idx = DataStore.allHifzProgress.indexOf(existing);
@@ -2248,25 +2256,54 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
     );
   }
 
-  Widget _hifzAyaRangeRow(TextEditingController sF, TextEditingController aF, TextEditingController sT, TextEditingController aT) {
+  Widget _hifzSurahAyaRangeRow(
+    String sF, {
+    required TextEditingController a,
+    required String b,
+    required TextEditingController c,
+    required Function(String?) onFromSurahChanged,
+    required Function(String?) onToSurahChanged,
+  }) {
     return Column(
       children: [
         Row(
           children: [
-            Expanded(child: _hifzField(sF, 'Sura')),
+            Expanded(flex: 3, child: _surahDropdown(sF, onFromSurahChanged)),
             const SizedBox(width: 8),
-            Expanded(child: _hifzField(aF, 'Aya')),
+            Expanded(flex: 2, child: _hifzField(a, 'Aya')),
           ],
         ),
         const Padding(padding: EdgeInsets.symmetric(vertical: 4), child: Text('to', style: TextStyle(fontSize: 10, color: Colors.grey))),
         Row(
           children: [
-            Expanded(child: _hifzField(sT, 'Sura')),
+            Expanded(flex: 3, child: _surahDropdown(b, onToSurahChanged)),
             const SizedBox(width: 8),
-            Expanded(child: _hifzField(aT, 'Aya')),
+            Expanded(flex: 2, child: _hifzField(c, 'Aya')),
           ],
         ),
       ],
+    );
+  }
+
+  Widget _surahDropdown(String value, Function(String?) onChanged) {
+    String safeValue = quranSurahsArabic.contains(value) ? value : quranSurahsArabic[0];
+    return Container(
+      height: 40,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          isExpanded: true,
+          value: safeValue,
+          style: const TextStyle(fontSize: 13, color: Colors.black, fontFamily: 'sans-serif'),
+          items: quranSurahsArabic.map((s) => DropdownMenuItem(value: s, child: Text(s, overflow: TextOverflow.ellipsis))).toList(),
+          onChanged: onChanged,
+        ),
+      ),
     );
   }
 
