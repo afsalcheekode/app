@@ -1931,7 +1931,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
 
 
   Widget _buildStudentsTab(ColorScheme colorScheme) {
-    final isHifz = DataStore.classDepts[_teacherSelectedClass] == 'HIFZ';
+    final isHifz = DataStore.classDepts[_teacherSelectedClass] == 'HIFZ' || _teacherSelectedClass.toUpperCase().contains('HZ');
     if (!isHifz) return _buildRegularStudentsTab(colorScheme);
 
     return DefaultTabController(
@@ -2083,7 +2083,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                   backgroundColor: colorScheme.primary.withOpacity(0.1),
                   child: Text(s['name']?[0] ?? 'S', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 18)),
                 ),
-                title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16)),
+                title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 subtitle: Text('Juzh Progress: ${progress['juzh'] ?? 'Not set'}', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
                 trailing: ElevatedButton.icon(
                   onPressed: () => _showHifzProgressDialog(s),
@@ -2339,7 +2339,7 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
           backgroundImage: (s['photo'] != null && s['photo']!.isNotEmpty) ? MemoryImage(base64Decode(s['photo']!)) : null,
           child: (s['photo'] == null || s['photo']!.isEmpty) ? Text(s['name']?[0] ?? 'S', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.w900, fontSize: 18)) : null,
         ),
-        title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF1E293B))),
+        title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14, color: Color(0xFF1E293B))),
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
