@@ -1931,7 +1931,8 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
 
 
   Widget _buildStudentsTab(ColorScheme colorScheme) {
-    final isHifz = DataStore.classDepts[_teacherSelectedClass] == 'HIFZ' || _teacherSelectedClass.toUpperCase().contains('HZ');
+    final currentClass = _teacherSelectedClass ?? widget.assignedClass;
+    final isHifz = DataStore.classDepts[currentClass] == 'HIFZ' || currentClass.toUpperCase().contains('HZ');
     if (!isHifz) return _buildRegularStudentsTab(colorScheme);
 
     return DefaultTabController(
