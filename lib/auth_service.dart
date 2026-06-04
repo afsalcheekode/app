@@ -55,7 +55,7 @@ class AuthService {
           } else {
             // Check if it's a valid teacher
             for (var t in DataStore.allTeachers) {
-              if (t['username']?.toString().toLowerCase() == username && t['password'] == password) {
+              if (t['username']?.toString().trim().toLowerCase() == username && t['password']?.toString().trim() == password) {
                 isMatch = true;
                 matchData = {...t, 'role': 'teacher', 'email': formattedEmail};
                 break;
@@ -64,7 +64,7 @@ class AuthService {
             // Check if it's a valid student
             if (!isMatch) {
               for (var s in DataStore.allStudents) {
-                if (s['username']?.toString().toLowerCase() == username && s['password'] == password) {
+                if (s['username']?.toString().trim().toLowerCase() == username && s['password']?.toString().trim() == password) {
                   isMatch = true;
                   matchData = {...s, 'role': 'student', 'email': formattedEmail};
                   break;
@@ -79,7 +79,7 @@ class AuthService {
                   final data = doc.data()!;
                   if (data['allTeachers'] != null) {
                     for (var t in data['allTeachers']) {
-                      if (t['username']?.toString().toLowerCase() == username && t['password'] == password) {
+                      if (t['username']?.toString().trim().toLowerCase() == username && t['password']?.toString().trim() == password) {
                         isMatch = true;
                         matchData = {...(t as Map<String, dynamic>), 'role': 'teacher', 'email': formattedEmail};
                         break;
@@ -88,7 +88,7 @@ class AuthService {
                   }
                   if (!isMatch && data['allStudents'] != null) {
                     for (var s in data['allStudents']) {
-                      if (s['username']?.toString().toLowerCase() == username && s['password'] == password) {
+                      if (s['username']?.toString().trim().toLowerCase() == username && s['password']?.toString().trim() == password) {
                         isMatch = true;
                         matchData = {...(s as Map<String, dynamic>), 'role': 'student', 'email': formattedEmail};
                         break;
@@ -150,7 +150,7 @@ class AuthService {
         // Fallback for Teachers & Students
         final username = formattedEmail.split('@')[0];
         try {
-            final teacher = DataStore.allTeachers.firstWhere((t) => t['username']?.toString().toLowerCase() == username);
+            final teacher = DataStore.allTeachers.firstWhere((t) => t['username']?.toString().trim().toLowerCase() == username);
             final teacherData = {...teacher, 'role': 'teacher', 'uid': user.uid, 'email': formattedEmail};
             await _db.collection('users').doc(user.uid).set(teacherData);
             DataStore.updateMockUser(teacherData);
@@ -158,12 +158,41 @@ class AuthService {
         } catch(e) {}
 
         try {
-            final student = DataStore.allStudents.firstWhere((s) => s['username']?.toString().toLowerCase() == username);
+            final student = DataStore.allStudents.firstWhere((s) => s['username']?.toString().trim().toLowerCase() == username);
             final studentData = {...student, 'role': 'student', 'uid': user.uid, 'email': formattedEmail};
             await _db.collection('users').doc(user.uid).set(studentData);
             DataStore.updateMockUser(studentData);
             return studentData;
         } catch(e) {}
+
+        try {
+            final cDoc = await _db.collection('app_data').doc('central_store').get();
+            if (cDoc.exists) {
+                final data = cDoc.data()!;
+                if (data['allTeachers'] != null) {
+                    for (var t in data['allTeachers']) {
+                        if (t['username']?.toString().trim().toLowerCase() == username) {
+                            final teacherData = {...(t as Map<String, dynamic>), 'role': 'teacher', 'uid': user.uid, 'email': formattedEmail};
+                            await _db.collection('users').doc(user.uid).set(teacherData);
+                            DataStore.updateMockUser(teacherData);
+                            return teacherData;
+                        }
+                    }
+                }
+                if (data['allStudents'] != null) {
+                    for (var s in data['allStudents']) {
+                        if (s['username']?.toString().trim().toLowerCase() == username) {
+                            final studentData = {...(s as Map<String, dynamic>), 'role': 'student', 'uid': user.uid, 'email': formattedEmail};
+                            await _db.collection('users').doc(user.uid).set(studentData);
+                            DataStore.updateMockUser(studentData);
+                            return studentData;
+                        }
+                    }
+                }
+            }
+        } catch(e) {
+            debugPrint("AuthService missing doc fallback query failed: $e");
+        }
 
         throw Exception("User data not found in database.");
       }
