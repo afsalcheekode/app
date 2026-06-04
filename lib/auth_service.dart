@@ -71,6 +71,35 @@ class AuthService {
                 }
               }
             }
+            // If not found locally (e.g. fresh incognito load), check Firestore directly
+            if (!isMatch) {
+              try {
+                final doc = await _db.collection('app_data').doc('central_store').get();
+                if (doc.exists) {
+                  final data = doc.data()!;
+                  if (data['allTeachers'] != null) {
+                    for (var t in data['allTeachers']) {
+                      if (t['username']?.toString().toLowerCase() == username && t['password'] == password) {
+                        isMatch = true;
+                        matchData = {...(t as Map<String, dynamic>), 'role': 'teacher', 'email': formattedEmail};
+                        break;
+                      }
+                    }
+                  }
+                  if (!isMatch && data['allStudents'] != null) {
+                    for (var s in data['allStudents']) {
+                      if (s['username']?.toString().toLowerCase() == username && s['password'] == password) {
+                        isMatch = true;
+                        matchData = {...(s as Map<String, dynamic>), 'role': 'student', 'email': formattedEmail};
+                        break;
+                      }
+                    }
+                  }
+                }
+              } catch(e) {
+                 debugPrint("AuthService fallback query failed: $e");
+              }
+            }
           }
 
           if (isMatch) {
