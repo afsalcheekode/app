@@ -181,7 +181,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
             onTap: null,
             child: CircleAvatar(
               backgroundColor: Colors.white24,
-              backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty
+              backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty && widget.studentData['photo'] != 'null'
                   ? MemoryImage(base64Decode(widget.studentData['photo']!))
                   : null,
               child: widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty
@@ -299,7 +299,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
               onTap: null,
               child: CircleAvatar(
                 backgroundColor: colorScheme.primary.withOpacity(0.1),
-                backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty
+                backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty && widget.studentData['photo'] != 'null'
                     ? MemoryImage(base64Decode(widget.studentData['photo']!))
                     : null,
                 child: widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty
@@ -359,7 +359,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
           onTap: null,
           child: CircleAvatar(
             backgroundColor: colorScheme.primary.withOpacity(0.1),
-            backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty
+            backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty && widget.studentData['photo'] != 'null'
                 ? MemoryImage(base64Decode(widget.studentData['photo']!))
                 : null,
             child: widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty
@@ -801,7 +801,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                           child: CircleAvatar(
                             radius: 28,
                             backgroundColor: Colors.white.withOpacity(0.2),
-                            backgroundImage: (widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty) 
+                            backgroundImage: (widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty && widget.studentData['photo'] != 'null') 
                                 ? MemoryImage(base64Decode(widget.studentData['photo']!)) 
                                 : null,
                             child: (widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty) 
@@ -866,7 +866,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                                   child: CircleAvatar(
                                     radius: 35,
                                     backgroundColor: const Color(0xFFF1F5F9),
-                                    backgroundImage: (t['photo'] != null && t['photo']!.isNotEmpty)
+                                    backgroundImage: (t['photo'] != null && t['photo']!.isNotEmpty && t['photo'] != 'null')
                                         ? MemoryImage(base64Decode(t['photo']!))
                                         : const AssetImage('assets/male_avatar.png') as ImageProvider,
                                   ),
@@ -2257,7 +2257,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                     child: CircleAvatar(
                       radius: 60,
                       backgroundColor: const Color(0xFFF1F5F9),
-                      backgroundImage: (t['photo'] != null && t['photo']!.isNotEmpty)
+                      backgroundImage: (t['photo'] != null && t['photo']!.isNotEmpty && t['photo'] != 'null')
                           ? MemoryImage(base64Decode(t['photo']!))
                           : const AssetImage('assets/male_avatar.png') as ImageProvider,
                     ),

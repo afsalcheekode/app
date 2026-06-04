@@ -110,7 +110,7 @@ class AuthWrapper extends StatelessWidget {
             studentName: data['name'] ?? 'Student',
             studentClass: data['std'] ?? '',
             studentUsername: username,
-            studentData: Map<String, String>.from(data.map((k, v) => MapEntry(k, v.toString()))),
+            studentData: Map<String, String>.from(data.map((k, v) => MapEntry(k, v?.toString() ?? ''))),
           );
         }
 

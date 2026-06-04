@@ -30,7 +30,7 @@ class AuthService {
       
       String formattedEmail = email.trim().toLowerCase();
       if (!formattedEmail.contains('@')) {
-        formattedEmail = '$formattedEmail@harakat.com';
+        formattedEmail = '$formattedEmail@v2.harakat.com';
       }
       
       // 1. Firebase Auth Sign In
@@ -53,9 +53,9 @@ class AuthService {
           if (lowEmail.contains('minad') || lowEmail.contains('director') || lowEmail.contains('hsh')) {
             isMatch = true;
           } else {
-            // Check if it's a valid teacher
+              // Check if it's a valid teacher
             for (var t in DataStore.allTeachers) {
-              if (t['username']?.toString().trim().toLowerCase() == username && t['password']?.toString().trim() == password) {
+              if (t['username']?.toString().trim().toLowerCase() == username && t['password']?.toString().trim() == password.trim()) {
                 isMatch = true;
                 matchData = {...t, 'role': 'teacher', 'email': formattedEmail};
                 break;
@@ -64,7 +64,7 @@ class AuthService {
             // Check if it's a valid student
             if (!isMatch) {
               for (var s in DataStore.allStudents) {
-                if (s['username']?.toString().trim().toLowerCase() == username && s['password']?.toString().trim() == password) {
+                if (s['username']?.toString().trim().toLowerCase() == username && s['password']?.toString().trim() == password.trim()) {
                   isMatch = true;
                   matchData = {...s, 'role': 'student', 'email': formattedEmail};
                   break;
@@ -79,7 +79,7 @@ class AuthService {
                   final data = doc.data()!;
                   if (data['allTeachers'] != null) {
                     for (var t in data['allTeachers']) {
-                      if (t['username']?.toString().trim().toLowerCase() == username && t['password']?.toString().trim() == password) {
+                      if (t['username']?.toString().trim().toLowerCase() == username && t['password']?.toString().trim() == password.trim()) {
                         isMatch = true;
                         matchData = {...(t as Map<String, dynamic>), 'role': 'teacher', 'email': formattedEmail};
                         break;
@@ -88,7 +88,7 @@ class AuthService {
                   }
                   if (!isMatch && data['allStudents'] != null) {
                     for (var s in data['allStudents']) {
-                      if (s['username']?.toString().trim().toLowerCase() == username && s['password']?.toString().trim() == password) {
+                      if (s['username']?.toString().trim().toLowerCase() == username && s['password']?.toString().trim() == password.trim()) {
                         isMatch = true;
                         matchData = {...(s as Map<String, dynamic>), 'role': 'student', 'email': formattedEmail};
                         break;
@@ -110,15 +110,24 @@ class AuthService {
                 password: firebasePassword,
               );
               if (matchData != null && result.user != null) {
+                // Delete old documents with same username to prevent duplicates
+                try {
+                  final oldDocs = await _db.collection('users').where('username', isEqualTo: username).get();
+                  for (var d in oldDocs.docs) {
+                    await d.reference.delete();
+                  }
+                } catch (e) {
+                  debugPrint("AuthService: Error deleting old user docs: $e");
+                }
                 matchData['uid'] = result.user!.uid;
                 await _db.collection('users').doc(result.user!.uid).set(matchData, SetOptions(merge: true));
               }
             } catch (createError) {
               debugPrint("AuthService: Auto-create failed: $createError");
-              throw Exception("Invalid username or password.");
+              throw Exception("Create Error: $createError");
             }
           } else {
-            throw Exception("Invalid username or password.");
+            throw Exception("Invalid username or password. (Match Failed)");
           }
         } else {
           rethrow;
@@ -245,9 +254,13 @@ class AuthService {
       
       final firebasePassword = _getFirebasePassword(password);
       
-      // 2. Create Auth Account in secondary app
+      String formattedEmail = email;
+      if (!formattedEmail.contains('@')) {
+        formattedEmail = '$formattedEmail@v2.harakat.com';
+      }
+
       UserCredential result = await secondaryAuth.createUserWithEmailAndPassword(
-        email: email.trim().toLowerCase(),
+        email: formattedEmail.trim().toLowerCase(),
         password: firebasePassword,
       );
       
