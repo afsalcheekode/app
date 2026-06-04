@@ -46,13 +46,44 @@ class AuthService {
         debugPrint("AuthService: Sign-in failed with code: ${e.code}");
         final lowEmail = formattedEmail.toLowerCase();
         if (e.code == 'user-not-found' || e.code == 'invalid-credential' || e.code == 'wrong-password' || e.code.toLowerCase().contains('credential')) {
+          final username = formattedEmail.split('@')[0];
+          bool isMatch = false;
+          Map<String, dynamic>? matchData;
+
           if (lowEmail.contains('minad') || lowEmail.contains('director') || lowEmail.contains('hsh')) {
+            isMatch = true;
+          } else {
+            // Check if it's a valid teacher
+            for (var t in DataStore.allTeachers) {
+              if (t['username']?.toString().toLowerCase() == username && t['password'] == password) {
+                isMatch = true;
+                matchData = {...t, 'role': 'teacher', 'email': formattedEmail};
+                break;
+              }
+            }
+            // Check if it's a valid student
+            if (!isMatch) {
+              for (var s in DataStore.allStudents) {
+                if (s['username']?.toString().toLowerCase() == username && s['password'] == password) {
+                  isMatch = true;
+                  matchData = {...s, 'role': 'student', 'email': formattedEmail};
+                  break;
+                }
+              }
+            }
+          }
+
+          if (isMatch) {
             try {
               debugPrint("AuthService: Auto-creating account for $formattedEmail");
               result = await _auth.createUserWithEmailAndPassword(
                 email: formattedEmail,
                 password: firebasePassword,
               );
+              if (matchData != null && result.user != null) {
+                matchData['uid'] = result.user!.uid;
+                await _db.collection('users').doc(result.user!.uid).set(matchData, SetOptions(merge: true));
+              }
             } catch (createError) {
               debugPrint("AuthService: Auto-create failed: $createError");
               throw Exception("Invalid username or password.");
@@ -86,6 +117,25 @@ class AuthService {
            DataStore.updateMockUser(adminData);
            return adminData;
         }
+
+        // Fallback for Teachers & Students
+        final username = formattedEmail.split('@')[0];
+        try {
+            final teacher = DataStore.allTeachers.firstWhere((t) => t['username']?.toString().toLowerCase() == username);
+            final teacherData = {...teacher, 'role': 'teacher', 'uid': user.uid, 'email': formattedEmail};
+            await _db.collection('users').doc(user.uid).set(teacherData);
+            DataStore.updateMockUser(teacherData);
+            return teacherData;
+        } catch(e) {}
+
+        try {
+            final student = DataStore.allStudents.firstWhere((s) => s['username']?.toString().toLowerCase() == username);
+            final studentData = {...student, 'role': 'student', 'uid': user.uid, 'email': formattedEmail};
+            await _db.collection('users').doc(user.uid).set(studentData);
+            DataStore.updateMockUser(studentData);
+            return studentData;
+        } catch(e) {}
+
         throw Exception("User data not found in database.");
       }
 
