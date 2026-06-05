@@ -40,6 +40,12 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
   @override
   String get currentSchoolName => widget.studentData['schoolName'] ?? '';
 
+  String? get _myPhoto {
+    final cached = DataStore.teacherPhotoCache[widget.studentUsername];
+    if (cached != null && cached.isNotEmpty && cached != 'null') return cached;
+    return widget.studentData['photo'];
+  }
+
   int _currentIndex = 0; 
   
   // Use global static lists for persistence
@@ -181,10 +187,10 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
             onTap: null,
             child: CircleAvatar(
               backgroundColor: Colors.white24,
-              backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty && widget.studentData['photo'] != 'null'
-                  ? MemoryImage(base64Decode(widget.studentData['photo']!))
+              backgroundImage: _myPhoto != null && _myPhoto!.isNotEmpty && _myPhoto != 'null'
+                  ? MemoryImage(base64Decode(_myPhoto!))
                   : null,
-              child: widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty
+              child: _myPhoto == null || _myPhoto!.isEmpty
                   ? Text(widget.studentName[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
                   : null,
             ),
@@ -299,10 +305,10 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
               onTap: null,
               child: CircleAvatar(
                 backgroundColor: colorScheme.primary.withOpacity(0.1),
-                backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty && widget.studentData['photo'] != 'null'
-                    ? MemoryImage(base64Decode(widget.studentData['photo']!))
+                backgroundImage: _myPhoto != null && _myPhoto!.isNotEmpty && _myPhoto != 'null'
+                    ? MemoryImage(base64Decode(_myPhoto!))
                     : null,
-                child: widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty
+                child: _myPhoto == null || _myPhoto!.isEmpty
                     ? Text(widget.studentName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))
                     : null,
               ),
@@ -359,10 +365,10 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
           onTap: null,
           child: CircleAvatar(
             backgroundColor: colorScheme.primary.withOpacity(0.1),
-            backgroundImage: widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty && widget.studentData['photo'] != 'null'
-                ? MemoryImage(base64Decode(widget.studentData['photo']!))
+            backgroundImage: _myPhoto != null && _myPhoto!.isNotEmpty && _myPhoto != 'null'
+                ? MemoryImage(base64Decode(_myPhoto!))
                 : null,
-            child: widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty
+            child: _myPhoto == null || _myPhoto!.isEmpty
                 ? Text(widget.studentName[0], style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold))
                 : null,
           ),
@@ -801,10 +807,10 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
                           child: CircleAvatar(
                             radius: 28,
                             backgroundColor: Colors.white.withOpacity(0.2),
-                            backgroundImage: (widget.studentData['photo'] != null && widget.studentData['photo']!.isNotEmpty && widget.studentData['photo'] != 'null') 
-                                ? MemoryImage(base64Decode(widget.studentData['photo']!)) 
+                            backgroundImage: (_myPhoto != null && _myPhoto!.isNotEmpty && _myPhoto != 'null') 
+                                ? MemoryImage(base64Decode(_myPhoto!)) 
                                 : null,
-                            child: (widget.studentData['photo'] == null || widget.studentData['photo']!.isEmpty) 
+                            child: (_myPhoto == null || _myPhoto!.isEmpty) 
                                 ? Text(widget.studentName[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900, fontSize: 24)) 
                                 : null,
                           ),
