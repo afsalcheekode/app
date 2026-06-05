@@ -183,7 +183,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         centerTitle: true,
         title: Column(
           children: [
-            const Text('STUDIO', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            Image.asset('assets/images/app_name_arabic.png', height: 24, color: Colors.white),
             Text('Class ${widget.studentClass}', style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.8))),
           ],
         ),
