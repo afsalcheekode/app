@@ -73,6 +73,8 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
 
   bool get _isHifzStudent => DataStore.classDepts[widget.studentClass] == 'HIFZ' || widget.studentClass.toUpperCase().contains('HZ') || widget.studentClass == '01';
   Timer? _refreshTimer;
+  Timer? _facultyTimer;
+  final PageController _facultyPageCtrl = PageController();
 
   @override
   void initState() {
@@ -85,6 +87,18 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         updateNoticeCount();
         DataStore.checkForNewAndNotify(widget.studentUsername);
         setState(() {});
+      }
+    });
+    _facultyTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted && _facultyPageCtrl.hasClients) {
+        int itemsPerPage = (MediaQuery.of(context).size.width / 160.0).floor().clamp(2, 6);
+        if (MediaQuery.of(context).size.width < 400) itemsPerPage = 2;
+        final totalPages = (_teachers.length / itemsPerPage).ceil();
+        if (totalPages > 1) {
+          int nextPage = _facultyPageCtrl.page!.round() + 1;
+          if (nextPage >= totalPages) nextPage = 0;
+          _facultyPageCtrl.animateToPage(nextPage, duration: const Duration(milliseconds: 500), curve: Curves.easeInOut);
+        }
       }
     });
     _loadAllDataIfNecessary();
@@ -104,6 +118,8 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
   @override
   void dispose() {
     _refreshTimer?.cancel();
+    _facultyTimer?.cancel();
+    _facultyPageCtrl.dispose();
     _examSearchCtrl.dispose();
     _resultSearchCtrl.dispose();
     _chatScrollCtrl.dispose();
@@ -827,69 +843,84 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
               )
             : SizedBox(
                 height: 180,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: _teachers.length,
-                  itemBuilder: (context, index) {
-                    final t = _teachers[index];
-                    return GestureDetector(
-                      onTap: () => _showTeacherProfile(t, colorScheme),
-                      child: Container(
-                        width: 160,
-                        margin: const EdgeInsets.only(right: 16, bottom: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(24),
-                          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Stack(
-                              children: [
-                                Container(
-                                  padding: const EdgeInsets.all(3),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    int itemsPerPage = (constraints.maxWidth / 160.0).floor().clamp(2, 6);
+                    if (constraints.maxWidth < 400) itemsPerPage = 2;
+                    int pageCount = (_teachers.length / itemsPerPage).ceil();
+
+                    return PageView.builder(
+                      controller: _facultyPageCtrl,
+                      itemCount: pageCount,
+                      itemBuilder: (context, pageIndex) {
+                        return Row(
+                          mainAxisAlignment: MainAxisAlignment.start,
+                          children: List.generate(itemsPerPage, (i) {
+                            int idx = pageIndex * itemsPerPage + i;
+                            if (idx >= _teachers.length) return const Expanded(child: SizedBox());
+                            final t = _teachers[idx];
+                            return Expanded(
+                              child: GestureDetector(
+                                onTap: () => _showTeacherProfile(t, colorScheme),
+                                child: Container(
+                                  margin: const EdgeInsets.only(right: 12, bottom: 8, left: 4),
                                   decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    gradient: LinearGradient(colors: [colorScheme.primary.withOpacity(0.5), colorScheme.secondary.withOpacity(0.5)]),
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(24),
+                                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
                                   ),
-                                  child: CircleAvatar(
-                                    radius: 35,
-                                    backgroundColor: const Color(0xFFF1F5F9),
-                                    backgroundImage: (t['photo'] != null && t['photo']!.isNotEmpty && t['photo'] != 'null')
-                                        ? MemoryImage(base64Decode(t['photo']!))
-                                        : const AssetImage('assets/male_avatar.png') as ImageProvider,
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Stack(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(3),
+                                            decoration: BoxDecoration(
+                                              shape: BoxShape.circle,
+                                              gradient: LinearGradient(colors: [colorScheme.primary.withOpacity(0.5), colorScheme.secondary.withOpacity(0.5)]),
+                                            ),
+                                            child: CircleAvatar(
+                                              radius: 35,
+                                              backgroundColor: const Color(0xFFF1F5F9),
+                                              backgroundImage: (t['photo'] != null && t['photo']!.isNotEmpty && t['photo'] != 'null')
+                                                  ? MemoryImage(base64Decode(t['photo']!))
+                                                  : const AssetImage('assets/male_avatar.png') as ImageProvider,
+                                            ),
+                                          ),
+                                          Positioned(
+                                            right: 0, bottom: 0,
+                                            child: Container(
+                                              padding: const EdgeInsets.all(4),
+                                              decoration: BoxDecoration(color: colorScheme.primary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
+                                              child: const Icon(Icons.verified_rounded, color: Colors.white, size: 12),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(t['name'] ?? 'Faculty', 
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                                          style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF1E293B))),
+                                      Text(t['designation'] ?? 'Teacher', 
+                                          textAlign: TextAlign.center,
+                                          maxLines: 1, overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(color: colorScheme.primary, fontSize: 10, fontWeight: FontWeight.bold)),
+                                      const SizedBox(height: 8),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                        decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)),
+                                        child: Text('View Profile', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.grey.shade600)),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                Positioned(
-                                  right: 0, bottom: 0,
-                                  child: Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(color: colorScheme.primary, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 2)),
-                                    child: const Icon(Icons.verified_rounded, color: Colors.white, size: 12),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 12),
-                            Text(t['name'] ?? 'Faculty', 
-                                textAlign: TextAlign.center,
-                                maxLines: 1, overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14, color: Color(0xFF1E293B))),
-                            Text(t['designation'] ?? 'Teacher', 
-                                textAlign: TextAlign.center,
-                                maxLines: 1, overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: colorScheme.primary, fontSize: 10, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(color: const Color(0xFFF1F5F9), borderRadius: BorderRadius.circular(10)),
-                              child: Text('View Profile', style: TextStyle(fontSize: 9, fontWeight: FontWeight.w800, color: Colors.grey.shade600)),
-                            ),
-                          ],
-                        ),
-                      ),
+                              ),
+                            );
+                          }),
+                        );
+                      },
                     );
                   },
                 ),

@@ -16,22 +16,25 @@ void main() async {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     await DataStore.initPrefs();
     
-    try {
-      if (DataStore.allSchools.length > 1 || DataStore.allSchools.any((s) => s['username'] != 'hsh.dtcr')) {
-        DataStore.allSchools.removeWhere((s) => s['username'] != 'hsh.dtcr');
-        await DataStore.saveAllData();
-        
-        final query = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'director').get();
-        for (var doc in query.docs) {
-          if (doc.data()['username'] != 'hsh.dtcr') {
-            await doc.reference.delete();
+    // Run cleanup asynchronously so it doesn't block app startup
+    Future.microtask(() async {
+      try {
+        if (DataStore.allSchools.length > 1 || DataStore.allSchools.any((s) => s['username'] != 'hsh.dtcr')) {
+          DataStore.allSchools.removeWhere((s) => s['username'] != 'hsh.dtcr');
+          await DataStore.saveAllData();
+          
+          final query = await FirebaseFirestore.instance.collection('users').where('role', isEqualTo: 'director').get();
+          for (var doc in query.docs) {
+            if (doc.data()['username'] != 'hsh.dtcr') {
+              await doc.reference.delete();
+            }
           }
+          debugPrint("Cleanup of director accounts completed!");
         }
-        debugPrint("Cleanup of director accounts completed!");
+      } catch (e) {
+        debugPrint("Cleanup error: $e");
       }
-    } catch (e) {
-      debugPrint("Cleanup error: $e");
-    }
+    });
   } catch (e) {
     debugPrint("Init Error: $e");
   }
