@@ -3435,7 +3435,19 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                         Row(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            CircleAvatar(radius: 40, backgroundColor: Colors.white, child: Text(name.isNotEmpty ? name[0] : 'S', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.teal.shade700))),
+                            Builder(
+                              builder: (context) {
+                                String? photo = DataStore.teacherPhotoCache[student['username']];
+                                return CircleAvatar(
+                                  radius: 40,
+                                  backgroundColor: Colors.white,
+                                  backgroundImage: photo != null && photo.isNotEmpty && photo != 'null' ? MemoryImage(base64Decode(photo)) : null,
+                                  child: photo == null || photo.isEmpty || photo == 'null'
+                                      ? Text(name.isNotEmpty ? name[0] : 'S', style: TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.teal.shade700))
+                                      : null,
+                                );
+                              }
+                            ),
                             const SizedBox(width: 20),
                             Expanded(
                               child: Column(
