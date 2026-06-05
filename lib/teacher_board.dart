@@ -2086,16 +2086,27 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
                 ),
                 title: Text(s['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14)),
                 subtitle: Text('Juzh Progress: ${progress['juzh'] ?? 'Not set'}', style: TextStyle(color: colorScheme.primary, fontWeight: FontWeight.bold, fontSize: 12)),
-                trailing: ElevatedButton.icon(
-                  onPressed: () => _showHifzProgressDialog(s),
-                  icon: const Icon(Icons.edit_note, size: 18),
-                  label: const Text('UPDATE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: colorScheme.primary.withOpacity(0.1),
-                    foregroundColor: colorScheme.primary,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.history_rounded, size: 20),
+                      onPressed: () => _showHifzHistoryDialog(s),
+                      color: colorScheme.primary,
+                      tooltip: 'View History',
+                    ),
+                    ElevatedButton.icon(
+                      onPressed: () => _showHifzProgressDialog(s),
+                      icon: const Icon(Icons.edit_note, size: 18),
+                      label: const Text('UPDATE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: colorScheme.primary.withOpacity(0.1),
+                        foregroundColor: colorScheme.primary,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ],
                 ),
               ),
               if (progress.isNotEmpty) Padding(
@@ -2127,6 +2138,120 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
             Text(value, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showHifzHistoryDialog(Map<String, String> student) {
+    final progress = DataStore.allHifzProgress.where((p) => p['studentUsername'] == student['username']).toList().reversed.toList();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.85,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              margin: const EdgeInsets.only(top: 12, bottom: 20),
+              width: 40, height: 4,
+              decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    child: Text(student['name']?[0] ?? '', style: TextStyle(color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.bold)),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(student['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+                        const Text('Hifz Progress History', style: TextStyle(color: Colors.grey, fontSize: 13)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Divider(height: 32),
+            Expanded(
+              child: progress.isEmpty
+                  ? const Center(child: Text('No progress history found', style: TextStyle(color: Colors.grey)))
+                  : ListView.builder(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      itemCount: progress.length,
+                      itemBuilder: (context, index) {
+                        final p = progress[index];
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: 16),
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(24),
+                            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 10, offset: const Offset(0, 4))],
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(p['date'] ?? '', style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 16, color: Color(0xFF64748B))),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                    decoration: BoxDecoration(color: const Color(0xFF075E54).withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                                    child: Text('Juzh ${p['juzh'] ?? ''}', style: const TextStyle(color: Color(0xFF075E54), fontWeight: FontWeight.w900, fontSize: 11)),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 16),
+                              _hifzHistoryRow('New Lesson', '${p['todayFromSura']} ${p['todayFromAya']} | ${p['todayToSura']} ${p['todayToAya']}', Colors.blue),
+                              _hifzHistoryRow('Old Review', '${p['oldFromSura']} ${p['oldFromAya']} | ${p['oldToSura']} ${p['oldToAya']}', Colors.orange),
+                              if ((p['murajaaFromSura']?.isNotEmpty ?? false) && p['murajaaFromSura'] != '-')
+                                _hifzHistoryRow('Muraja\'a', '${p['murajaaFromSura']} ${p['murajaaFromAya']} | ${p['murajaaToSura']} ${p['murajaaToAya']}', Colors.purple),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _hifzHistoryRow(String label, String value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(top: 4, right: 12),
+            width: 8, height: 8,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: color)),
+                Text(value, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 14)),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

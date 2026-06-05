@@ -65,7 +65,7 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
   final TextEditingController _chatMsgCtrl = TextEditingController();
   bool _chatEmojiOpen = false;
 
-  bool get _isHifzStudent => DataStore.classDepts[widget.studentClass] == 'HIFZ' || widget.studentClass == '01';
+  bool get _isHifzStudent => DataStore.classDepts[widget.studentClass] == 'HIFZ' || widget.studentClass.toUpperCase().contains('HZ') || widget.studentClass == '01';
   Timer? _refreshTimer;
 
   @override
