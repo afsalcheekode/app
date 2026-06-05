@@ -181,24 +181,9 @@ class _StudentBoardScreenState extends State<StudentBoardScreen> with NoticeCent
         backgroundColor: colorScheme.primary,
         foregroundColor: Colors.white,
         centerTitle: true,
-        leading: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: GestureDetector(
-            onTap: null,
-            child: CircleAvatar(
-              backgroundColor: Colors.white24,
-              backgroundImage: _myPhoto != null && _myPhoto!.isNotEmpty && _myPhoto != 'null'
-                  ? MemoryImage(base64Decode(_myPhoto!))
-                  : null,
-              child: _myPhoto == null || _myPhoto!.isEmpty
-                  ? Text(widget.studentName[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
-                  : null,
-            ),
-          ),
-        ),
         title: Column(
           children: [
-            Text(widget.studentName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const Text('STUDIO', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
             Text('Class ${widget.studentClass}', style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.8))),
           ],
         ),
