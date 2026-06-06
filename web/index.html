@@ -36,9 +36,134 @@
 
   <style>
     body {
-      background-color: #FFFFFF;
+      background-color: #F8FAFC;
       margin: 0;
       padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    /* Modern Glassmorphism Container */
+    .loading-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 40px;
+      border-radius: 32px;
+      box-shadow: 0 20px 40px rgba(7, 94, 84, 0.08), 0 1px 3px rgba(0,0,0,0.05);
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+    }
+
+    /* Logo Animation */
+    .logo-container {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .app-logo {
+      width: 90px;
+      height: 90px;
+      border-radius: 22px;
+      z-index: 2;
+      box-shadow: 0 15px 35px rgba(7, 94, 84, 0.2);
+      animation: gentle-float 3s ease-in-out infinite;
+    }
+
+    /* Outer glowing spin ring */
+    .spin-ring {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-top-color: #075E54;
+      border-right-color: #25D366;
+      animation: spin 1.5s linear infinite;
+      z-index: 1;
+      opacity: 0.8;
+    }
+
+    .spin-ring::after {
+      content: '';
+      position: absolute;
+      top: -3px; left: -3px; right: -3px; bottom: -3px;
+      border-radius: 50%;
+      border: 3px solid transparent;
+      border-bottom-color: rgba(37, 211, 102, 0.3);
+      border-left-color: rgba(7, 94, 84, 0.3);
+      animation: spin 2.5s linear infinite reverse;
+    }
+
+    /* Loading Text & Progress Bar */
+    .loading-text {
+      font-size: 16px;
+      font-weight: 600;
+      color: #075E54;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+      animation: pulse-text 2s ease-in-out infinite;
+    }
+
+    .progress-bar-container {
+      width: 160px;
+      height: 4px;
+      background: rgba(7, 94, 84, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 40%;
+      background: linear-gradient(90deg, #075E54, #25D366);
+      border-radius: 4px;
+      animation: slide-progress 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+    }
+
+    /* Keyframes */
+    @keyframes gentle-float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulse-text {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
+    }
+
+    @keyframes slide-progress {
+      0% { left: -40%; width: 40%; }
+      50% { left: 20%; width: 60%; }
+      100% { left: 100%; width: 40%; }
+    }
+
+    /* Utility class to hide loader smoothly */
+    .hide-loader {
+      opacity: 0;
+      transform: scale(0.95);
+      pointer-events: none;
     }
   </style>
 
@@ -54,6 +179,17 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
+  <!-- Loading Screen Container -->
+  <div id="loading-screen" class="loading-wrapper">
+    <div class="logo-container">
+      <div class="spin-ring"></div>
+      <img class="app-logo" src="favicon.png?v=2" alt="App Logo">
+    </div>
+    <div class="loading-text">LOADING...</div>
+    <div class="progress-bar-container">
+      <div class="progress-bar"></div>
+    </div>
+  </div>
 
   <script>
     window.addEventListener('load', function(ev) {
@@ -78,7 +214,19 @@
             // and avoid downloading the ~3MB CanvasKit engine.
             renderer: "html",
           }).then(function(appRunner) {
-            appRunner.runApp();
+            appRunner.runApp().then(function() {
+              // Smoothly fade out the loading screen once Flutter paints its first frame
+              window.setTimeout(function() {
+                var loader = document.getElementById('loading-screen');
+                if (loader) {
+                  loader.classList.add('hide-loader');
+                  // Remove from DOM after transition completes
+                  window.setTimeout(function() {
+                    loader.remove();
+                  }, 500);
+                }
+              }, 150);
+            });
           });
         }
       });
