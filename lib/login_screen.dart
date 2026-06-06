@@ -12,6 +12,7 @@ import 'admin_board.dart';
 import 'auth_service.dart';
 import 'web_helper.dart' if (dart.library.html) 'web_helper_web.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'main.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -61,6 +62,9 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
+      if (backendInitFuture != null) {
+        await backendInitFuture;
+      }
       if (!DataStore.isInitialized) {
         await DataStore.initPrefs();
       }

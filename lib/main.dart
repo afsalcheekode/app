@@ -10,8 +10,15 @@ import 'teacher_board.dart' as teacher;
 import 'student_board.dart' as student;
 import 'admin_board.dart' as admin;
 
-void main() async {
+Future<void>? backendInitFuture;
+
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  backendInitFuture = _initializeBackend();
+  runApp(const SchoolApp());
+}
+
+Future<void> _initializeBackend() async {
   try {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     await DataStore.initPrefs();
@@ -38,7 +45,6 @@ void main() async {
   } catch (e) {
     debugPrint("Init Error: $e");
   }
-  runApp(const SchoolApp());
 }
 
 class SchoolApp extends StatelessWidget {
