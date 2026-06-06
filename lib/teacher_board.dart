@@ -1915,8 +1915,8 @@ class _TeacherBoardScreenState extends State<TeacherBoardScreen> with NoticeCent
           DropdownButton<int>(
             value: _attYear,
             underline: const SizedBox(),
-            items: List.generate(5, (i) => DropdownMenuItem(value: 2024 + i, child: Text('${2024 + i}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)))),
-            onChanged: (v) => setState(() => _attYear = v ?? 2024),
+            items: List.generate(11, (i) => DropdownMenuItem(value: 2026 + i, child: Text('${2026 + i}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)))),
+            onChanged: (v) => setState(() => _attYear = v ?? DateTime.now().year),
           ),
         ],
       ),
