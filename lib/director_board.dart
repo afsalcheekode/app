@@ -1152,6 +1152,99 @@ class _DepartmentsTabState extends State<_DepartmentsTab> {
     );
   }
 
+  void _editClassDialog(String oldClassName, String currentDept) {
+    final ctrl = TextEditingController(text: oldClassName);
+    
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Edit Class Name', style: TextStyle(fontWeight: FontWeight.w900)),
+        content: TextField(
+          controller: ctrl,
+          decoration: InputDecoration(
+            labelText: 'Class Name / Number',
+            prefixIcon: const Icon(Icons.edit_rounded, color: Color(0xFF6366F1)),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6366F1)),
+            onPressed: () {
+              final newName = ctrl.text.trim();
+              if (newName.isEmpty || newName == oldClassName) return;
+              if (DataStore.getClassesForSchool(widget.schoolName).contains(newName)) {
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Class already exists!')));
+                return;
+              }
+
+              setState(() {
+                // 1. Update students
+                final studentsToUpdate = DataStore.allStudents.where((s) => s['std'] == oldClassName && s['schoolName'] == widget.schoolName).toList();
+                for (final s in studentsToUpdate) {
+                  s['std'] = newName;
+                  
+                  FirebaseFirestore.instance.collection('users')
+                      .where('username', isEqualTo: s['username'])
+                      .get().then((query) {
+                    if (query.docs.isNotEmpty) {
+                      query.docs.first.reference.update({'std': newName});
+                    }
+                  });
+                }
+
+                // 2. Update teachers
+                for (var t in DataStore.allTeachers) {
+                  if (t['schoolName'] != widget.schoolName) continue;
+                  final cField = t['class'];
+                  if (cField != null && cField.isNotEmpty) {
+                    var classes = cField.split(',').map((e) => e.trim()).toList();
+                    if (classes.contains(oldClassName)) {
+                      final idx = classes.indexOf(oldClassName);
+                      classes[idx] = newName;
+                      t['class'] = classes.join(', ');
+                      
+                      FirebaseFirestore.instance.collection('users')
+                          .where('username', isEqualTo: t['username'])
+                          .get().then((query) {
+                        if (query.docs.isNotEmpty) {
+                          query.docs.first.reference.update({'class': classes.join(', ')});
+                        }
+                      });
+                    }
+                  }
+                }
+
+                // 3. Update the class itself
+                DataStore.removeClassForSchool(widget.schoolName, oldClassName);
+                DataStore.removeDeptForClass(widget.schoolName, oldClassName);
+                DataStore.addClassForSchool(widget.schoolName, newName);
+                DataStore.setDeptForClass(widget.schoolName, newName, currentDept);
+                
+                // Update allClasses just in case
+                if (DataStore.allClasses.contains(oldClassName) && 
+                    !DataStore.classesBySchool.values.any((list) => list.contains(oldClassName))) {
+                  DataStore.allClasses.remove(oldClassName);
+                  DataStore.classDepts.remove(oldClassName);
+                }
+                if (!DataStore.allClasses.contains(newName)) {
+                  DataStore.allClasses.add(newName);
+                  DataStore.classDepts[newName] = currentDept;
+                }
+                
+                DataStore.saveAllData();
+              });
+              widget.onRefresh();
+              Navigator.pop(context);
+            },
+            child: const Text('Update'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _changeDept(String className, String currentDept) {
     final newDept = currentDept == 'HIFZ' ? 'DA\'WA' : 'HIFZ';
     setState(() {
@@ -1268,6 +1361,14 @@ class _DepartmentsTabState extends State<_DepartmentsTab> {
                                 padding: const EdgeInsets.all(4),
                                 child: Icon(Icons.swap_horiz_rounded, size: 18, color: color.withOpacity(0.6)),
                               ),
+                            ),
+                          ),
+                          InkWell(
+                            onTap: () => _editClassDialog(c, dept),
+                            borderRadius: BorderRadius.circular(6),
+                            child: Padding(
+                              padding: const EdgeInsets.all(4),
+                              child: Icon(Icons.edit_rounded, size: 18, color: color.withOpacity(0.6)),
                             ),
                           ),
                           InkWell(
