@@ -40,74 +40,6 @@
       margin: 0;
       padding: 0;
     }
-    .loading {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      margin: 0;
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-    }
-
-    .loader-container {
-      position: relative;
-      width: 200px;
-      height: 200px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    .loader-container::before, .loader-container::after {
-      content: '';
-      position: absolute;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(7, 94, 84, 0.2) 0%, rgba(37, 211, 102, 0.05) 70%, transparent 100%);
-      animation: ripple 2.5s cubic-bezier(0.1, 0.5, 0.8, 1) infinite;
-    }
-    .loader-container::after {
-      animation-delay: -1.25s;
-    }
-
-    @keyframes ripple {
-      0% {
-        width: 80px;
-        height: 80px;
-        opacity: 1;
-      }
-      100% {
-        width: 220px;
-        height: 220px;
-        opacity: 0;
-      }
-    }
-
-    #splash-logo {
-      width: 90px;
-      height: 90px;
-      position: relative;
-      z-index: 10;
-      border-radius: 22px;
-      box-shadow: 0 15px 35px rgba(7, 94, 84, 0.25);
-      animation: float 3s ease-in-out infinite;
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0px) scale(1); }
-      50% { transform: translateY(-10px) scale(1.02); }
-    }
-
-    .loading-text {
-      margin-top: 20px;
-      color: #1E293B;
-      font-family: 'Inter', sans-serif;
-      font-size: 18px;
-      font-weight: 500;
-      letter-spacing: 1px;
-    }
   </style>
 
   <script>
@@ -122,12 +54,6 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
-  <div id="loading" class="loading">
-    <div class="loader-container">
-      <img id="splash-logo" src="favicon.png?v=2" alt="حركات الحياة Logo">
-    </div>
-
-  </div>
 
   <script>
     window.addEventListener('load', function(ev) {
@@ -152,20 +78,7 @@
             // and avoid downloading the ~3MB CanvasKit engine.
             renderer: "html",
           }).then(function(appRunner) {
-            appRunner.runApp().then(function() {
-              // Wait for Flutter to paint its first frame before hiding the loading screen
-              window.setTimeout(function() {
-                var loading = document.getElementById('loading');
-                if (loading) {
-                  // Add a quick fade out transition
-                  loading.style.transition = 'opacity 0.2s ease-out';
-                  loading.style.opacity = '0';
-                  window.setTimeout(function() {
-                    loading.style.display = 'none';
-                  }, 200);
-                }
-              }, 150);
-            });
+            appRunner.runApp();
           });
         }
       });
